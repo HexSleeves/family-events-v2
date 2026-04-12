@@ -17,7 +17,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem("family-events-city")
     if (saved) {
-      const city = MOCK_CITIES.find(c => c.id === saved)
+      const city = MOCK_CITIES.find((c) => c.id === saved)
       if (city) setSelectedCityState(city)
     } else {
       setSelectedCityState(MOCK_CITIES[0])

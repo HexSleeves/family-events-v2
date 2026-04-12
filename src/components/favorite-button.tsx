@@ -31,7 +31,9 @@ export function FavoriteButton({
     e.stopPropagation()
 
     if (!user) {
-      toast("Sign in to save events", { description: "Create a free account to save your favorites." })
+      toast("Sign in to save events", {
+        description: "Create a free account to save your favorites.",
+      })
       return
     }
 

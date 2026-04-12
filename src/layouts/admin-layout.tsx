@@ -1,11 +1,29 @@
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom"
 import {
-  LayoutDashboard, Database, Calendar, MapPin, MessageSquare, Star, FileText, ArrowLeft, Zap
+  LayoutDashboard,
+  Database,
+  Calendar,
+  MapPin,
+  MessageSquare,
+  Star,
+  FileText,
+  ArrowLeft,
+  Zap,
 } from "lucide-react"
 import {
-  SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarGroup,
-  SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem,
-  SidebarMenuButton, SidebarFooter, SidebarTrigger, SidebarInset
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+  SidebarTrigger,
+  SidebarInset,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -94,7 +112,7 @@ export function AdminLayout() {
           <header className="flex items-center h-14 px-6 border-b border-border/60 bg-background sticky top-0 z-30">
             <SidebarTrigger className="-ml-2 mr-4" />
             <h1 className="text-sm font-semibold text-foreground">
-              {ADMIN_NAV.find(n => isActive(n.to, n.exact))?.label ?? "Admin"}
+              {ADMIN_NAV.find((n) => isActive(n.to, n.exact))?.label ?? "Admin"}
             </h1>
           </header>
           <div className="flex-1 p-6">

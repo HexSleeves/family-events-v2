@@ -16,20 +16,20 @@ export function MyEventsPage() {
   const { user } = useAuth()
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [savedIds, setSavedIds] = useState<Set<string>>(
-    new Set(MOCK_EVENTS.filter(e => e.is_favorited || e.is_in_calendar).map(e => e.id))
+    new Set(MOCK_EVENTS.filter((e) => e.is_favorited || e.is_in_calendar).map((e) => e.id))
   )
 
   const now = new Date()
-  const upcomingEvents = MOCK_EVENTS.filter(e =>
-    savedIds.has(e.id) && new Date(e.start_datetime) >= now
+  const upcomingEvents = MOCK_EVENTS.filter(
+    (e) => savedIds.has(e.id) && new Date(e.start_datetime) >= now
   )
-  const pastEvents = MOCK_EVENTS.filter(e =>
-    savedIds.has(e.id) && new Date(e.start_datetime) < now
+  const pastEvents = MOCK_EVENTS.filter(
+    (e) => savedIds.has(e.id) && new Date(e.start_datetime) < now
   )
-  const allSaved = MOCK_EVENTS.filter(e => savedIds.has(e.id))
+  const allSaved = MOCK_EVENTS.filter((e) => savedIds.has(e.id))
 
   function handleRemove(eventId: string) {
-    setSavedIds(prev => {
+    setSavedIds((prev) => {
       const next = new Set(prev)
       next.delete(eventId)
       return next
@@ -98,13 +98,8 @@ export function MyEventsPage() {
               ctaHref="/explore"
             />
           ) : (
-            upcomingEvents.map(event => (
-              <EventRow
-                key={event.id}
-                event={event}
-                onRemove={handleRemove}
-                variant="upcoming"
-              />
+            upcomingEvents.map((event) => (
+              <EventRow key={event.id} event={event} onRemove={handleRemove} variant="upcoming" />
             ))
           )}
         </TabsContent>
@@ -120,13 +115,8 @@ export function MyEventsPage() {
               ctaHref="/explore"
             />
           ) : (
-            allSaved.map(event => (
-              <EventRow
-                key={event.id}
-                event={event}
-                onRemove={handleRemove}
-                variant="saved"
-              />
+            allSaved.map((event) => (
+              <EventRow key={event.id} event={event} onRemove={handleRemove} variant="saved" />
             ))
           )}
         </TabsContent>
@@ -142,14 +132,14 @@ export function MyEventsPage() {
               ctaHref="/explore"
             />
           ) : (
-            pastEvents.map(event => (
+            pastEvents.map((event) => (
               <EventRow
                 key={event.id}
                 event={event}
                 onRemove={handleRemove}
                 rating={ratings[event.id]}
-                onRate={score => {
-                  setRatings(prev => ({ ...prev, [event.id]: score }))
+                onRate={(score) => {
+                  setRatings((prev) => ({ ...prev, [event.id]: score }))
                   toast.success("Rating saved!")
                 }}
                 variant="past"
@@ -191,7 +181,9 @@ function EventRow({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <Link to={`/events/${event.id}`} className="min-w-0">
-                <h3 className="font-bold text-sm text-foreground leading-tight line-clamp-2">{event.title}</h3>
+                <h3 className="font-bold text-sm text-foreground leading-tight line-clamp-2">
+                  {event.title}
+                </h3>
               </Link>
               <button
                 onClick={() => onRemove(event.id)}
@@ -208,7 +200,13 @@ function EventRow({
             </div>
 
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className={event.is_free ? "text-xs font-bold text-green-600" : "text-xs font-bold text-primary"}>
+              <span
+                className={
+                  event.is_free
+                    ? "text-xs font-bold text-green-600"
+                    : "text-xs font-bold text-primary"
+                }
+              >
                 {event.is_free ? "Free" : `$${event.price}`}
               </span>
               <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
@@ -218,11 +216,7 @@ function EventRow({
             {variant === "past" && onRate && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Rate:</span>
-                <StarRating
-                  value={rating ?? 0}
-                  onChange={onRate}
-                  size="sm"
-                />
+                <StarRating value={rating ?? 0} onChange={onRate} size="sm" />
               </div>
             )}
 

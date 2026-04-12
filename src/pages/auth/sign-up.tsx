@@ -42,7 +42,9 @@ export function SignUpPage() {
             </div>
           </Link>
           <h1 className="text-2xl font-extrabold text-foreground">Create your account</h1>
-          <p className="text-muted-foreground text-sm mt-1">Discover the best family events near you</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Discover the best family events near you
+          </p>
         </div>
 
         <Card className="border-border/60">
@@ -54,7 +56,7 @@ export function SignUpPage() {
                   id="name"
                   type="text"
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Sarah"
                   required
                 />
@@ -65,7 +67,7 @@ export function SignUpPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
                 />
@@ -76,7 +78,7 @@ export function SignUpPage() {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 6 characters"
                   required
                   minLength={6}

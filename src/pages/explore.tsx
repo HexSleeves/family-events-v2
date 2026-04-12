@@ -13,10 +13,30 @@ import { useApp } from "@/contexts/app-context"
 import { MOCK_EVENTS, MOCK_TAGS } from "@/lib/mock-data"
 
 const CATEGORIES = [
-  { label: "Playgroups", icon: Users, slug: "playgroup", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-  { label: "Music & Movement", icon: Music, slug: "music", color: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" },
-  { label: "Outdoor Fun", icon: TreePine, slug: "outdoor", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  { label: "Indoor Storytime", icon: BookOpen, slug: "storytime", color: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400" },
+  {
+    label: "Playgroups",
+    icon: Users,
+    slug: "playgroup",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  {
+    label: "Music & Movement",
+    icon: Music,
+    slug: "music",
+    color: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+  },
+  {
+    label: "Outdoor Fun",
+    icon: TreePine,
+    slug: "outdoor",
+    color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
+  {
+    label: "Indoor Storytime",
+    icon: BookOpen,
+    slug: "storytime",
+    color: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+  },
 ]
 
 const DATE_QUICK_FILTERS = [
@@ -42,21 +62,21 @@ export function ExplorePage() {
   const [onlyFree, setOnlyFree] = useState(false)
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [favorited, setFavorited] = useState<Set<string>>(new Set(
-    MOCK_EVENTS.filter(e => e.is_favorited).map(e => e.id)
-  ))
+  const [favorited, setFavorited] = useState<Set<string>>(
+    new Set(MOCK_EVENTS.filter((e) => e.is_favorited).map((e) => e.id))
+  )
 
   const filteredEvents = useMemo(() => {
-    return MOCK_EVENTS.filter(event => {
+    return MOCK_EVENTS.filter((event) => {
       if (keyword && !event.title.toLowerCase().includes(keyword.toLowerCase())) return false
       if (onlyFree && !event.is_free) return false
       if (activeCategory) {
-        const hasTag = event.tags?.some(et => et.tag.slug === activeCategory)
+        const hasTag = event.tags?.some((et) => et.tag.slug === activeCategory)
         if (!hasTag) return false
       }
       if (selectedTagSlugs.length > 0) {
-        const hasAll = selectedTagSlugs.every(slug =>
-          event.tags?.some(et => et.tag.slug === slug)
+        const hasAll = selectedTagSlugs.every((slug) =>
+          event.tags?.some((et) => et.tag.slug === slug)
         )
         if (!hasAll) return false
       }
@@ -81,7 +101,7 @@ export function ExplorePage() {
   }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavorited(prev => {
+    setFavorited((prev) => {
       const next = new Set(prev)
       if (newState) next.add(eventId)
       else next.delete(eventId)
@@ -90,8 +110,8 @@ export function ExplorePage() {
   }
 
   function toggleTagSlug(slug: string) {
-    setSelectedTagSlugs(prev =>
-      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+    setSelectedTagSlugs((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     )
   }
 
@@ -100,11 +120,12 @@ export function ExplorePage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          Today&apos;s adventures,{" "}
-          <span className="text-primary italic">hand-picked</span> for them.
+          Today&apos;s adventures, <span className="text-primary italic">hand-picked</span> for
+          them.
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Discover the best family-friendly events in {selectedCity?.name ?? "your city"}, curated for every stage of play.
+          Discover the best family-friendly events in {selectedCity?.name ?? "your city"}, curated
+          for every stage of play.
         </p>
       </div>
 
@@ -114,7 +135,7 @@ export function ExplorePage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={keyword}
-            onChange={e => setKeyword(e.target.value)}
+            onChange={(e) => setKeyword(e.target.value)}
             placeholder="Find activities nearby..."
             className="pl-9 bg-muted border-0 h-11"
           />
@@ -147,10 +168,12 @@ export function ExplorePage() {
               <div>
                 <p className="text-sm font-semibold mb-3">Date</p>
                 <div className="flex flex-wrap gap-2">
-                  {DATE_QUICK_FILTERS.map(f => (
+                  {DATE_QUICK_FILTERS.map((f) => (
                     <button
                       key={f.value}
-                      onClick={() => setActiveDateFilter(prev => prev === f.value ? null : f.value)}
+                      onClick={() =>
+                        setActiveDateFilter((prev) => (prev === f.value ? null : f.value))
+                      }
                       className={cn(
                         "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                         activeDateFilter === f.value
@@ -169,10 +192,10 @@ export function ExplorePage() {
               <div>
                 <p className="text-sm font-semibold mb-3">Age Group</p>
                 <div className="flex flex-wrap gap-2">
-                  {AGE_OPTIONS.map(a => (
+                  {AGE_OPTIONS.map((a) => (
                     <button
                       key={a.label}
-                      onClick={() => setSelectedAge(prev => prev === a.label ? null : a.label)}
+                      onClick={() => setSelectedAge((prev) => (prev === a.label ? null : a.label))}
                       className={cn(
                         "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                         selectedAge === a.label
@@ -192,9 +215,11 @@ export function ExplorePage() {
                 <Checkbox
                   id="free-only"
                   checked={onlyFree}
-                  onCheckedChange={v => setOnlyFree(!!v)}
+                  onCheckedChange={(v) => setOnlyFree(!!v)}
                 />
-                <Label htmlFor="free-only" className="font-medium">Free events only</Label>
+                <Label htmlFor="free-only" className="font-medium">
+                  Free events only
+                </Label>
               </div>
 
               <Separator />
@@ -202,7 +227,7 @@ export function ExplorePage() {
               <div>
                 <p className="text-sm font-semibold mb-3">Tags</p>
                 <div className="flex flex-col gap-2">
-                  {MOCK_TAGS.slice(0, 8).map(tag => (
+                  {MOCK_TAGS.slice(0, 8).map((tag) => (
                     <div key={tag.id} className="flex items-center gap-3">
                       <Checkbox
                         id={`tag-${tag.slug}`}
@@ -237,21 +262,27 @@ export function ExplorePage() {
           {onlyFree && (
             <Badge variant="secondary" className="gap-1">
               Free only
-              <button onClick={() => setOnlyFree(false)}><X className="h-3 w-3" /></button>
+              <button onClick={() => setOnlyFree(false)}>
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
           {activeCategory && (
             <Badge variant="secondary" className="gap-1 capitalize">
               {activeCategory}
-              <button onClick={() => setActiveCategory(null)}><X className="h-3 w-3" /></button>
+              <button onClick={() => setActiveCategory(null)}>
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
-          {selectedTagSlugs.map(slug => {
-            const tag = MOCK_TAGS.find(t => t.slug === slug)
+          {selectedTagSlugs.map((slug) => {
+            const tag = MOCK_TAGS.find((t) => t.slug === slug)
             return tag ? (
               <Badge key={slug} variant="secondary" className="gap-1">
                 {tag.name}
-                <button onClick={() => toggleTagSlug(slug)}><X className="h-3 w-3" /></button>
+                <button onClick={() => toggleTagSlug(slug)}>
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
             ) : null
           })}
@@ -261,13 +292,15 @@ export function ExplorePage() {
       {/* Explore by Joy categories */}
       {!keyword && !activeCategory && (
         <section>
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Explore by Joy</p>
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Explore by Joy
+          </p>
           <p className="text-xs text-muted-foreground mb-3">Whatever they're into today</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {CATEGORIES.map(({ label, icon: Icon, slug, color }) => (
               <button
                 key={slug}
-                onClick={() => setActiveCategory(prev => prev === slug ? null : slug)}
+                onClick={() => setActiveCategory((prev) => (prev === slug ? null : slug))}
                 className={cn(
                   "rounded-2xl p-4 flex flex-col items-center gap-2 border-2 transition-all hover:scale-[1.02]",
                   activeCategory === slug
@@ -278,7 +311,9 @@ export function ExplorePage() {
                 <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", color)}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-semibold text-center text-foreground leading-tight">{label}</span>
+                <span className="text-xs font-semibold text-center text-foreground leading-tight">
+                  {label}
+                </span>
               </button>
             ))}
           </div>
@@ -290,7 +325,7 @@ export function ExplorePage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">
             {activeCategory
-              ? CATEGORIES.find(c => c.slug === activeCategory)?.label
+              ? CATEGORIES.find((c) => c.slug === activeCategory)?.label
               : "Happening Soon"}
           </h2>
           <span className="text-sm text-muted-foreground">{filteredEvents.length} events</span>
@@ -300,12 +335,16 @@ export function ExplorePage() {
           <div className="text-center py-16">
             <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
-            <p className="text-muted-foreground text-sm mb-4">Try adjusting your filters or search terms</p>
-            <Button variant="outline" onClick={clearAllFilters}>Clear Filters</Button>
+            <p className="text-muted-foreground text-sm mb-4">
+              Try adjusting your filters or search terms
+            </p>
+            <Button variant="outline" onClick={clearAllFilters}>
+              Clear Filters
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredEvents.map(event => (
+            {filteredEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={{ ...event, is_favorited: favorited.has(event.id) }}
@@ -326,7 +365,10 @@ export function ExplorePage() {
         <p className="text-sm text-muted-foreground mb-3">
           Check out our interactive map for pop-up play spots.
         </p>
-        <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+        <Button
+          variant="outline"
+          className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+        >
           View Map
         </Button>
       </div>

@@ -18,7 +18,12 @@ interface EventCardProps {
   className?: string
 }
 
-export function EventCard({ event, variant = "default", onFavoriteToggle, className }: EventCardProps) {
+export function EventCard({
+  event,
+  variant = "default",
+  onFavoriteToggle,
+  className,
+}: EventCardProps) {
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/600/400`
   const startDate = new Date(event.start_datetime)
   const topTags = event.tags?.slice(0, 3) || []
@@ -26,7 +31,12 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
   if (variant === "compact") {
     return (
       <Link to={`/events/${event.id}`} className="block">
-        <div className={cn("flex gap-3 items-center py-3 px-1 border-b border-border last:border-0 hover:bg-accent/30 transition-colors rounded-lg px-2", className)}>
+        <div
+          className={cn(
+            "flex gap-3 items-center py-3 px-1 border-b border-border last:border-0 hover:bg-accent/30 transition-colors rounded-lg px-2",
+            className
+          )}
+        >
           <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
             <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
           </div>
@@ -37,14 +47,23 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               {event.is_free ? (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Free</Badge>
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                >
+                  Free
+                </Badge>
               ) : (
                 <span className="text-xs font-semibold text-primary">${event.price}</span>
               )}
               <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
             </div>
           </div>
-          <Button variant="outline" size="sm" className="text-xs shrink-0 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs shrink-0 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          >
             Book Now
           </Button>
         </div>
@@ -55,7 +74,12 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
   if (variant === "list") {
     return (
       <Link to={`/events/${event.id}`} className="block group">
-        <Card className={cn("overflow-hidden border-border/60 hover:shadow-md transition-shadow", className)}>
+        <Card
+          className={cn(
+            "overflow-hidden border-border/60 hover:shadow-md transition-shadow",
+            className
+          )}
+        >
           <div className="relative">
             <img
               src={imageUrl}
@@ -73,10 +97,10 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
                 <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
               </div>
             ) : null}
-            {topTags.find(t => t.tag.slug === "outdoor") && (
+            {topTags.find((t) => t.tag.slug === "outdoor") && (
               <div className="absolute bottom-3 left-3">
                 <Badge className="bg-green-600 text-white text-[10px]">
-                  {topTags.find(t => t.tag.slug === "outdoor")?.tag.name}
+                  {topTags.find((t) => t.tag.slug === "outdoor")?.tag.name}
                 </Badge>
               </div>
             )}
@@ -84,11 +108,15 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
           <CardContent className="p-4">
             <div className="flex gap-2 flex-wrap mb-2">
               {topTags
-                .filter(t => t.tag.slug !== "outdoor")
+                .filter((t) => t.tag.slug !== "outdoor")
                 .slice(0, 2)
-                .map(et => <TagBadge key={et.tag_id} tag={et.tag} />)}
+                .map((et) => (
+                  <TagBadge key={et.tag_id} tag={et.tag} />
+                ))}
             </div>
-            <h3 className="font-bold text-base text-foreground leading-tight line-clamp-2">{event.title}</h3>
+            <h3 className="font-bold text-base text-foreground leading-tight line-clamp-2">
+              {event.title}
+            </h3>
             <div className="flex items-center gap-1.5 mt-1.5 text-muted-foreground text-xs">
               <Clock className="h-3 w-3" />
               <span>{format(startDate, "EEE, MMM d · h:mm a")}</span>
@@ -100,7 +128,12 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
               </div>
             )}
             <div className="flex items-center justify-between mt-3">
-              <span className={cn("text-sm font-bold", event.is_free ? "text-green-600 dark:text-green-400" : "text-primary")}>
+              <span
+                className={cn(
+                  "text-sm font-bold",
+                  event.is_free ? "text-green-600 dark:text-green-400" : "text-primary"
+                )}
+              >
                 {event.is_free ? "Free" : `$${event.price}`}
               </span>
               <span className="text-xs text-muted-foreground">Details →</span>
@@ -114,13 +147,14 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
   if (variant === "featured") {
     return (
       <Link to={`/events/${event.id}`} className="block group">
-        <Card className={cn("overflow-hidden border-border/60 hover:shadow-lg transition-all", className)}>
+        <Card
+          className={cn(
+            "overflow-hidden border-border/60 hover:shadow-lg transition-all",
+            className
+          )}
+        >
           <div className="relative">
-            <img
-              src={imageUrl}
-              alt={event.title}
-              className="w-full h-48 object-cover"
-            />
+            <img src={imageUrl} alt={event.title} className="w-full h-48 object-cover" />
             <FavoriteButton
               eventId={event.id}
               isFavorited={event.is_favorited ?? false}
@@ -130,7 +164,7 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3 right-10">
               <div className="flex gap-1.5 mb-1.5 flex-wrap">
-                {topTags.slice(0, 2).map(et => (
+                {topTags.slice(0, 2).map((et) => (
                   <span
                     key={et.tag_id}
                     className="inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-white/20 text-white backdrop-blur-sm"
@@ -139,18 +173,25 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
                   </span>
                 ))}
               </div>
-              <p className="text-white font-bold text-sm leading-tight line-clamp-2">{event.title}</p>
-              <p className="text-white/80 text-xs mt-0.5">{format(startDate, "EEE, MMM d")} · {event.venue_name}</p>
+              <p className="text-white font-bold text-sm leading-tight line-clamp-2">
+                {event.title}
+              </p>
+              <p className="text-white/80 text-xs mt-0.5">
+                {format(startDate, "EEE, MMM d")} · {event.venue_name}
+              </p>
             </div>
           </div>
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
-              <span className={cn("text-sm font-bold", event.is_free ? "text-green-600 dark:text-green-400" : "text-primary")}>
+              <span
+                className={cn(
+                  "text-sm font-bold",
+                  event.is_free ? "text-green-600 dark:text-green-400" : "text-primary"
+                )}
+              >
                 {event.is_free ? "Free" : `$${event.price}/child`}
               </span>
-              {event.avg_rating && (
-                <StarRating value={event.avg_rating} readonly size="sm" />
-              )}
+              {event.avg_rating && <StarRating value={event.avg_rating} readonly size="sm" />}
             </div>
           </CardContent>
         </Card>
@@ -160,7 +201,9 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
 
   return (
     <Link to={`/events/${event.id}`} className="block group">
-      <Card className={cn("overflow-hidden border-border/60 hover:shadow-md transition-all", className)}>
+      <Card
+        className={cn("overflow-hidden border-border/60 hover:shadow-md transition-all", className)}
+      >
         <div className="relative">
           <img
             src={imageUrl}
@@ -182,9 +225,13 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
         </div>
         <CardContent className="p-3">
           <div className="flex gap-1.5 flex-wrap mb-1.5">
-            {topTags.slice(0, 2).map(et => <TagBadge key={et.tag_id} tag={et.tag} />)}
+            {topTags.slice(0, 2).map((et) => (
+              <TagBadge key={et.tag_id} tag={et.tag} />
+            ))}
           </div>
-          <h3 className="font-bold text-sm text-foreground leading-snug line-clamp-2">{event.title}</h3>
+          <h3 className="font-bold text-sm text-foreground leading-snug line-clamp-2">
+            {event.title}
+          </h3>
           <div className="flex items-center gap-1 mt-1 text-muted-foreground text-xs">
             <Clock className="h-3 w-3" />
             <span>{format(startDate, "MMM d · h a")}</span>
@@ -196,7 +243,9 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
             </div>
           )}
           <div className="flex items-center justify-between mt-2.5">
-            <span className={cn("text-sm font-bold", event.is_free ? "text-green-600" : "text-primary")}>
+            <span
+              className={cn("text-sm font-bold", event.is_free ? "text-green-600" : "text-primary")}
+            >
               {event.is_free ? "Free" : `$${event.price}`}
             </span>
             {event.avg_rating && event.rating_count ? (
@@ -212,7 +261,11 @@ export function EventCard({ event, variant = "default", onFavoriteToggle, classN
   )
 }
 
-export function EventCardSkeleton({ variant = "default" }: { variant?: "default" | "compact" | "list" }) {
+export function EventCardSkeleton({
+  variant = "default",
+}: {
+  variant?: "default" | "compact" | "list"
+}) {
   if (variant === "compact") {
     return (
       <div className="flex gap-3 items-center py-3">

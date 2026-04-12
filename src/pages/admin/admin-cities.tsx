@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { MOCK_CITIES } from "@/lib/mock-data"
 import { toast } from "sonner"
@@ -13,10 +20,16 @@ import { toast } from "sonner"
 export function AdminCitiesPage() {
   const [cities, setCities] = useState(MOCK_CITIES)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [newCity, setNewCity] = useState({ name: "", state: "", country: "US", slug: "", timezone: "America/New_York" })
+  const [newCity, setNewCity] = useState({
+    name: "",
+    state: "",
+    country: "US",
+    slug: "",
+    timezone: "America/New_York",
+  })
 
   function handleToggle(id: string) {
-    setCities(prev => prev.map(c => c.id === id ? { ...c, is_active: !c.is_active } : c))
+    setCities((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c)))
   }
 
   function handleAdd() {
@@ -24,7 +37,17 @@ export function AdminCitiesPage() {
       toast.error("Name and slug are required")
       return
     }
-    setCities(prev => [...prev, { ...newCity, id: `c${Date.now()}`, latitude: null, longitude: null, is_active: true, created_at: new Date().toISOString() }])
+    setCities((prev) => [
+      ...prev,
+      {
+        ...newCity,
+        id: `c${Date.now()}`,
+        latitude: null,
+        longitude: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+    ])
     setDialogOpen(false)
     setNewCity({ name: "", state: "", country: "US", slug: "", timezone: "America/New_York" })
     toast.success("City added!")
@@ -35,11 +58,16 @@ export function AdminCitiesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-foreground">Cities</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{cities.filter(c => c.is_active).length} active cities</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {cities.filter((c) => c.is_active).length} active cities
+          </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />Add City</Button>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add City
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -49,24 +77,41 @@ export function AdminCitiesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>City Name</Label>
-                  <Input value={newCity.name} onChange={e => setNewCity(p => ({ ...p, name: e.target.value }))} placeholder="Portland" />
+                  <Input
+                    value={newCity.name}
+                    onChange={(e) => setNewCity((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="Portland"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>State</Label>
-                  <Input value={newCity.state} onChange={e => setNewCity(p => ({ ...p, state: e.target.value }))} placeholder="OR" />
+                  <Input
+                    value={newCity.state}
+                    onChange={(e) => setNewCity((p) => ({ ...p, state: e.target.value }))}
+                    placeholder="OR"
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>URL Slug</Label>
-                <Input value={newCity.slug} onChange={e => setNewCity(p => ({ ...p, slug: e.target.value }))} placeholder="portland" />
+                <Input
+                  value={newCity.slug}
+                  onChange={(e) => setNewCity((p) => ({ ...p, slug: e.target.value }))}
+                  placeholder="portland"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Timezone</Label>
-                <Input value={newCity.timezone} onChange={e => setNewCity(p => ({ ...p, timezone: e.target.value }))} />
+                <Input
+                  value={newCity.timezone}
+                  onChange={(e) => setNewCity((p) => ({ ...p, timezone: e.target.value }))}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleAdd}>Add City</Button>
             </DialogFooter>
           </DialogContent>
@@ -74,7 +119,7 @@ export function AdminCitiesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {cities.map(city => (
+        {cities.map((city) => (
           <Card key={city.id} className="border-border/60">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
@@ -83,7 +128,9 @@ export function AdminCitiesPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-sm text-foreground">{city.name}</h3>
-                  {city.state && <span className="text-xs text-muted-foreground">{city.state}</span>}
+                  {city.state && (
+                    <span className="text-xs text-muted-foreground">{city.state}</span>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{city.timezone}</p>
               </div>

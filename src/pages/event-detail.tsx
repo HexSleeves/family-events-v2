@@ -16,8 +16,22 @@ import { MOCK_EVENTS } from "@/lib/mock-data"
 import { toast } from "sonner"
 
 const MOCK_COMMENTS = [
-  { id: "c1", user: "Maria T.", avatar: null, body: "Our 3-year-old absolutely loved it! The instructor was so patient and creative.", rating: 5, date: "2 days ago" },
-  { id: "c2", user: "James P.", avatar: null, body: "Great way to spend a morning. Parking can be tricky so arrive early!", rating: 4, date: "1 week ago" },
+  {
+    id: "c1",
+    user: "Maria T.",
+    avatar: null,
+    body: "Our 3-year-old absolutely loved it! The instructor was so patient and creative.",
+    rating: 5,
+    date: "2 days ago",
+  },
+  {
+    id: "c2",
+    user: "James P.",
+    avatar: null,
+    body: "Great way to spend a morning. Parking can be tricky so arrive early!",
+    rating: 4,
+    date: "1 week ago",
+  },
 ]
 
 export function EventDetailPage() {
@@ -30,13 +44,15 @@ export function EventDetailPage() {
   const [isInCalendar, setIsInCalendar] = useState(false)
   const [submittingComment, setSubmittingComment] = useState(false)
 
-  const event = MOCK_EVENTS.find(e => e.id === id) ?? MOCK_EVENTS[0]
+  const event = MOCK_EVENTS.find((e) => e.id === id) ?? MOCK_EVENTS[0]
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/800/500`
   const startDate = new Date(event.start_datetime)
 
   function handleAddToCalendar() {
     if (!user) {
-      toast("Sign in required", { description: "Create a free account to save events to your calendar." })
+      toast("Sign in required", {
+        description: "Create a free account to save events to your calendar.",
+      })
       return
     }
     setIsInCalendar(!isInCalendar)
@@ -50,17 +66,27 @@ export function EventDetailPage() {
       return
     }
     setSubmittingComment(true)
-    await new Promise(r => setTimeout(r, 600))
+    await new Promise((r) => setTimeout(r, 600))
     setSubmittingComment(false)
     setComment("")
     toast.success("Comment posted!")
   }
 
   const infoItems = [
-    { label: "Duration", value: event.end_datetime ? `${Math.round((new Date(event.end_datetime).getTime() - new Date(event.start_datetime).getTime()) / 60000)} mins` : "TBD", icon: Clock },
+    {
+      label: "Duration",
+      value: event.end_datetime
+        ? `${Math.round((new Date(event.end_datetime).getTime() - new Date(event.start_datetime).getTime()) / 60000)} mins`
+        : "TBD",
+      icon: Clock,
+    },
     { label: "Price", value: event.is_free ? "Free" : `$${event.price}`, icon: Star },
     { label: "Capacity", value: "12 Spots", icon: Users },
-    { label: "Rating", value: event.avg_rating ? `${event.avg_rating} (${event.rating_count})` : "No ratings", icon: Star },
+    {
+      label: "Rating",
+      value: event.avg_rating ? `${event.avg_rating} (${event.rating_count})` : "No ratings",
+      icon: Star,
+    },
   ]
 
   return (
@@ -76,11 +102,7 @@ export function EventDetailPage() {
 
       {/* Hero image */}
       <div className="relative">
-        <img
-          src={imageUrl}
-          alt={event.title}
-          className="w-full h-64 sm:h-80 object-cover"
-        />
+        <img src={imageUrl} alt={event.title} className="w-full h-64 sm:h-80 object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         <div className="absolute top-4 right-4 flex gap-2">
           <FavoriteButton
@@ -110,7 +132,7 @@ export function EventDetailPage() {
 
           <div className="flex flex-wrap gap-2 mt-3">
             <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
-            {event.tags?.slice(0, 3).map(et => (
+            {event.tags?.slice(0, 3).map((et) => (
               <TagBadge key={et.tag_id} tag={et.tag} />
             ))}
           </div>
@@ -118,7 +140,7 @@ export function EventDetailPage() {
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {infoItems.map(item => (
+          {infoItems.map((item) => (
             <Card key={item.label} className="border-border/60">
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
@@ -142,9 +164,12 @@ export function EventDetailPage() {
           <div className="mt-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-4 flex gap-3">
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-0.5">Parent Tip</p>
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-0.5">
+                Parent Tip
+              </p>
               <p className="text-xs text-blue-600 dark:text-blue-500 leading-relaxed">
-                We recommend arriving 10 minutes early to let your toddler get comfortable with the space before the session begins!
+                We recommend arriving 10 minutes early to let your toddler get comfortable with the
+                space before the session begins!
               </p>
             </div>
           </div>
@@ -203,7 +228,9 @@ export function EventDetailPage() {
 
           <Button className="w-full h-12 text-base font-bold" asChild>
             <a href={event.source_url || "#"} target="_blank" rel="noopener noreferrer">
-              {event.is_free ? "Reserve Your Spot (Free)" : `Book Now · $${(event.price ?? 0) * attendees}`}
+              {event.is_free
+                ? "Reserve Your Spot (Free)"
+                : `Book Now · $${(event.price ?? 0) * attendees}`}
             </a>
           </Button>
           <Button
@@ -239,7 +266,7 @@ export function EventDetailPage() {
                 <Textarea
                   placeholder="Share your experience..."
                   value={comment}
-                  onChange={e => setComment(e.target.value)}
+                  onChange={(e) => setComment(e.target.value)}
                   rows={3}
                   className="text-sm resize-none"
                 />
@@ -256,7 +283,7 @@ export function EventDetailPage() {
 
           {/* Existing comments */}
           <div className="space-y-4">
-            {MOCK_COMMENTS.map(c => (
+            {MOCK_COMMENTS.map((c) => (
               <div key={c.id} className="flex gap-3">
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarFallback className="text-xs bg-muted">{c.user.charAt(0)}</AvatarFallback>

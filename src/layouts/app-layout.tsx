@@ -1,5 +1,14 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
-import { Hop as Home, Compass, Bookmark, User, Search, ChevronDown, LogOut, Shield } from "lucide-react"
+import {
+  Hop as Home,
+  Compass,
+  Bookmark,
+  User,
+  Search,
+  ChevronDown,
+  LogOut,
+  Shield,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -62,8 +71,8 @@ export function AppLayout() {
           <div className="flex items-center gap-2 flex-1 max-w-xs">
             <Select
               value={selectedCity?.id || ""}
-              onValueChange={val => {
-                const city = cities.find(c => c.id === val)
+              onValueChange={(val) => {
+                const city = cities.find((c) => c.id === val)
                 if (city) setSelectedCity(city)
               }}
             >
@@ -71,7 +80,7 @@ export function AppLayout() {
                 <SelectValue placeholder="Select city" />
               </SelectTrigger>
               <SelectContent>
-                {cities.map(city => (
+                {cities.map((city) => (
                   <SelectItem key={city.id} value={city.id}>
                     {city.name}
                   </SelectItem>
@@ -127,7 +136,10 @@ export function AppLayout() {
                     </>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
                     <LogOut className="h-4 w-4" /> Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -195,31 +207,29 @@ export function AppLayout() {
             {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
               const active = isActive(to)
               return (
-                <Link
-                  key={to}
-                  to={to}
-                  className="flex flex-col items-center gap-0.5 min-w-0 px-3"
-                >
-                  <div className={cn(
-                    "flex items-center justify-center rounded-xl transition-all",
-                    to === "/explore" ? "h-11 w-11" : "h-8 w-8",
-                    active && to === "/explore"
-                      ? "bg-primary shadow-md"
-                      : active
-                        ? ""
-                        : ""
-                  )}>
-                    <Icon className={cn(
-                      "transition-colors",
-                      to === "/explore" && active ? "h-5 w-5 text-primary-foreground" : "h-5 w-5",
-                      active && to !== "/explore" ? "text-primary" : "",
-                      !active ? "text-muted-foreground" : ""
-                    )} />
+                <Link key={to} to={to} className="flex flex-col items-center gap-0.5 min-w-0 px-3">
+                  <div
+                    className={cn(
+                      "flex items-center justify-center rounded-xl transition-all",
+                      to === "/explore" ? "h-11 w-11" : "h-8 w-8",
+                      active && to === "/explore" ? "bg-primary shadow-md" : active ? "" : ""
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "transition-colors",
+                        to === "/explore" && active ? "h-5 w-5 text-primary-foreground" : "h-5 w-5",
+                        active && to !== "/explore" ? "text-primary" : "",
+                        !active ? "text-muted-foreground" : ""
+                      )}
+                    />
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-medium",
-                    active ? "text-primary" : "text-muted-foreground"
-                  )}>
+                  <span
+                    className={cn(
+                      "text-[10px] font-medium",
+                      active ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
                     {label}
                   </span>
                 </Link>

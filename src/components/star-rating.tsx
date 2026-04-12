@@ -28,7 +28,7 @@ export function StarRating({
 
   return (
     <div className={cn("flex items-center gap-0.5", className)}>
-      {[1, 2, 3, 4, 5].map(star => (
+      {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"

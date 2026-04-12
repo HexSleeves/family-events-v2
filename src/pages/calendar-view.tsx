@@ -1,5 +1,14 @@
 import { useState } from "react"
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from "date-fns"
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
+  addMonths,
+  subMonths,
+} from "date-fns"
 import { ChevronLeft, ChevronRight, CalendarDays, List, Bookmark } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -13,29 +22,29 @@ export function CalendarViewPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week">("month")
-  const [favorited, setFavorited] = useState<Set<string>>(new Set(
-    MOCK_EVENTS.filter(e => e.is_favorited || e.is_in_calendar).map(e => e.id)
-  ))
+  const [favorited, setFavorited] = useState<Set<string>>(
+    new Set(MOCK_EVENTS.filter((e) => e.is_favorited || e.is_in_calendar).map((e) => e.id))
+  )
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
   const firstDayOfWeek = monthStart.getDay()
 
-  const eventsForSelectedDate = MOCK_EVENTS.filter(event => {
+  const eventsForSelectedDate = MOCK_EVENTS.filter((event) => {
     const eventDate = new Date(event.start_datetime)
     return isSameDay(eventDate, selectedDate)
   })
 
-  const savedEventIds = new Set(MOCK_EVENTS.filter(e => e.is_in_calendar).map(e => e.id))
-  const upcomingCount = MOCK_EVENTS.filter(e => new Date(e.start_datetime) >= new Date()).length
+  const savedEventIds = new Set(MOCK_EVENTS.filter((e) => e.is_in_calendar).map((e) => e.id))
+  const upcomingCount = MOCK_EVENTS.filter((e) => new Date(e.start_datetime) >= new Date()).length
 
   function getEventsForDay(day: Date) {
-    return MOCK_EVENTS.filter(e => isSameDay(new Date(e.start_datetime), day))
+    return MOCK_EVENTS.filter((e) => isSameDay(new Date(e.start_datetime), day))
   }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavorited(prev => {
+    setFavorited((prev) => {
       const next = new Set(prev)
       if (newState) next.add(eventId)
       else next.delete(eventId)
@@ -47,10 +56,14 @@ export function CalendarViewPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Calendar</p>
-          <h1 className="text-2xl font-extrabold text-foreground tracking-tight">Your Adventures</h1>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+            Calendar
+          </p>
+          <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+            Your Adventures
+          </h1>
         </div>
-        <Tabs value={view} onValueChange={v => setView(v as "month" | "week")}>
+        <Tabs value={view} onValueChange={(v) => setView(v as "month" | "week")}>
           <TabsList className="h-9">
             <TabsTrigger value="month" className="text-xs gap-1.5 px-3">
               <CalendarDays className="h-3.5 w-3.5" />
@@ -94,8 +107,11 @@ export function CalendarViewPage() {
             <div className="px-4 pb-4 pt-3">
               {/* Weekday headers */}
               <div className="grid grid-cols-7 mb-1">
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
-                  <div key={d} className="text-center text-[11px] font-semibold text-muted-foreground py-2">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                  <div
+                    key={d}
+                    className="text-center text-[11px] font-semibold text-muted-foreground py-2"
+                  >
                     {d}
                   </div>
                 ))}
@@ -106,7 +122,7 @@ export function CalendarViewPage() {
                 {Array.from({ length: firstDayOfWeek }).map((_, i) => (
                   <div key={`empty-${i}`} />
                 ))}
-                {days.map(day => {
+                {days.map((day) => {
                   const dayEvents = getEventsForDay(day)
                   const isSelected = isSameDay(day, selectedDate)
                   const isTodayDay = isToday(day)
@@ -175,11 +191,14 @@ export function CalendarViewPage() {
                 <h3 className="font-bold text-foreground text-sm">
                   {isToday(selectedDate) ? "Today" : format(selectedDate, "EEEE")}
                 </h3>
-                <p className="text-xs text-muted-foreground">{format(selectedDate, "MMMM d, yyyy")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {format(selectedDate, "MMMM d, yyyy")}
+                </p>
               </div>
               {eventsForSelectedDate.length > 0 && (
                 <Badge variant="secondary" className="text-xs font-semibold">
-                  {eventsForSelectedDate.length} {eventsForSelectedDate.length === 1 ? "event" : "events"}
+                  {eventsForSelectedDate.length}{" "}
+                  {eventsForSelectedDate.length === 1 ? "event" : "events"}
                 </Badge>
               )}
             </div>
@@ -197,7 +216,7 @@ export function CalendarViewPage() {
               </div>
             ) : (
               <div className="divide-y divide-border/40">
-                {eventsForSelectedDate.map(event => (
+                {eventsForSelectedDate.map((event) => (
                   <EventCard
                     key={event.id}
                     event={{ ...event, is_favorited: favorited.has(event.id) }}
@@ -215,7 +234,9 @@ export function CalendarViewPage() {
               <div className="flex items-center justify-center mb-1">
                 <Bookmark className="h-4 w-4 text-primary" />
               </div>
-              <p className="text-2xl font-extrabold text-primary leading-none">{savedEventIds.size}</p>
+              <p className="text-2xl font-extrabold text-primary leading-none">
+                {savedEventIds.size}
+              </p>
               <p className="text-[11px] text-muted-foreground mt-1 font-medium">Saved</p>
             </div>
             <div className="bg-card border border-border/60 rounded-2xl p-4 text-center shadow-sm">
@@ -234,22 +255,26 @@ export function CalendarViewPage() {
         <Separator className="mb-6" />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">Saved Events</h2>
-          <span className="text-sm text-muted-foreground">{MOCK_EVENTS.filter(e => favorited.has(e.id) || e.is_in_calendar).length} saved</span>
+          <span className="text-sm text-muted-foreground">
+            {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).length} saved
+          </span>
         </div>
-        {MOCK_EVENTS.filter(e => favorited.has(e.id) || e.is_in_calendar).length === 0 ? (
+        {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).length === 0 ? (
           <div className="py-16 text-center">
             <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Bookmark className="h-7 w-7 text-muted-foreground/40" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">No saved events yet</h3>
-            <p className="text-muted-foreground text-sm mb-5">Browse events and tap the heart to save them here.</p>
+            <p className="text-muted-foreground text-sm mb-5">
+              Browse events and tap the heart to save them here.
+            </p>
             <Button asChild>
               <a href="/explore">Explore Events</a>
             </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MOCK_EVENTS.filter(e => favorited.has(e.id) || e.is_in_calendar).map(event => (
+            {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).map((event) => (
               <EventCard
                 key={event.id}
                 event={{ ...event, is_favorited: favorited.has(event.id) }}

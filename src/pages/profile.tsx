@@ -7,7 +7,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/components/theme-provider"
@@ -32,8 +38,12 @@ export function ProfilePage() {
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
         <User className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
         <h1 className="text-2xl font-extrabold text-foreground mb-2">Your Profile</h1>
-        <p className="text-muted-foreground mb-6">Sign in to manage your profile and preferences.</p>
-        <Button asChild><Link to="/sign-in">Sign In</Link></Button>
+        <p className="text-muted-foreground mb-6">
+          Sign in to manage your profile and preferences.
+        </p>
+        <Button asChild>
+          <Link to="/sign-in">Sign In</Link>
+        </Button>
       </div>
     )
   }
@@ -55,7 +65,8 @@ export function ProfilePage() {
           <p className="text-sm text-muted-foreground">{profile?.email}</p>
           {isAdmin && (
             <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-primary">
-              <Shield className="h-3 w-3" />Admin
+              <Shield className="h-3 w-3" />
+              Admin
             </span>
           )}
         </div>
@@ -69,18 +80,22 @@ export function ProfilePage() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>Your Name</Label>
-            <Input value={displayName} onChange={e => setDisplayName(e.target.value)} />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Child's Name (optional)</Label>
-            <Input value={childName} onChange={e => setChildName(e.target.value)} placeholder="e.g. Leo" />
+            <Input
+              value={childName}
+              onChange={(e) => setChildName(e.target.value)}
+              placeholder="e.g. Leo"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Preferred City</Label>
             <Select
               value={selectedCity?.id ?? ""}
-              onValueChange={val => {
-                const city = cities.find(c => c.id === val)
+              onValueChange={(val) => {
+                const city = cities.find((c) => c.id === val)
                 if (city) setSelectedCity(city)
               }}
             >
@@ -88,8 +103,10 @@ export function ProfilePage() {
                 <SelectValue placeholder="Select city" />
               </SelectTrigger>
               <SelectContent>
-                {cities.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}, {c.state}</SelectItem>
+                {cities.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}, {c.state}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -105,11 +122,13 @@ export function ProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-2">
-            {([
-              { value: "light", label: "Light", icon: Sun },
-              { value: "dark", label: "Dark", icon: Moon },
-              { value: "system", label: "System", icon: Monitor },
-            ] as const).map(({ value, label, icon: Icon }) => (
+            {(
+              [
+                { value: "light", label: "Light", icon: Sun },
+                { value: "dark", label: "Dark", icon: Moon },
+                { value: "system", label: "System", icon: Monitor },
+              ] as const
+            ).map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
                 onClick={() => setTheme(value)}
@@ -139,11 +158,7 @@ export function ProfilePage() {
 
       <Separator />
 
-      <Button
-        variant="destructive"
-        className="w-full gap-2"
-        onClick={handleSignOut}
-      >
+      <Button variant="destructive" className="w-full gap-2" onClick={handleSignOut}>
         <LogOut className="h-4 w-4" />
         Sign Out
       </Button>

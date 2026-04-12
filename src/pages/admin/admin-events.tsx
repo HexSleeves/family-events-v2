@@ -13,51 +13,65 @@ import { toast } from "sonner"
 type EventStatus = "draft" | "published" | "rejected" | "archived"
 
 export function AdminEventsPage() {
-  const [events, setEvents] = useState(MOCK_EVENTS.map(e => ({ ...e, status: e.status as EventStatus })))
+  const [events, setEvents] = useState(
+    MOCK_EVENTS.map((e) => ({ ...e, status: e.status as EventStatus }))
+  )
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
-  const [selectedEvent, setSelectedEvent] = useState<typeof events[0] | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<(typeof events)[0] | null>(null)
 
-  const filtered = events.filter(e => {
+  const filtered = events.filter((e) => {
     if (keyword && !e.title.toLowerCase().includes(keyword.toLowerCase())) return false
     if (statusFilter !== "all" && e.status !== statusFilter) return false
     return true
   })
 
   function updateStatus(id: string, newStatus: EventStatus) {
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, status: newStatus } : e))
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e)))
     toast.success(`Event ${newStatus}`)
     setSelectedEvent(null)
   }
 
   const statusConfig: Record<EventStatus, { label: string; color: string }> = {
     draft: { label: "Draft", color: "bg-muted text-muted-foreground" },
-    published: { label: "Published", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    published: {
+      label: "Published",
+      color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    },
     rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive" },
     archived: { label: "Archived", color: "bg-muted/50 text-muted-foreground" },
   }
 
-  const counts = events.reduce((acc, e) => {
-    acc[e.status] = (acc[e.status] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  const counts = events.reduce(
+    (acc, e) => {
+      acc[e.status] = (acc[e.status] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>
+  )
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-extrabold text-foreground">Events</h1>
         <div className="flex gap-3 mt-2 flex-wrap">
-          {(["all", "draft", "published", "rejected"] as const).map(s => (
+          {(["all", "draft", "published", "rejected"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={cn(
                 "text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors",
-                statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border hover:bg-accent"
               )}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
-              {s !== "all" && counts[s] ? <span className="ml-1">({counts[s]})</span> : s === "all" ? <span className="ml-1">({events.length})</span> : null}
+              {s !== "all" && counts[s] ? (
+                <span className="ml-1">({counts[s]})</span>
+              ) : s === "all" ? (
+                <span className="ml-1">({events.length})</span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -68,7 +82,7 @@ export function AdminEventsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={keyword}
-            onChange={e => setKeyword(e.target.value)}
+            onChange={(e) => setKeyword(e.target.value)}
             placeholder="Search events..."
             className="pl-9"
           />
@@ -76,7 +90,7 @@ export function AdminEventsPage() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map(event => {
+        {filtered.map((event) => {
           const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
           const status = statusConfig[event.status]
           return (
@@ -88,8 +102,15 @@ export function AdminEventsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 flex-wrap">
-                      <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">{event.title}</h3>
-                      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}>
+                      <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
+                        {event.title}
+                      </h3>
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                          status.color
+                        )}
+                      >
                         {status.label}
                       </span>
                     </div>
@@ -105,7 +126,7 @@ export function AdminEventsPage() {
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
-                      {event.tags?.slice(0, 2).map(et => (
+                      {event.tags?.slice(0, 2).map((et) => (
                         <TagBadge key={et.tag_id} tag={et.tag} />
                       ))}
                     </div>
@@ -166,7 +187,10 @@ export function AdminEventsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <img
-                src={selectedEvent.images?.[0] || `https://picsum.photos/seed/${selectedEvent.id}/600/300`}
+                src={
+                  selectedEvent.images?.[0] ||
+                  `https://picsum.photos/seed/${selectedEvent.id}/600/300`
+                }
                 alt={selectedEvent.title}
                 className="w-full h-40 object-cover rounded-xl"
               />
@@ -175,18 +199,36 @@ export function AdminEventsPage() {
                 <p className="text-sm text-muted-foreground mt-1">{selectedEvent.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{format(new Date(selectedEvent.start_datetime), "MMM d, h:mm a")}</span></div>
-                <div><span className="text-muted-foreground">Venue:</span> <span className="font-medium">{selectedEvent.venue_name}</span></div>
-                <div><span className="text-muted-foreground">Price:</span> <span className="font-medium">{selectedEvent.is_free ? "Free" : `$${selectedEvent.price}`}</span></div>
-                <div><span className="text-muted-foreground">AI confidence:</span> <span className="font-medium">{Math.round((selectedEvent.ai_confidence ?? 0) * 100)}%</span></div>
+                <div>
+                  <span className="text-muted-foreground">Date:</span>{" "}
+                  <span className="font-medium">
+                    {format(new Date(selectedEvent.start_datetime), "MMM d, h:mm a")}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Venue:</span>{" "}
+                  <span className="font-medium">{selectedEvent.venue_name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Price:</span>{" "}
+                  <span className="font-medium">
+                    {selectedEvent.is_free ? "Free" : `$${selectedEvent.price}`}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">AI confidence:</span>{" "}
+                  <span className="font-medium">
+                    {Math.round((selectedEvent.ai_confidence ?? 0) * 100)}%
+                  </span>
+                </div>
               </div>
               <div>
                 <p className="text-sm font-semibold mb-2">Tags</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {selectedEvent.tags?.map(et => (
+                  {selectedEvent.tags?.map((et) => (
                     <TagBadge key={et.tag_id} tag={et.tag} />
                   ))}
-                  {MOCK_TAGS.slice(0, 3).map(tag => (
+                  {MOCK_TAGS.slice(0, 3).map((tag) => (
                     <button
                       key={tag.id}
                       className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
