@@ -33,86 +33,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import {
+  useAdminCities,
+  useAdminSources,
+  useCreateAdminSource,
+  useTriggerSourceScrape,
+  useUpdateAdminSource,
+} from "@/hooks/admin/use-admin-data"
 import { toast } from "sonner"
 
 type SourceType = "website" | "ical" | "rss" | "manual"
 type SourceStatus = "pending" | "success" | "error" | "partial"
-
-interface MockSource {
-  id: string
-  name: string
-  url: string
-  source_type: SourceType
-  city: string
-  is_active: boolean
-  last_scraped_at: string | null
-  last_status: SourceStatus
-  error_count: number
-  events_imported: number
-}
-
-const MOCK_SOURCES: MockSource[] = [
-  {
-    id: "s1",
-    name: "NYC Parks Family Events",
-    url: "https://www.nycgovparks.org/events",
-    source_type: "website",
-    city: "New York",
-    is_active: true,
-    last_scraped_at: new Date(Date.now() - 7200000).toISOString(),
-    last_status: "success",
-    error_count: 0,
-    events_imported: 48,
-  },
-  {
-    id: "s2",
-    name: "Brooklyn Public Library",
-    url: "https://www.bklynlibrary.org/events",
-    source_type: "website",
-    city: "New York",
-    is_active: true,
-    last_scraped_at: new Date(Date.now() - 21600000).toISOString(),
-    last_status: "error",
-    error_count: 3,
-    events_imported: 0,
-  },
-  {
-    id: "s3",
-    name: "Eventbrite Family NYC",
-    url: "https://www.eventbrite.com/d/ny--new-york/family-events/",
-    source_type: "rss",
-    city: "New York",
-    is_active: true,
-    last_scraped_at: new Date(Date.now() - 3600000).toISOString(),
-    last_status: "success",
-    error_count: 0,
-    events_imported: 102,
-  },
-  {
-    id: "s4",
-    name: "Museum of Natural History Kids",
-    url: "https://www.amnh.org/calendar.ics",
-    source_type: "ical",
-    city: "New York",
-    is_active: true,
-    last_scraped_at: new Date(Date.now() - 43200000).toISOString(),
-    last_status: "partial",
-    error_count: 1,
-    events_imported: 12,
-  },
-  {
-    id: "s5",
-    name: "Central Park Conservancy",
-    url: "https://www.centralparknyc.org/events",
-    source_type: "website",
-    city: "New York",
-    is_active: false,
-    last_scraped_at: null,
-    last_status: "pending",
-    error_count: 0,
-    events_imported: 0,
-  },
-]
 
 const SOURCE_TYPE_ICONS: Record<SourceType, React.ElementType> = {
   website: Globe,
@@ -138,62 +69,65 @@ function StatusIndicator({ status }: { status: SourceStatus }) {
 }
 
 export function AdminSourcesPage() {
-  const [sources, setSources] = useState(MOCK_SOURCES)
+  const { data: sources = [] } = useAdminSources()
+  const { data: cities = [] } = useAdminCities()
+  const createSource = useCreateAdminSource()
+  const updateSource = useUpdateAdminSource()
+  const triggerScrape = useTriggerSourceScrape()
+
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [scrapingId, setScrapingId] = useState<string | null>(null)
   const [newSource, setNewSource] = useState({
     name: "",
     url: "",
     source_type: "website" as SourceType,
-    city: "New York",
+    city_id: "",
   })
 
   async function handleScrape(sourceId: string) {
-    setScrapingId(sourceId)
-    await new Promise((r) => setTimeout(r, 2000))
-    setSources((prev) =>
-      prev.map((s) =>
-        s.id === sourceId
-          ? {
-              ...s,
-              last_scraped_at: new Date().toISOString(),
-              last_status: "success",
-              events_imported: s.events_imported + Math.floor(Math.random() * 8) + 2,
-            }
-          : s
-      )
-    )
-    setScrapingId(null)
-    toast.success("Scrape complete!", { description: "Events imported and queued for review." })
+    try {
+      await triggerScrape.mutateAsync({ sourceId })
+      toast.success("Scrape started!", { description: "Ingestion run queued." })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to trigger scrape.")
+    }
   }
 
-  function handleToggleActive(sourceId: string) {
-    setSources((prev) =>
-      prev.map((s) => (s.id === sourceId ? { ...s, is_active: !s.is_active } : s))
-    )
+  async function handleToggleActive(sourceId: string, isActive: boolean) {
+    try {
+      await updateSource.mutateAsync({
+        sourceId,
+        updates: { is_active: !isActive },
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update source.")
+    }
   }
 
-  function handleAddSource() {
+  async function handleAddSource() {
     if (!newSource.name || !newSource.url) {
       toast.error("Name and URL are required")
       return
     }
-    const source: MockSource = {
-      id: `s${Date.now()}`,
-      name: newSource.name,
-      url: newSource.url,
-      source_type: newSource.source_type,
-      city: newSource.city,
-      is_active: true,
-      last_scraped_at: null,
-      last_status: "pending",
-      error_count: 0,
-      events_imported: 0,
+
+    try {
+      await createSource.mutateAsync({
+        name: newSource.name,
+        url: newSource.url,
+        source_type: newSource.source_type,
+        city_id: newSource.city_id || null,
+        is_active: true,
+        scrape_interval_hours: 24,
+        last_scraped_at: null,
+        last_status: "pending",
+        error_count: 0,
+        notes: null,
+      })
+      setDialogOpen(false)
+      setNewSource({ name: "", url: "", source_type: "website", city_id: "" })
+      toast.success("Source added!", { description: "Trigger a scrape to import events." })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create source.")
     }
-    setSources((prev) => [...prev, source])
-    setDialogOpen(false)
-    setNewSource({ name: "", url: "", source_type: "website", city: "New York" })
-    toast.success("Source added!", { description: "Trigger a scrape to import events." })
   }
 
   return (
@@ -255,10 +189,21 @@ export function AdminSourcesPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>City</Label>
-                  <Input
-                    value={newSource.city}
-                    onChange={(e) => setNewSource((p) => ({ ...p, city: e.target.value }))}
-                  />
+                  <Select
+                    value={newSource.city_id}
+                    onValueChange={(value) => setNewSource((prev) => ({ ...prev, city_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.id}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -275,6 +220,7 @@ export function AdminSourcesPage() {
       <div className="space-y-3">
         {sources.map((source) => {
           const TypeIcon = SOURCE_TYPE_ICONS[source.source_type]
+          const cityLabel = cities.find((city) => city.id === source.city_id)?.name ?? "All cities"
           return (
             <Card key={source.id} className="border-border/60">
               <CardContent className="p-4">
@@ -288,19 +234,16 @@ export function AdminSourcesPage() {
                       <Badge variant="outline" className="text-[10px] capitalize">
                         {source.source_type}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">{source.city}</span>
+                      <span className="text-[10px] text-muted-foreground">{cityLabel}</span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">{source.url}</p>
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
-                      <StatusIndicator status={source.last_status} />
+                      <StatusIndicator status={(source.last_status ?? "pending") as SourceStatus} />
                       {source.last_scraped_at && (
                         <span className="text-xs text-muted-foreground">
                           Last run {format(new Date(source.last_scraped_at), "MMM d, h:mm a")}
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">
-                        {source.events_imported} events imported
-                      </span>
                       {source.error_count > 0 && (
                         <span className="text-xs text-destructive">
                           {source.error_count} errors
@@ -311,20 +254,20 @@ export function AdminSourcesPage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <Switch
                       checked={source.is_active}
-                      onCheckedChange={() => handleToggleActive(source.id)}
+                      onCheckedChange={() => handleToggleActive(source.id, source.is_active)}
                       aria-label="Active"
                     />
                     <Button
                       variant="outline"
                       size="sm"
                       className="gap-1.5 text-xs h-8"
-                      disabled={scrapingId === source.id || !source.is_active}
+                      disabled={triggerScrape.isPending || !source.is_active}
                       onClick={() => handleScrape(source.id)}
                     >
                       <RefreshCw
-                        className={`h-3 w-3 ${scrapingId === source.id ? "animate-spin" : ""}`}
+                        className={`h-3 w-3 ${triggerScrape.isPending ? "animate-spin" : ""}`}
                       />
-                      {scrapingId === source.id ? "Running..." : "Scrape Now"}
+                      {triggerScrape.isPending ? "Running..." : "Scrape Now"}
                     </Button>
                   </div>
                 </div>

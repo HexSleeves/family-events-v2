@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { format } from "date-fns"
 import { ArrowLeft, MapPin, Clock, Users, Star, CalendarPlus, Share2, Info } from "lucide-react"
@@ -12,51 +12,103 @@ import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
 import { FavoriteButton } from "@/components/favorite-button"
 import { StarRating } from "@/components/star-rating"
 import { useAuth } from "@/contexts/auth-context"
-import { MOCK_EVENTS } from "@/lib/mock-data"
+import { useEvent } from "@/hooks/use-events"
+import { useComments, useAddComment } from "@/hooks/use-comments"
+import { useUpsertRating, useUserRating } from "@/hooks/use-ratings"
+import { useToggleCalendarEvent } from "@/hooks/use-calendar-events"
 import { toast } from "sonner"
-
-const MOCK_COMMENTS = [
-  {
-    id: "c1",
-    user: "Maria T.",
-    avatar: null,
-    body: "Our 3-year-old absolutely loved it! The instructor was so patient and creative.",
-    rating: 5,
-    date: "2 days ago",
-  },
-  {
-    id: "c2",
-    user: "James P.",
-    avatar: null,
-    body: "Great way to spend a morning. Parking can be tricky so arrive early!",
-    rating: 4,
-    date: "1 week ago",
-  },
-]
 
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const { data: event, isLoading: isEventLoading, isError: isEventError } = useEvent(id, user?.id)
+  const { data: comments = [] } = useComments(id)
+  const { data: userRatingData } = useUserRating(user?.id, id)
+  const addComment = useAddComment(user?.id)
+  const upsertRating = useUpsertRating(user?.id)
+  const toggleCalendarEvent = useToggleCalendarEvent(user?.id)
+
   const [attendees, setAttendees] = useState(1)
   const [userRating, setUserRating] = useState(0)
   const [comment, setComment] = useState("")
-  const [isFavorited, setIsFavorited] = useState(false)
+  const [isFavorited, setIsFavorited] = useState<boolean>(false)
   const [isInCalendar, setIsInCalendar] = useState(false)
-  const [submittingComment, setSubmittingComment] = useState(false)
 
-  const event = MOCK_EVENTS.find((e) => e.id === id) ?? MOCK_EVENTS[0]
+  useEffect(() => {
+    setUserRating(userRatingData?.score ?? 0)
+  }, [userRatingData?.score])
+
+  useEffect(() => {
+    setIsFavorited(Boolean(event?.is_favorited))
+  }, [event?.is_favorited])
+
+  useEffect(() => {
+    setIsInCalendar(Boolean(event?.is_in_calendar))
+  }, [event?.is_in_calendar])
+
+  if (isEventLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <Card className="border-border/60">
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Loading event details...
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isEventError || !event) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-destructive">We couldn&apos;t load that event right now.</p>
+            <Button variant="outline" asChild>
+              <Link to="/explore">Back to Explore</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/800/500`
   const startDate = new Date(event.start_datetime)
 
-  function handleAddToCalendar() {
+  async function handleAddToCalendar() {
     if (!user) {
       toast("Sign in required", {
         description: "Create a free account to save events to your calendar.",
       })
       return
     }
-    setIsInCalendar(!isInCalendar)
-    toast.success(isInCalendar ? "Removed from calendar" : "Added to your calendar!")
+
+    try {
+      const nextState = await toggleCalendarEvent.mutateAsync({
+        eventId: event.id,
+        isInCalendar,
+      })
+      setIsInCalendar(nextState)
+      toast.success(nextState ? "Added to your calendar!" : "Removed from calendar")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update calendar.")
+    }
+  }
+
+  async function handleRatingChange(nextScore: number) {
+    if (!user) {
+      toast("Sign in to leave a rating")
+      return
+    }
+
+    setUserRating(nextScore)
+    try {
+      await upsertRating.mutateAsync({ eventId: event.id, score: nextScore })
+      toast.success("Rating saved!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save your rating.")
+    }
   }
 
   async function handleSubmitComment() {
@@ -65,11 +117,14 @@ export function EventDetailPage() {
       toast("Sign in to leave a comment")
       return
     }
-    setSubmittingComment(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setSubmittingComment(false)
-    setComment("")
-    toast.success("Comment posted!")
+
+    try {
+      await addComment.mutateAsync({ eventId: event.id, body: comment.trim() })
+      setComment("")
+      toast.success("Comment posted!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to post comment.")
+    }
   }
 
   const infoItems = [
@@ -262,7 +317,7 @@ export function EventDetailPage() {
             <Card className="border-border/60 mb-4">
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold">Leave a review</p>
-                <StarRating value={userRating} onChange={setUserRating} size="lg" />
+                <StarRating value={userRating} onChange={handleRatingChange} size="lg" />
                 <Textarea
                   placeholder="Share your experience..."
                   value={comment}
@@ -272,10 +327,10 @@ export function EventDetailPage() {
                 />
                 <Button
                   size="sm"
-                  disabled={submittingComment || !comment.trim()}
+                  disabled={addComment.isPending || !comment.trim()}
                   onClick={handleSubmitComment}
                 >
-                  {submittingComment ? "Posting..." : "Post Review"}
+                  {addComment.isPending ? "Posting..." : "Post Review"}
                 </Button>
               </CardContent>
             </Card>
@@ -283,22 +338,33 @@ export function EventDetailPage() {
 
           {/* Existing comments */}
           <div className="space-y-4">
-            {MOCK_COMMENTS.map((c) => (
+            {comments.map((c) => (
               <div key={c.id} className="flex gap-3">
                 <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarFallback className="text-xs bg-muted">{c.user.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="text-xs bg-muted">
+                    {(c.user_profiles?.display_name || "U").charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{c.user}</span>
-                    <StarRating value={c.rating} readonly size="sm" />
-                    <span className="text-xs text-muted-foreground ml-auto">{c.date}</span>
+                    <span className="text-sm font-semibold">
+                      {c.user_profiles?.display_name || "Anonymous"}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {format(new Date(c.created_at), "MMM d, yyyy")}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{c.body}</p>
                 </div>
               </div>
             ))}
           </div>
+
+          {comments.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No comments yet. Be the first to add one.
+            </p>
+          )}
 
           {!user && (
             <div className="mt-4 text-center">

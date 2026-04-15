@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
+import { useToggleFavorite } from "@/hooks/use-favorites"
 import { toast } from "sonner"
 
 interface FavoriteButtonProps {
@@ -23,8 +24,12 @@ export function FavoriteButton({
   variant = "inline",
 }: FavoriteButtonProps) {
   const { user } = useAuth()
+  const toggleFavorite = useToggleFavorite(user?.id)
   const [optimistic, setOptimistic] = useState(isFavorited)
-  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setOptimistic(isFavorited)
+  }, [isFavorited])
 
   async function handleToggle(e: React.MouseEvent) {
     e.preventDefault()
@@ -37,19 +42,31 @@ export function FavoriteButton({
       return
     }
 
-    setLoading(true)
-    const newState = !optimistic
-    setOptimistic(newState)
-    onToggle?.(eventId, newState)
+    const currentState = optimistic
+    const nextState = !currentState
+
+    setOptimistic(nextState)
+    onToggle?.(eventId, nextState)
 
     try {
-      if (newState) {
+      const persistedState = await toggleFavorite.mutateAsync({
+        eventId,
+        isFavorited: currentState,
+      })
+
+      setOptimistic(persistedState)
+      onToggle?.(eventId, persistedState)
+
+      if (persistedState) {
         toast.success("Event saved!", { description: "Added to your favorites." })
       } else {
         toast("Removed from favorites")
       }
+    } catch (error) {
+      setOptimistic(currentState)
+      onToggle?.(eventId, currentState)
+      toast.error(error instanceof Error ? error.message : "Failed to update favorite.")
     } finally {
-      setLoading(false)
     }
   }
 
@@ -57,7 +74,7 @@ export function FavoriteButton({
     return (
       <button
         onClick={handleToggle}
-        disabled={loading}
+        disabled={toggleFavorite.isPending}
         className={cn(
           "absolute top-3 right-3 z-10 flex items-center justify-center rounded-full",
           "bg-white/90 backdrop-blur-sm shadow-md transition-all hover:scale-110 active:scale-95",
@@ -82,7 +99,7 @@ export function FavoriteButton({
       variant="ghost"
       size="sm"
       onClick={handleToggle}
-      disabled={loading}
+      disabled={toggleFavorite.isPending}
       className={cn("gap-1.5", className)}
       aria-label={optimistic ? "Remove from favorites" : "Add to favorites"}
     >

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo } from "react"
 import { Check, Flag, Trash2, MessageSquare } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
@@ -6,89 +6,71 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { StarRating } from "@/components/star-rating"
+import {
+  useAdminComments,
+  useDeleteAdminComment,
+  useUpdateAdminComment,
+  type AdminComment,
+} from "@/hooks/admin/use-admin-data"
 import { toast } from "sonner"
 
-const MOCK_COMMENTS = [
-  {
-    id: "c1",
-    user: "Maria T.",
-    event: "Musical Storytime & Singalong",
-    body: "Our 3-year-old absolutely loved it! The instructor was so patient and creative.",
-    rating: 5,
-    date: new Date(Date.now() - 172800000).toISOString(),
-    is_approved: true,
-    is_flagged: false,
-  },
-  {
-    id: "c2",
-    user: "James P.",
-    event: "Sensory Storytime & Bubbles",
-    body: "Great way to spend a morning. Parking can be tricky so arrive early!",
-    rating: 4,
-    date: new Date(Date.now() - 604800000).toISOString(),
-    is_approved: true,
-    is_flagged: false,
-  },
-  {
-    id: "c3",
-    user: "Anonymous",
-    event: "Tiny Explorers Tour",
-    body: "This is spam content trying to sell products...",
-    rating: 1,
-    date: new Date(Date.now() - 86400000).toISOString(),
-    is_approved: false,
-    is_flagged: true,
-  },
-  {
-    id: "c4",
-    user: "Sarah H.",
-    event: "Little Hands Pottery",
-    body: "My daughter made the most adorable clay pot! We'll definitely come back.",
-    rating: 5,
-    date: new Date(Date.now() - 259200000).toISOString(),
-    is_approved: true,
-    is_flagged: false,
-  },
-]
-
 export function AdminCommentsPage() {
-  const [comments, setComments] = useState(MOCK_COMMENTS)
+  const { data: comments = [] } = useAdminComments()
+  const updateComment = useUpdateAdminComment()
+  const deleteComment = useDeleteAdminComment()
 
-  function approve(id: string) {
-    setComments((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_approved: true, is_flagged: false } : c))
-    )
-    toast.success("Comment approved")
+  async function approve(id: string) {
+    try {
+      await updateComment.mutateAsync({
+        commentId: id,
+        updates: { is_approved: true, is_flagged: false },
+      })
+      toast.success("Comment approved")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to approve comment.")
+    }
   }
 
-  function remove(id: string) {
-    setComments((prev) => prev.filter((c) => c.id !== id))
-    toast("Comment removed")
+  async function remove(id: string) {
+    try {
+      await deleteComment.mutateAsync({ commentId: id })
+      toast("Comment removed")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove comment.")
+    }
   }
 
-  const flagged = comments.filter((c) => c.is_flagged)
-  const approved = comments.filter((c) => c.is_approved && !c.is_flagged)
-  const pending = comments.filter((c) => !c.is_approved && !c.is_flagged)
+  const { flagged, approved, pending } = useMemo(() => {
+    return {
+      flagged: comments.filter((comment) => comment.is_flagged),
+      approved: comments.filter((comment) => comment.is_approved && !comment.is_flagged),
+      pending: comments.filter((comment) => !comment.is_approved && !comment.is_flagged),
+    }
+  }, [comments])
 
-  function CommentCard({ c }: { c: (typeof comments)[0] }) {
+  function CommentCard({ c }: { c: AdminComment }) {
     return (
       <Card className="border-border/60">
         <CardContent className="p-4">
           <div className="flex gap-3">
             <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className="text-xs bg-muted">{c.user.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-xs bg-muted">
+                {(c.user_profiles?.display_name || "A").charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold">{c.user}</span>
+                <span className="text-sm font-semibold">
+                  {c.user_profiles?.display_name || "Anonymous"}
+                </span>
                 <span className="text-xs text-muted-foreground">on</span>
-                <span className="text-xs font-medium text-primary truncate">{c.event}</span>
+                <span className="text-xs font-medium text-primary truncate">
+                  {c.events?.title || "Event"}
+                </span>
                 <span className="text-xs text-muted-foreground ml-auto">
-                  {format(new Date(c.date), "MMM d")}
+                  {format(new Date(c.created_at), "MMM d")}
                 </span>
               </div>
-              <StarRating value={c.rating} readonly size="sm" className="mt-0.5" />
               <p className="text-sm text-muted-foreground mt-1">{c.body}</p>
               <div className="flex items-center gap-2 mt-2">
                 {c.is_flagged && (

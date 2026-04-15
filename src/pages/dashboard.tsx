@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
 import { MapPin, Clock, Lightbulb, Calendar, Sparkles, TrendingUp, ArrowRight } from "lucide-react"
@@ -14,15 +14,29 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { EventCard } from "@/components/event-card"
+import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { useAuth } from "@/contexts/auth-context"
-import { MOCK_EVENTS } from "@/lib/mock-data"
+import { useApp } from "@/contexts/app-context"
+import { useEvents } from "@/hooks/use-events"
 
 export function DashboardPage() {
   const { user, profile } = useAuth()
-  const [favorited, setFavorited] = useState<Set<string>>(
-    new Set(MOCK_EVENTS.filter((e) => e.is_favorited).map((e) => e.id))
-  )
+  const { selectedCity } = useApp()
+  const [favorited, setFavorited] = useState<Set<string>>(new Set())
+  const {
+    data: events = [],
+    isLoading: isEventsLoading,
+    isError: isEventsError,
+  } = useEvents({
+    filters: {
+      cityId: selectedCity?.id,
+    },
+    userId: user?.id,
+  })
+
+  useEffect(() => {
+    setFavorited(new Set(events.filter((event) => event.is_favorited).map((event) => event.id)))
+  }, [events])
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
     setFavorited((prev) => {
@@ -33,15 +47,17 @@ export function DashboardPage() {
     })
   }
 
-  const featuredEvents = MOCK_EVENTS.filter((e) => e.is_featured)
-  const happeningSoon = MOCK_EVENTS.filter((e) => !e.is_featured).slice(0, 4)
-  const recommended = MOCK_EVENTS.slice(0, 4)
-  const savedEvents = MOCK_EVENTS.filter((e) => favorited.has(e.id)).slice(0, 3)
-  const todayEvents = MOCK_EVENTS.filter((e) => {
-    const d = new Date(e.start_datetime)
-    const today = new Date()
-    return d.getDate() === today.getDate() && d.getMonth() === today.getMonth()
-  }).slice(0, 2)
+  const featuredEvents = events.filter((event) => event.is_featured)
+  const happeningSoon = events.filter((event) => !event.is_featured).slice(0, 4)
+  const recommended = events.slice(0, 4)
+  const savedEvents = events.filter((event) => favorited.has(event.id)).slice(0, 3)
+  const todayEvents = events
+    .filter((e) => {
+      const d = new Date(e.start_datetime)
+      const today = new Date()
+      return d.getDate() === today.getDate() && d.getMonth() === today.getMonth()
+    })
+    .slice(0, 2)
 
   const greeting = profile?.display_name
     ? `Welcome back, ${profile.display_name.split(" ")[0]}!`
@@ -74,6 +90,47 @@ export function DashboardPage() {
         )}
       </div>
 
+      {isEventsError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4 text-sm text-destructive">
+            We couldn&apos;t load events right now. Please refresh to try again.
+          </CardContent>
+        </Card>
+      )}
+
+      {isEventsLoading && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-foreground">Loading events</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <EventCardSkeleton key={`dashboard-skeleton-${index}`} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isEventsLoading && !isEventsError && events.length === 0 && (
+        <Card className="border-border/60">
+          <CardContent className="p-8 text-center space-y-3">
+            <h2 className="text-xl font-bold text-foreground">No events yet in this city</h2>
+            <p className="text-sm text-muted-foreground">
+              We are still importing local family events. Try exploring another city or check back
+              soon.
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/explore">Explore</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/profile">Change city</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Today's Events / Upcoming Bookings */}
       {todayEvents.length > 0 && (
         <section>
@@ -97,7 +154,7 @@ export function DashboardPage() {
                   <Card
                     className={cn(
                       "overflow-hidden border-border/60 hover:shadow-md transition-all",
-                      isFirst && "border-primary/30 bg-gradient-to-r from-primary/5 to-transparent"
+                      isFirst && "border-primary/30 bg-linear-to-r from-primary/5 to-transparent"
                     )}
                   >
                     <CardContent className="p-4">

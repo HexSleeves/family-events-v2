@@ -14,11 +14,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { MOCK_CITIES } from "@/lib/mock-data"
+import {
+  useAdminCities,
+  useCreateAdminCity,
+  useUpdateAdminCity,
+} from "@/hooks/admin/use-admin-data"
 import { toast } from "sonner"
 
 export function AdminCitiesPage() {
-  const [cities, setCities] = useState(MOCK_CITIES)
+  const { data: cities = [] } = useAdminCities()
+  const createCity = useCreateAdminCity()
+  const updateCity = useUpdateAdminCity()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newCity, setNewCity] = useState({
     name: "",
@@ -28,29 +34,30 @@ export function AdminCitiesPage() {
     timezone: "America/New_York",
   })
 
-  function handleToggle(id: string) {
-    setCities((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c)))
+  async function handleToggle(id: string, isActive: boolean) {
+    try {
+      await updateCity.mutateAsync({ cityId: id, updates: { is_active: !isActive } })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update city.")
+    }
   }
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!newCity.name || !newCity.slug) {
       toast.error("Name and slug are required")
       return
     }
-    setCities((prev) => [
-      ...prev,
-      {
+
+    try {
+      await createCity.mutateAsync({
         ...newCity,
-        id: `c${Date.now()}`,
-        latitude: null,
-        longitude: null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-      },
-    ])
-    setDialogOpen(false)
-    setNewCity({ name: "", state: "", country: "US", slug: "", timezone: "America/New_York" })
-    toast.success("City added!")
+      })
+      setDialogOpen(false)
+      setNewCity({ name: "", state: "", country: "US", slug: "", timezone: "America/New_York" })
+      toast.success("City added!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add city.")
+    }
   }
 
   return (
@@ -138,7 +145,10 @@ export function AdminCitiesPage() {
                 <Badge variant={city.is_active ? "secondary" : "outline"} className="text-[10px]">
                   {city.is_active ? "Active" : "Inactive"}
                 </Badge>
-                <Switch checked={city.is_active} onCheckedChange={() => handleToggle(city.id)} />
+                <Switch
+                  checked={city.is_active}
+                  onCheckedChange={() => handleToggle(city.id, city.is_active)}
+                />
               </div>
             </CardContent>
           </Card>

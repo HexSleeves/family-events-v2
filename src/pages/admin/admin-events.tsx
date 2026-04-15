@@ -7,29 +7,53 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
-import { MOCK_EVENTS, MOCK_TAGS } from "@/lib/mock-data"
+import {
+  useAdminEvents,
+  useUpdateAdminEventStatus,
+  useUpdateAdminEventTags,
+} from "@/hooks/admin/use-admin-data"
+import { useTags } from "@/hooks/use-tags"
 import { toast } from "sonner"
 
 type EventStatus = "draft" | "published" | "rejected" | "archived"
 
 export function AdminEventsPage() {
-  const [events, setEvents] = useState(
-    MOCK_EVENTS.map((e) => ({ ...e, status: e.status as EventStatus }))
-  )
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
-  const [selectedEvent, setSelectedEvent] = useState<(typeof events)[0] | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [editingTagIds, setEditingTagIds] = useState<string[]>([])
 
-  const filtered = events.filter((e) => {
-    if (keyword && !e.title.toLowerCase().includes(keyword.toLowerCase())) return false
-    if (statusFilter !== "all" && e.status !== statusFilter) return false
-    return true
-  })
+  const { data: events = [] } = useAdminEvents(keyword, statusFilter)
+  const { data: allTags = [] } = useTags()
+  const updateStatusMutation = useUpdateAdminEventStatus()
+  const updateTagsMutation = useUpdateAdminEventTags()
 
-  function updateStatus(id: string, newStatus: EventStatus) {
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e)))
-    toast.success(`Event ${newStatus}`)
-    setSelectedEvent(null)
+  const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
+
+  async function updateStatus(id: string, newStatus: EventStatus) {
+    try {
+      await updateStatusMutation.mutateAsync({ eventId: id, status: newStatus })
+      toast.success(`Event ${newStatus}`)
+      setSelectedEventId(null)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update event status.")
+    }
+  }
+
+  async function saveTagOverrides() {
+    if (!selectedEvent) {
+      return
+    }
+
+    try {
+      await updateTagsMutation.mutateAsync({
+        eventId: selectedEvent.id,
+        tagIds: editingTagIds,
+      })
+      toast.success("Tags updated")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update tags.")
+    }
   }
 
   const statusConfig: Record<EventStatus, { label: string; color: string }> = {
@@ -90,7 +114,7 @@ export function AdminEventsPage() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map((event) => {
+        {events.map((event) => {
           const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
           const status = statusConfig[event.status]
           return (
@@ -136,7 +160,10 @@ export function AdminEventsPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => setSelectedEvent(event)}
+                      onClick={() => {
+                        setSelectedEventId(event.id)
+                        setEditingTagIds((event.tags ?? []).map((tag) => tag.tag_id))
+                      }}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -179,7 +206,14 @@ export function AdminEventsPage() {
       </div>
 
       {/* Event review dialog */}
-      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+      <Dialog
+        open={!!selectedEvent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedEventId(null)
+          }
+        }}
+      >
         {selectedEvent && (
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
@@ -228,15 +262,30 @@ export function AdminEventsPage() {
                   {selectedEvent.tags?.map((et) => (
                     <TagBadge key={et.tag_id} tag={et.tag} />
                   ))}
-                  {MOCK_TAGS.slice(0, 3).map((tag) => (
+                  {allTags.map((tag) => (
                     <button
                       key={tag.id}
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                      onClick={() => {
+                        setEditingTagIds((current) =>
+                          current.includes(tag.id)
+                            ? current.filter((tagId) => tagId !== tag.id)
+                            : [...current, tag.id]
+                        )
+                      }}
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border transition-colors",
+                        editingTagIds.includes(tag.id)
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary"
+                      )}
                     >
-                      + {tag.name}
+                      {editingTagIds.includes(tag.id) ? "✓" : "+"} {tag.name}
                     </button>
                   ))}
                 </div>
+                <Button size="sm" variant="outline" className="mt-2" onClick={saveTagOverrides}>
+                  Save Tag Overrides
+                </Button>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button

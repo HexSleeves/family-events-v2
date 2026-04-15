@@ -6,35 +6,56 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { StarRating } from "@/components/star-rating"
 import { AgeRangeBadge, TagBadge } from "@/components/tag-badge"
 import { useAuth } from "@/contexts/auth-context"
-import { MOCK_EVENTS } from "@/lib/mock-data"
+import { useFavorites, useToggleFavorite } from "@/hooks/use-favorites"
+import { useCalendarEvents, useToggleCalendarEvent } from "@/hooks/use-calendar-events"
+import { useEventsByIds } from "@/hooks/use-events"
+import { useUpsertRating } from "@/hooks/use-ratings"
+import type { EventWithDetails } from "@/lib/types"
 import { toast } from "sonner"
 
 export function MyEventsPage() {
   const { user } = useAuth()
   const [ratings, setRatings] = useState<Record<string, number>>({})
-  const [savedIds, setSavedIds] = useState<Set<string>>(
-    new Set(MOCK_EVENTS.filter((e) => e.is_favorited || e.is_in_calendar).map((e) => e.id))
+  const { data: favorites = [] } = useFavorites(user?.id)
+  const { data: calendarEvents = [] } = useCalendarEvents(user?.id)
+  const toggleFavorite = useToggleFavorite(user?.id)
+  const toggleCalendarEvent = useToggleCalendarEvent(user?.id)
+  const upsertRating = useUpsertRating(user?.id)
+
+  const favoriteIds = new Set(favorites.map((favorite) => favorite.event_id))
+  const calendarIds = new Set(calendarEvents.map((calendarEvent) => calendarEvent.event_id))
+  const savedIds = new Set([...favoriteIds, ...calendarIds])
+
+  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEventsByIds(
+    [...savedIds],
+    user?.id
   )
 
   const now = new Date()
-  const upcomingEvents = MOCK_EVENTS.filter(
-    (e) => savedIds.has(e.id) && new Date(e.start_datetime) >= now
-  )
-  const pastEvents = MOCK_EVENTS.filter(
-    (e) => savedIds.has(e.id) && new Date(e.start_datetime) < now
-  )
-  const allSaved = MOCK_EVENTS.filter((e) => savedIds.has(e.id))
+  const upcomingEvents = savedEvents.filter((event) => new Date(event.start_datetime) >= now)
+  const pastEvents = savedEvents.filter((event) => new Date(event.start_datetime) < now)
+  const allSaved = savedEvents
 
-  function handleRemove(eventId: string) {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      next.delete(eventId)
-      return next
-    })
-    toast("Removed from saved events")
+  async function handleRemove(eventId: string) {
+    if (!user) {
+      return
+    }
+
+    try {
+      if (favoriteIds.has(eventId)) {
+        await toggleFavorite.mutateAsync({ eventId, isFavorited: true })
+      }
+      if (calendarIds.has(eventId)) {
+        await toggleCalendarEvent.mutateAsync({ eventId, isInCalendar: true })
+      }
+      toast("Removed from saved events")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove event.")
+    }
   }
 
   if (!user) {
@@ -87,9 +108,10 @@ export function MyEventsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Upcoming */}
         <TabsContent value="upcoming" className="mt-4 space-y-3">
-          {upcomingEvents.length === 0 ? (
+          {isSavedEventsLoading ? (
+            <LoadingRows />
+          ) : upcomingEvents.length === 0 ? (
             <EmptyState
               icon={Clock}
               title="No upcoming events"
@@ -104,9 +126,10 @@ export function MyEventsPage() {
           )}
         </TabsContent>
 
-        {/* Saved Ideas */}
         <TabsContent value="saved" className="mt-4 space-y-3">
-          {allSaved.length === 0 ? (
+          {isSavedEventsLoading ? (
+            <LoadingRows />
+          ) : allSaved.length === 0 ? (
             <EmptyState
               icon={Bookmark}
               title="No saved events yet"
@@ -121,9 +144,10 @@ export function MyEventsPage() {
           )}
         </TabsContent>
 
-        {/* Past */}
         <TabsContent value="past" className="mt-4 space-y-3">
-          {pastEvents.length === 0 ? (
+          {isSavedEventsLoading ? (
+            <LoadingRows />
+          ) : pastEvents.length === 0 ? (
             <EmptyState
               icon={Star}
               title="No past events"
@@ -138,9 +162,14 @@ export function MyEventsPage() {
                 event={event}
                 onRemove={handleRemove}
                 rating={ratings[event.id]}
-                onRate={(score) => {
+                onRate={async (score) => {
                   setRatings((prev) => ({ ...prev, [event.id]: score }))
-                  toast.success("Rating saved!")
+                  try {
+                    await upsertRating.mutateAsync({ eventId: event.id, score })
+                    toast.success("Rating saved!")
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Failed to save rating.")
+                  }
                 }}
                 variant="past"
               />
@@ -152,6 +181,30 @@ export function MyEventsPage() {
   )
 }
 
+function LoadingRows() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Card key={`loading-row-${index}`} className="border-border/60">
+          <CardContent className="p-4">
+            <div className="flex gap-4">
+              <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-2/3" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </>
+  )
+}
+
 function EventRow({
   event,
   onRemove,
@@ -159,7 +212,7 @@ function EventRow({
   onRate,
   variant,
 }: {
-  event: (typeof MOCK_EVENTS)[0]
+  event: EventWithDetails
   onRemove: (id: string) => void
   rating?: number
   onRate?: (score: number) => void
@@ -210,7 +263,7 @@ function EventRow({
                 {event.is_free ? "Free" : `$${event.price}`}
               </span>
               <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
-              {event.tags?.[0] && <TagBadge tag={event.tags[0].tag} />}
+              {event.tags?.[0]?.tag && <TagBadge tag={event.tags[0].tag} />}
             </div>
 
             {variant === "past" && onRate && (

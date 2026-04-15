@@ -13,47 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import type { ChartConfig } from "@/components/ui/chart"
-
-const STATS = [
-  {
-    label: "Total Events",
-    value: "248",
-    delta: "+12 this week",
-    icon: Calendar,
-    color: "text-primary",
-  },
-  {
-    label: "Pending Review",
-    value: "14",
-    delta: "Needs attention",
-    icon: Clock,
-    color: "text-amber-600",
-  },
-  {
-    label: "Active Sources",
-    value: "8",
-    delta: "2 with errors",
-    icon: Database,
-    color: "text-blue-600",
-  },
-  {
-    label: "Published",
-    value: "226",
-    delta: "91% publish rate",
-    icon: CheckCircle,
-    color: "text-green-600",
-  },
-]
-
-const INGESTION_DATA = [
-  { day: "Mon", imported: 24, skipped: 4, errors: 1 },
-  { day: "Tue", imported: 31, skipped: 6, errors: 0 },
-  { day: "Wed", imported: 18, skipped: 3, errors: 2 },
-  { day: "Thu", imported: 42, skipped: 8, errors: 1 },
-  { day: "Fri", imported: 35, skipped: 5, errors: 0 },
-  { day: "Sat", imported: 28, skipped: 4, errors: 1 },
-  { day: "Sun", imported: 19, skipped: 2, errors: 0 },
-]
+import { useAdminSourceRuns, useAdminStats } from "@/hooks/admin/use-admin-data"
 
 const chartConfig: ChartConfig = {
   imported: { label: "Imported", color: "var(--chart-1)" },
@@ -61,14 +21,67 @@ const chartConfig: ChartConfig = {
   errors: { label: "Errors", color: "var(--chart-5)" },
 }
 
-const RECENT_RUNS = [
-  { source: "NYC Parks Events", status: "success", imported: 12, time: "2 hours ago" },
-  { source: "Eventbrite Family", status: "success", imported: 8, time: "4 hours ago" },
-  { source: "Brooklyn Library", status: "error", imported: 0, time: "6 hours ago" },
-  { source: "Museum Kids Feed", status: "partial", imported: 5, time: "8 hours ago" },
-]
-
 export function AdminDashboardPage() {
+  const { data: stats, isLoading: isStatsLoading } = useAdminStats()
+  const { data: runs = [], isLoading: isRunsLoading } = useAdminSourceRuns()
+
+  const STAT_CARDS = [
+    {
+      label: "Total Events",
+      value: stats?.totalEvents ?? 0,
+      delta: "Across all statuses",
+      icon: Calendar,
+      color: "text-primary",
+    },
+    {
+      label: "Pending Review",
+      value: stats?.pendingReview ?? 0,
+      delta: "Needs attention",
+      icon: Clock,
+      color: "text-amber-600",
+    },
+    {
+      label: "Active Sources",
+      value: stats?.activeSources ?? 0,
+      delta: `${stats?.sourceErrors ?? 0} with errors`,
+      icon: Database,
+      color: "text-blue-600",
+    },
+    {
+      label: "Published",
+      value: stats?.published ?? 0,
+      delta: stats?.totalEvents
+        ? `${Math.round((stats.published / stats.totalEvents) * 100)}% publish rate`
+        : "No events yet",
+      icon: CheckCircle,
+      color: "text-green-600",
+    },
+  ]
+
+  const byDay = new Map<string, { imported: number; skipped: number; errors: number }>()
+  for (const run of runs) {
+    const day = new Date(run.started_at).toLocaleDateString("en-US", { weekday: "short" })
+    const current = byDay.get(day) ?? { imported: 0, skipped: 0, errors: 0 }
+    current.imported += run.events_imported
+    current.skipped += run.events_skipped
+    current.errors += run.status === "error" ? 1 : 0
+    byDay.set(day, current)
+  }
+
+  const INGESTION_DATA = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+    day,
+    imported: byDay.get(day)?.imported ?? 0,
+    skipped: byDay.get(day)?.skipped ?? 0,
+    errors: byDay.get(day)?.errors ?? 0,
+  }))
+
+  const RECENT_RUNS = runs.slice(0, 4).map((run) => ({
+    source: run.event_sources?.name || "Unknown source",
+    status: run.status,
+    imported: run.events_imported,
+    time: new Date(run.started_at).toLocaleString(),
+  }))
+
   return (
     <div className="space-y-6">
       <div>
@@ -80,14 +93,16 @@ export function AdminDashboardPage() {
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((stat) => (
+        {STAT_CARDS.map((stat) => (
           <Card key={stat.label} className="border-border/60">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
-              <p className="text-2xl font-extrabold text-foreground">{stat.value}</p>
+              <p className="text-2xl font-extrabold text-foreground">
+                {isStatsLoading ? "..." : stat.value}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">{stat.delta}</p>
             </CardContent>
           </Card>
@@ -124,6 +139,9 @@ export function AdminDashboardPage() {
             <CardTitle className="text-base">Recent Ingestion Runs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {!isRunsLoading && RECENT_RUNS.length === 0 && (
+              <p className="text-sm text-muted-foreground">No ingestion runs yet.</p>
+            )}
             {RECENT_RUNS.map((run) => (
               <div key={run.source} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -169,9 +187,21 @@ export function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              { label: "High confidence (>0.9)", value: 68, color: "bg-green-500" },
-              { label: "Medium (0.7-0.9)", value: 22, color: "bg-amber-500" },
-              { label: "Low (<0.7)", value: 10, color: "bg-destructive" },
+              {
+                label: "High confidence (>0.9)",
+                value: stats?.aiBuckets.high ?? 0,
+                color: "bg-green-500",
+              },
+              {
+                label: "Medium (0.7-0.9)",
+                value: stats?.aiBuckets.medium ?? 0,
+                color: "bg-amber-500",
+              },
+              {
+                label: "Low (<0.7)",
+                value: stats?.aiBuckets.low ?? 0,
+                color: "bg-destructive",
+              },
             ].map((item) => (
               <div key={item.label}>
                 <div className="flex justify-between text-xs mb-1">
@@ -182,7 +212,7 @@ export function AdminDashboardPage() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground pt-2">
-              226 of 248 events auto-tagged. 14 flagged for manual review.
+              {stats?.published ?? 0} published events, {stats?.pendingReview ?? 0} pending review.
             </p>
           </CardContent>
         </Card>

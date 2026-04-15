@@ -9,76 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-
-const MOCK_LOGS = [
-  {
-    id: "r1",
-    source: "NYC Parks Family Events",
-    status: "success",
-    started_at: new Date(Date.now() - 7200000).toISOString(),
-    completed_at: new Date(Date.now() - 7100000).toISOString(),
-    events_found: 18,
-    events_imported: 12,
-    events_skipped: 6,
-    error_log: null,
-  },
-  {
-    id: "r2",
-    source: "Eventbrite Family NYC",
-    status: "success",
-    started_at: new Date(Date.now() - 14400000).toISOString(),
-    completed_at: new Date(Date.now() - 14300000).toISOString(),
-    events_found: 34,
-    events_imported: 28,
-    events_skipped: 6,
-    error_log: null,
-  },
-  {
-    id: "r3",
-    source: "Brooklyn Public Library",
-    status: "error",
-    started_at: new Date(Date.now() - 21600000).toISOString(),
-    completed_at: new Date(Date.now() - 21550000).toISOString(),
-    events_found: 0,
-    events_imported: 0,
-    events_skipped: 0,
-    error_log:
-      "Connection timeout: Unable to reach https://www.bklynlibrary.org/events after 3 retries. SSL certificate error.",
-  },
-  {
-    id: "r4",
-    source: "Museum of Natural History Kids",
-    status: "partial",
-    started_at: new Date(Date.now() - 43200000).toISOString(),
-    completed_at: new Date(Date.now() - 43100000).toISOString(),
-    events_found: 15,
-    events_imported: 8,
-    events_skipped: 7,
-    error_log: "7 events skipped due to missing required fields (start_datetime)",
-  },
-  {
-    id: "r5",
-    source: "NYC Parks Family Events",
-    status: "success",
-    started_at: new Date(Date.now() - 86400000).toISOString(),
-    completed_at: new Date(Date.now() - 86300000).toISOString(),
-    events_found: 22,
-    events_imported: 18,
-    events_skipped: 4,
-    error_log: null,
-  },
-  {
-    id: "r6",
-    source: "Eventbrite Family NYC",
-    status: "success",
-    started_at: new Date(Date.now() - 90000000).toISOString(),
-    completed_at: new Date(Date.now() - 89900000).toISOString(),
-    events_found: 41,
-    events_imported: 35,
-    events_skipped: 6,
-    error_log: null,
-  },
-]
+import { useAdminSourceRuns } from "@/hooks/admin/use-admin-data"
 
 type RunStatus = "success" | "error" | "partial" | "running"
 
@@ -91,6 +22,8 @@ const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string;
   }
 
 export function AdminLogsPage() {
+  const { data: logs = [] } = useAdminSourceRuns()
+
   return (
     <div className="space-y-6">
       <div>
@@ -99,7 +32,7 @@ export function AdminLogsPage() {
       </div>
 
       <div className="space-y-3">
-        {MOCK_LOGS.map((run) => {
+        {logs.map((run) => {
           const status = STATUS_CONFIG[run.status as RunStatus]
           const duration = run.completed_at
             ? Math.round(
@@ -116,7 +49,9 @@ export function AdminLogsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-sm text-foreground">{run.source}</h3>
+                      <h3 className="font-semibold text-sm text-foreground">
+                        {run.event_sources?.name || "Unknown source"}
+                      </h3>
                       <Badge
                         variant={
                           run.status === "success"

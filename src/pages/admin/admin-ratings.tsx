@@ -1,56 +1,23 @@
-import { useState } from "react"
 import { Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { StarRating } from "@/components/star-rating"
+import { useAdminRatings, useDeleteAdminRating } from "@/hooks/admin/use-admin-data"
 import { toast } from "sonner"
 
-const MOCK_RATINGS = [
-  {
-    id: "r1",
-    user: "Maria T.",
-    event: "Musical Storytime & Singalong",
-    score: 5,
-    date: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: "r2",
-    user: "James P.",
-    event: "Sensory Storytime & Bubbles",
-    score: 4,
-    date: new Date(Date.now() - 604800000).toISOString(),
-  },
-  {
-    id: "r3",
-    user: "Anonymous",
-    event: "Tiny Explorers Tour",
-    score: 1,
-    date: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "r4",
-    user: "Sarah H.",
-    event: "Little Hands Pottery",
-    score: 5,
-    date: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: "r5",
-    user: "Tom K.",
-    event: "Messy Masterpieces",
-    score: 3,
-    date: new Date(Date.now() - 345600000).toISOString(),
-  },
-]
-
 export function AdminRatingsPage() {
-  const [ratings, setRatings] = useState(MOCK_RATINGS)
+  const { data: ratings = [] } = useAdminRatings()
+  const deleteRating = useDeleteAdminRating()
 
-  function handleRemove(id: string) {
-    setRatings((prev) => prev.filter((r) => r.id !== id))
-    toast("Rating removed")
+  async function handleRemove(id: string) {
+    try {
+      await deleteRating.mutateAsync({ ratingId: id })
+      toast("Rating removed")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove rating.")
+    }
   }
 
   const avg =
@@ -74,17 +41,23 @@ export function AdminRatingsPage() {
           <Card key={r.id} className="border-border/60">
             <CardContent className="p-4 flex items-center gap-3">
               <Avatar className="h-8 w-8 shrink-0">
-                <AvatarFallback className="text-xs bg-muted">{r.user.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="text-xs bg-muted">
+                  {(r.user_profiles?.display_name || "A").charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">{r.user}</span>
-                  <span className="text-xs text-muted-foreground truncate">on {r.event}</span>
+                  <span className="text-sm font-semibold">
+                    {r.user_profiles?.display_name || "Anonymous"}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    on {r.events?.title || "Event"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <StarRating value={r.score} readonly size="sm" />
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(r.date), "MMM d, yyyy")}
+                    {format(new Date(r.created_at), "MMM d, yyyy")}
                   </span>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { User, LogOut, Shield, Moon, Sun, Monitor } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,20 +17,48 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/components/theme-provider"
+import { useUpdateProfile } from "@/hooks/use-profile"
 import { toast } from "sonner"
 
 export function ProfilePage() {
-  const { user, profile, signOut, isAdmin } = useAuth()
-  const { selectedCity, setSelectedCity, cities } = useApp()
+  const { user, profile, signOut, isAdmin, refreshProfile } = useAuth()
+  const { selectedCity, setSelectedCity, cities, isCitiesLoading } = useApp()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
+  const updateProfile = useUpdateProfile(user?.id)
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "")
   const [childName, setChildName] = useState(profile?.child_name ?? "")
+  const [childAge, setChildAge] = useState(profile?.child_age?.toString() ?? "")
+
+  useEffect(() => {
+    setDisplayName(profile?.display_name ?? "")
+    setChildName(profile?.child_name ?? "")
+    setChildAge(profile?.child_age?.toString() ?? "")
+  }, [profile?.child_age, profile?.child_name, profile?.display_name])
 
   async function handleSignOut() {
     await signOut()
     navigate("/sign-in")
+  }
+
+  async function handleSaveProfile() {
+    if (!user) {
+      return
+    }
+
+    try {
+      await updateProfile.mutateAsync({
+        display_name: displayName.trim() || null,
+        child_name: childName.trim() || null,
+        child_age: childAge.trim() ? Number(childAge) : null,
+        city_preference_id: selectedCity?.id ?? null,
+      })
+      await refreshProfile()
+      toast.success("Profile updated!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update profile.")
+    }
   }
 
   if (!user) {
@@ -91,6 +119,17 @@ export function ProfilePage() {
             />
           </div>
           <div className="space-y-1.5">
+            <Label>Child&apos;s Age (optional)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={18}
+              value={childAge}
+              onChange={(e) => setChildAge(e.target.value)}
+              placeholder="e.g. 3"
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label>Preferred City</Label>
             <Select
               value={selectedCity?.id ?? ""}
@@ -100,7 +139,7 @@ export function ProfilePage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select city" />
+                <SelectValue placeholder={isCitiesLoading ? "Loading cities..." : "Select city"} />
               </SelectTrigger>
               <SelectContent>
                 {cities.map((c) => (
@@ -111,7 +150,9 @@ export function ProfilePage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => toast.success("Profile updated!")}>Save Changes</Button>
+          <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}>
+            {updateProfile.isPending ? "Saving..." : "Save Changes"}
+          </Button>
         </CardContent>
       </Card>
 

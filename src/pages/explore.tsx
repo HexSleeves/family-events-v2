@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search, SlidersHorizontal, X, Music, TreePine, BookOpen, Users, Map } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -8,9 +8,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { EventCard } from "@/components/event-card"
+import { Card, CardContent } from "@/components/ui/card"
+import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { useApp } from "@/contexts/app-context"
-import { MOCK_EVENTS, MOCK_TAGS } from "@/lib/mock-data"
+import { useAuth } from "@/contexts/auth-context"
+import { useEvents } from "@/hooks/use-events"
+import { useTags } from "@/hooks/use-tags"
 
 const CATEGORIES = [
   {
@@ -55,6 +58,7 @@ const AGE_OPTIONS = [
 ]
 
 export function ExplorePage() {
+  const { user } = useAuth()
   const { selectedCity } = useApp()
   const [keyword, setKeyword] = useState("")
   const [activeDateFilter, setActiveDateFilter] = useState<string | null>(null)
@@ -62,27 +66,78 @@ export function ExplorePage() {
   const [onlyFree, setOnlyFree] = useState(false)
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [favorited, setFavorited] = useState<Set<string>>(
-    new Set(MOCK_EVENTS.filter((e) => e.is_favorited).map((e) => e.id))
-  )
+  const [favorited, setFavorited] = useState<Set<string>>(new Set())
 
-  const filteredEvents = useMemo(() => {
-    return MOCK_EVENTS.filter((event) => {
-      if (keyword && !event.title.toLowerCase().includes(keyword.toLowerCase())) return false
-      if (onlyFree && !event.is_free) return false
-      if (activeCategory) {
-        const hasTag = event.tags?.some((et) => et.tag.slug === activeCategory)
-        if (!hasTag) return false
-      }
-      if (selectedTagSlugs.length > 0) {
-        const hasAll = selectedTagSlugs.every((slug) =>
-          event.tags?.some((et) => et.tag.slug === slug)
-        )
-        if (!hasAll) return false
-      }
-      return true
-    })
-  }, [keyword, onlyFree, activeCategory, selectedTagSlugs])
+  const ageFilter = AGE_OPTIONS.find((option) => option.label === selectedAge)
+
+  const dateRange = useMemo(() => {
+    const now = new Date()
+    const startOfToday = new Date(now)
+    startOfToday.setHours(0, 0, 0, 0)
+
+    if (activeDateFilter === "today") {
+      const end = new Date(startOfToday)
+      end.setDate(end.getDate() + 1)
+      return { dateFrom: startOfToday.toISOString(), dateTo: end.toISOString() }
+    }
+
+    if (activeDateFilter === "weekend") {
+      const day = startOfToday.getDay()
+      const daysUntilSaturday = (6 - day + 7) % 7
+      const saturday = new Date(startOfToday)
+      saturday.setDate(startOfToday.getDate() + daysUntilSaturday)
+      const sundayEnd = new Date(saturday)
+      sundayEnd.setDate(saturday.getDate() + 2)
+      return { dateFrom: saturday.toISOString(), dateTo: sundayEnd.toISOString() }
+    }
+
+    if (activeDateFilter === "week") {
+      const end = new Date(startOfToday)
+      end.setDate(end.getDate() + 7)
+      return { dateFrom: startOfToday.toISOString(), dateTo: end.toISOString() }
+    }
+
+    if (activeDateFilter === "month") {
+      const end = new Date(startOfToday)
+      end.setMonth(end.getMonth() + 1)
+      return { dateFrom: startOfToday.toISOString(), dateTo: end.toISOString() }
+    }
+
+    return { dateFrom: undefined, dateTo: undefined }
+  }, [activeDateFilter])
+
+  const combinedTagSlugs = useMemo(() => {
+    const all = [...selectedTagSlugs]
+    if (activeCategory && !all.includes(activeCategory)) {
+      all.push(activeCategory)
+    }
+    return all
+  }, [activeCategory, selectedTagSlugs])
+
+  const { data: tags = [] } = useTags()
+  const {
+    data: filteredEvents = [],
+    isLoading: isEventsLoading,
+    isError: isEventsError,
+  } = useEvents({
+    filters: {
+      cityId: selectedCity?.id,
+      keyword: keyword || undefined,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo,
+      isFree: onlyFree || undefined,
+      ageMin: ageFilter?.min,
+      ageMax: ageFilter?.max ?? undefined,
+      tagSlugs: combinedTagSlugs.length > 0 ? combinedTagSlugs : undefined,
+    },
+    userId: user?.id,
+  })
+
+  useEffect(() => {
+    setFavorited(
+      new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id))
+    )
+  }, [filteredEvents])
 
   const activeFilterCount = [
     activeDateFilter,
@@ -227,7 +282,7 @@ export function ExplorePage() {
               <div>
                 <p className="text-sm font-semibold mb-3">Tags</p>
                 <div className="flex flex-col gap-2">
-                  {MOCK_TAGS.slice(0, 8).map((tag) => (
+                  {tags.slice(0, 8).map((tag) => (
                     <div key={tag.id} className="flex items-center gap-3">
                       <Checkbox
                         id={`tag-${tag.slug}`}
@@ -276,7 +331,7 @@ export function ExplorePage() {
             </Badge>
           )}
           {selectedTagSlugs.map((slug) => {
-            const tag = MOCK_TAGS.find((t) => t.slug === slug)
+            const tag = tags.find((t) => t.slug === slug)
             return tag ? (
               <Badge key={slug} variant="secondary" className="gap-1">
                 {tag.name}
@@ -331,7 +386,21 @@ export function ExplorePage() {
           <span className="text-sm text-muted-foreground">{filteredEvents.length} events</span>
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {isEventsError && (
+          <Card className="border-destructive/30 bg-destructive/5 mb-4">
+            <CardContent className="p-4 text-sm text-destructive">
+              We couldn&apos;t load events. Try refreshing the page.
+            </CardContent>
+          </Card>
+        )}
+
+        {isEventsLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <EventCardSkeleton key={`explore-skeleton-${index}`} variant="list" />
+            ))}
+          </div>
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center py-16">
             <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>

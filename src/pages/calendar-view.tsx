@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   format,
   startOfMonth,
@@ -15,32 +15,77 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { EventCard } from "@/components/event-card"
-import { MOCK_EVENTS } from "@/lib/mock-data"
+import { Card, CardContent } from "@/components/ui/card"
+import { EventCard, EventCardSkeleton } from "@/components/event-card"
+import { useAuth } from "@/contexts/auth-context"
+import { useApp } from "@/contexts/app-context"
+import { useEvents, useEventsByIds } from "@/hooks/use-events"
+import { useFavorites } from "@/hooks/use-favorites"
+import { useCalendarEvents } from "@/hooks/use-calendar-events"
 
 export function CalendarViewPage() {
+  const { user } = useAuth()
+  const { selectedCity } = useApp()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week">("month")
-  const [favorited, setFavorited] = useState<Set<string>>(
-    new Set(MOCK_EVENTS.filter((e) => e.is_favorited || e.is_in_calendar).map((e) => e.id))
-  )
+  const [favorited, setFavorited] = useState<Set<string>>(new Set())
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
   const firstDayOfWeek = monthStart.getDay()
 
-  const eventsForSelectedDate = MOCK_EVENTS.filter((event) => {
+  const {
+    data: monthEvents = [],
+    isLoading: isMonthEventsLoading,
+    isError: isMonthEventsError,
+  } = useEvents({
+    filters: {
+      cityId: selectedCity?.id,
+      dateFrom: monthStart.toISOString(),
+      dateTo: monthEnd.toISOString(),
+    },
+    userId: user?.id,
+  })
+
+  const { data: favorites = [] } = useFavorites(user?.id)
+  const { data: calendarEvents = [] } = useCalendarEvents(user?.id)
+
+  const savedEventIds = useMemo(() => {
+    return new Set([
+      ...favorites.map((favorite) => favorite.event_id),
+      ...calendarEvents.map((calendarEvent) => calendarEvent.event_id),
+    ])
+  }, [calendarEvents, favorites])
+
+  const savedIdsArray = useMemo(() => [...savedEventIds], [savedEventIds])
+  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEventsByIds(
+    savedIdsArray,
+    user?.id
+  )
+
+  useEffect(() => {
+    setFavorited(
+      new Set(
+        [...monthEvents, ...savedEvents]
+          .filter((event) => event.is_favorited || savedEventIds.has(event.id))
+          .map((event) => event.id)
+      )
+    )
+  }, [monthEvents, savedEventIds, savedEvents])
+
+  const eventsForSelectedDate = monthEvents.filter((event) => {
     const eventDate = new Date(event.start_datetime)
     return isSameDay(eventDate, selectedDate)
   })
 
-  const savedEventIds = new Set(MOCK_EVENTS.filter((e) => e.is_in_calendar).map((e) => e.id))
-  const upcomingCount = MOCK_EVENTS.filter((e) => new Date(e.start_datetime) >= new Date()).length
+  const upcomingCount = savedEvents.filter(
+    (event) => new Date(event.start_datetime) >= new Date()
+  ).length
 
   function getEventsForDay(day: Date) {
-    return MOCK_EVENTS.filter((e) => isSameDay(new Date(e.start_datetime), day))
+    return monthEvents.filter((event) => isSameDay(new Date(event.start_datetime), day))
   }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
@@ -76,6 +121,14 @@ export function CalendarViewPage() {
           </TabsList>
         </Tabs>
       </div>
+
+      {isMonthEventsError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4 text-sm text-destructive">
+            We couldn&apos;t load calendar events right now.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Calendar Grid — spans 3 cols */}
@@ -226,6 +279,14 @@ export function CalendarViewPage() {
                 ))}
               </div>
             )}
+
+            {isMonthEventsLoading && (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <EventCardSkeleton key={`calendar-skeleton-${index}`} variant="compact" />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Stats */}
@@ -255,11 +316,15 @@ export function CalendarViewPage() {
         <Separator className="mb-6" />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">Saved Events</h2>
-          <span className="text-sm text-muted-foreground">
-            {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).length} saved
-          </span>
+          <span className="text-sm text-muted-foreground">{savedEvents.length} saved</span>
         </div>
-        {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).length === 0 ? (
+        {isSavedEventsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <EventCardSkeleton key={`saved-events-skeleton-${index}`} />
+            ))}
+          </div>
+        ) : savedEvents.length === 0 ? (
           <div className="py-16 text-center">
             <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
               <Bookmark className="h-7 w-7 text-muted-foreground/40" />
@@ -274,7 +339,7 @@ export function CalendarViewPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MOCK_EVENTS.filter((e) => favorited.has(e.id) || e.is_in_calendar).map((event) => (
+            {savedEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={{ ...event, is_favorited: favorited.has(event.id) }}
