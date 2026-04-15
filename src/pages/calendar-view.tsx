@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
+import { Link } from "react-router-dom"
 import {
   format,
   startOfMonth,
@@ -29,7 +30,7 @@ export function CalendarViewPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week">("month")
-  const [favorited, setFavorited] = useState<Set<string>>(new Set())
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -65,15 +66,19 @@ export function CalendarViewPage() {
     user?.id
   )
 
-  useEffect(() => {
-    setFavorited(
+  const baseFavoritedIds = useMemo(
+    () =>
       new Set(
         [...monthEvents, ...savedEvents]
           .filter((event) => event.is_favorited || savedEventIds.has(event.id))
           .map((event) => event.id)
-      )
-    )
-  }, [monthEvents, savedEventIds, savedEvents])
+      ),
+    [monthEvents, savedEventIds, savedEvents]
+  )
+
+  function isFavorited(eventId: string) {
+    return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
+  }
 
   const eventsForSelectedDate = monthEvents.filter((event) => {
     const eventDate = new Date(event.start_datetime)
@@ -89,12 +94,7 @@ export function CalendarViewPage() {
   }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavorited((prev) => {
-      const next = new Set(prev)
-      if (newState) next.add(eventId)
-      else next.delete(eventId)
-      return next
-    })
+    setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
   return (
@@ -264,7 +264,7 @@ export function CalendarViewPage() {
                 <p className="text-sm font-medium text-foreground mb-1">Nothing planned</p>
                 <p className="text-xs text-muted-foreground mb-4">No events on this day</p>
                 <Button variant="outline" size="sm" className="text-xs h-8" asChild>
-                  <a href="/explore">Browse events</a>
+                  <Link to="/explore">Browse events</Link>
                 </Button>
               </div>
             ) : (
@@ -272,7 +272,7 @@ export function CalendarViewPage() {
                 {eventsForSelectedDate.map((event) => (
                   <EventCard
                     key={event.id}
-                    event={{ ...event, is_favorited: favorited.has(event.id) }}
+                    event={{ ...event, is_favorited: isFavorited(event.id) }}
                     variant="compact"
                     onFavoriteToggle={handleFavoriteToggle}
                   />
@@ -334,7 +334,7 @@ export function CalendarViewPage() {
               Browse events and tap the heart to save them here.
             </p>
             <Button asChild>
-              <a href="/explore">Explore Events</a>
+              <Link to="/explore">Explore Events</Link>
             </Button>
           </div>
         ) : (
@@ -342,7 +342,7 @@ export function CalendarViewPage() {
             {savedEvents.map((event) => (
               <EventCard
                 key={event.id}
-                event={{ ...event, is_favorited: favorited.has(event.id) }}
+                event={{ ...event, is_favorited: isFavorited(event.id) }}
                 variant="default"
                 onFavoriteToggle={handleFavoriteToggle}
               />

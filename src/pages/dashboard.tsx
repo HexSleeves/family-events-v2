@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
 import { MapPin, Clock, Lightbulb, Calendar, Sparkles, TrendingUp, ArrowRight } from "lucide-react"
@@ -22,7 +22,7 @@ import { useEvents } from "@/hooks/use-events"
 export function DashboardPage() {
   const { user, profile } = useAuth()
   const { selectedCity } = useApp()
-  const [favorited, setFavorited] = useState<Set<string>>(new Set())
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
   const {
     data: events = [],
     isLoading: isEventsLoading,
@@ -34,23 +34,23 @@ export function DashboardPage() {
     userId: user?.id,
   })
 
-  useEffect(() => {
-    setFavorited(new Set(events.filter((event) => event.is_favorited).map((event) => event.id)))
-  }, [events])
+  const baseFavoritedIds = useMemo(
+    () => new Set(events.filter((event) => event.is_favorited).map((event) => event.id)),
+    [events]
+  )
+
+  function isFavorited(eventId: string) {
+    return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
+  }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavorited((prev) => {
-      const next = new Set(prev)
-      if (newState) next.add(eventId)
-      else next.delete(eventId)
-      return next
-    })
+    setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
   const featuredEvents = events.filter((event) => event.is_featured)
   const happeningSoon = events.filter((event) => !event.is_featured).slice(0, 4)
   const recommended = events.slice(0, 4)
-  const savedEvents = events.filter((event) => favorited.has(event.id)).slice(0, 3)
+  const savedEvents = events.filter((event) => isFavorited(event.id)).slice(0, 3)
   const todayEvents = events
     .filter((e) => {
       const d = new Date(e.start_datetime)
@@ -225,7 +225,7 @@ export function DashboardPage() {
               {featuredEvents.map((event) => (
                 <CarouselItem key={event.id} className="pl-3 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                   <EventCard
-                    event={{ ...event, is_favorited: favorited.has(event.id) }}
+                    event={{ ...event, is_favorited: isFavorited(event.id) }}
                     variant="featured"
                     onFavoriteToggle={handleFavoriteToggle}
                   />
@@ -259,7 +259,7 @@ export function DashboardPage() {
             {recommended.map((event) => (
               <CarouselItem key={event.id} className="pl-3 basis-[85%] sm:basis-1/2 lg:basis-1/3">
                 <EventCard
-                  event={{ ...event, is_favorited: favorited.has(event.id) }}
+                  event={{ ...event, is_favorited: isFavorited(event.id) }}
                   variant="default"
                   onFavoriteToggle={handleFavoriteToggle}
                 />
@@ -289,7 +289,7 @@ export function DashboardPage() {
           {happeningSoon.map((event) => (
             <EventCard
               key={event.id}
-              event={{ ...event, is_favorited: favorited.has(event.id) }}
+              event={{ ...event, is_favorited: isFavorited(event.id) }}
               variant="list"
               onFavoriteToggle={handleFavoriteToggle}
             />
@@ -327,7 +327,7 @@ export function DashboardPage() {
             className="w-full mt-3 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
             asChild
           >
-            <Link to="/saved">Explore All Saved ({favorited.size})</Link>
+            <Link to="/saved">Explore All Saved ({savedEvents.length})</Link>
           </Button>
         </section>
       )}

@@ -13,36 +13,29 @@ const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { data: cities = [], isLoading: isCitiesLoading } = useCities()
-  const [selectedCityId, setSelectedCityId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (cities.length === 0) {
-      return
+  const [selectedCityId, setSelectedCityId] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null
     }
 
-    const savedCityId = localStorage.getItem("family-events-city")
-    const hasSaved = savedCityId && cities.some((city) => city.id === savedCityId)
+    return localStorage.getItem("family-events-city")
+  })
 
-    setSelectedCityId((current) => {
-      if (current && cities.some((city) => city.id === current)) {
-        return current
-      }
-      return hasSaved ? savedCityId! : cities[0].id
-    })
-  }, [cities])
+  const selectedCity = useMemo(() => {
+    if (cities.length === 0) {
+      return null
+    }
+
+    return cities.find((city) => city.id === selectedCityId) ?? cities[0]
+  }, [cities, selectedCityId])
 
   useEffect(() => {
-    if (selectedCityId) {
-      localStorage.setItem("family-events-city", selectedCityId)
+    if (selectedCity?.id) {
+      localStorage.setItem("family-events-city", selectedCity.id)
     } else {
       localStorage.removeItem("family-events-city")
     }
-  }, [selectedCityId])
-
-  const selectedCity = useMemo(
-    () => cities.find((city) => city.id === selectedCityId) ?? null,
-    [cities, selectedCityId]
-  )
+  }, [selectedCity])
 
   function setSelectedCity(city: City | null) {
     setSelectedCityId(city?.id ?? null)

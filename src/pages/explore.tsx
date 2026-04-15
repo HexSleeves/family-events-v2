@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { Search, SlidersHorizontal, X, Music, TreePine, BookOpen, Users, Map } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -66,7 +66,7 @@ export function ExplorePage() {
   const [onlyFree, setOnlyFree] = useState(false)
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [favorited, setFavorited] = useState<Set<string>>(new Set())
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
 
   const ageFilter = AGE_OPTIONS.find((option) => option.label === selectedAge)
 
@@ -133,11 +133,14 @@ export function ExplorePage() {
     userId: user?.id,
   })
 
-  useEffect(() => {
-    setFavorited(
-      new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id))
-    )
-  }, [filteredEvents])
+  const baseFavoritedIds = useMemo(
+    () => new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id)),
+    [filteredEvents]
+  )
+
+  function isFavorited(eventId: string) {
+    return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
+  }
 
   const activeFilterCount = [
     activeDateFilter,
@@ -156,12 +159,7 @@ export function ExplorePage() {
   }
 
   function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavorited((prev) => {
-      const next = new Set(prev)
-      if (newState) next.add(eventId)
-      else next.delete(eventId)
-      return next
-    })
+    setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
   function toggleTagSlug(slug: string) {
@@ -416,7 +414,7 @@ export function ExplorePage() {
             {filteredEvents.map((event) => (
               <EventCard
                 key={event.id}
-                event={{ ...event, is_favorited: favorited.has(event.id) }}
+                event={{ ...event, is_favorited: isFavorited(event.id) }}
                 variant="list"
                 onFavoriteToggle={handleFavoriteToggle}
               />
