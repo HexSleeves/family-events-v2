@@ -1,14 +1,16 @@
 import { useState } from "react"
-import { Check, X, Eye, Tag, Search } from "lucide-react"
+import { Check, X, Eye, Tag, Search, CheckCheck, XCircle } from "lucide-react"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn, formatEventPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
 import {
   useAdminEvents,
+  useBatchUpdateAdminEventStatus,
   useUpdateAdminEventStatus,
   useUpdateAdminEventTags,
 } from "@/hooks/admin/use-admin-data"
@@ -22,13 +24,56 @@ export function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [editingTagIds, setEditingTagIds] = useState<string[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const { data: events = [] } = useAdminEvents(keyword, statusFilter)
   const { data: allTags = [] } = useTags()
   const updateStatusMutation = useUpdateAdminEventStatus()
+  const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
   const updateTagsMutation = useUpdateAdminEventTags()
 
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
+
+  const draftEvents = events.filter((e) => e.status === "draft")
+  const selectedDraftIds = [...selectedIds].filter((id) =>
+    draftEvents.some((e) => e.id === id)
+  )
+  const allDraftsSelected = draftEvents.length > 0 && draftEvents.every((e) => selectedIds.has(e.id))
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (allDraftsSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(draftEvents.map((e) => e.id)))
+    }
+  }
+
+  async function batchUpdateStatus(newStatus: EventStatus) {
+    if (selectedDraftIds.length === 0) return
+
+    try {
+      const { count } = await batchUpdateStatusMutation.mutateAsync({
+        eventIds: selectedDraftIds,
+        status: newStatus,
+      })
+      toast.success(`${count} event${count === 1 ? "" : "s"} ${newStatus}`)
+      setSelectedIds(new Set())
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk update failed.")
+    }
+  }
 
   async function updateStatus(id: string, newStatus: EventStatus) {
     try {
@@ -82,7 +127,10 @@ export function AdminEventsPage() {
           {(["all", "draft", "published", "rejected"] as const).map((s) => (
             <button
               key={s}
-              onClick={() => setStatusFilter(s)}
+              onClick={() => {
+                setStatusFilter(s)
+                setSelectedIds(new Set())
+              }}
               className={cn(
                 "text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors",
                 statusFilter === s
@@ -101,7 +149,7 @@ export function AdminEventsPage() {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -111,16 +159,83 @@ export function AdminEventsPage() {
             className="pl-9"
           />
         </div>
+        {draftEvents.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={toggleSelectAll}
+          >
+            <Checkbox
+              checked={allDraftsSelected}
+              className="h-3.5 w-3.5"
+              onCheckedChange={toggleSelectAll}
+            />
+            {allDraftsSelected ? "Deselect all" : `Select all drafts (${draftEvents.length})`}
+          </Button>
+        )}
       </div>
+
+      {/* Bulk action bar */}
+      {selectedDraftIds.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium">
+            {selectedDraftIds.length} draft{selectedDraftIds.length === 1 ? "" : "s"} selected
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+              disabled={batchUpdateStatusMutation.isPending}
+              onClick={() => batchUpdateStatus("published")}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              Publish selected
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              disabled={batchUpdateStatusMutation.isPending}
+              onClick={() => batchUpdateStatus("rejected")}
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              Reject selected
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         {events.map((event) => {
           const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
           const status = statusConfig[event.status]
+          const isDraft = event.status === "draft"
+          const isSelected = selectedIds.has(event.id)
           return (
-            <Card key={event.id} className="border-border/60">
+            <Card
+              key={event.id}
+              className={cn(
+                "border-border/60 transition-colors",
+                isSelected && "border-primary/50 bg-primary/5"
+              )}
+            >
               <CardContent className="p-4">
                 <div className="flex gap-3 items-start">
+                  {isDraft && (
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelect(event.id)}
+                      className="mt-1 shrink-0"
+                    />
+                  )}
                   <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
                     <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
                   </div>
@@ -167,7 +282,7 @@ export function AdminEventsPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {event.status === "draft" && (
+                    {isDraft && (
                       <>
                         <Button
                           variant="ghost"
@@ -241,12 +356,12 @@ export function AdminEventsPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Venue:</span>{" "}
-                  <span className="font-medium">{selectedEvent.venue_name}</span>
+                  <span className="font-medium">{selectedEvent.venue_name ?? "—"}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Price:</span>{" "}
                   <span className="font-medium">
-                    {selectedEvent.is_free ? "Free" : `$${selectedEvent.price}`}
+                    {formatEventPrice(selectedEvent.price, selectedEvent.is_free)}
                   </span>
                 </div>
                 <div>

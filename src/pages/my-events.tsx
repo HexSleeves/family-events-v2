@@ -15,6 +15,7 @@ import { useCalendarEvents, useToggleCalendarEvent } from "@/hooks/use-calendar-
 import { useEventsByIds } from "@/hooks/use-events"
 import { useUpsertRating } from "@/hooks/use-ratings"
 import type { EventWithDetails } from "@/lib/types"
+import { formatEventPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
 export function MyEventsPage() {
@@ -260,7 +261,7 @@ function EventRow({
                     : "text-xs font-bold text-primary"
                 }
               >
-                {event.is_free ? "Free" : `$${event.price}`}
+                {formatEventPrice(event.price, event.is_free)}
               </span>
               <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
               {event.tags?.[0]?.tag && <TagBadge tag={event.tags[0].tag} />}

@@ -142,6 +142,25 @@ export function useUpdateAdminEventStatus() {
   })
 }
 
+export function useBatchUpdateAdminEventStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ eventIds, status }: { eventIds: string[]; status: Event["status"] }) => {
+      const { error } = await supabase.from("events").update({ status }).in("id", eventIds)
+      if (error) {
+        throw error
+      }
+      return { count: eventIds.length, status }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "events"] })
+      void queryClient.invalidateQueries({ queryKey: ["events"] })
+      void queryClient.invalidateQueries({ queryKey: ["event"] })
+    },
+  })
+}
+
 export function useUpdateAdminEventTags() {
   const queryClient = useQueryClient()
 

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { MapPin, Clock } from "lucide-react"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { cn, formatEventPrice } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,7 +43,7 @@ export function EventCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{event.title}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {format(startDate, "EEE, MMM d")} · {event.venue_name}
+              {format(startDate, "EEE, MMM d")}{event.venue_name ? ` · ${event.venue_name}` : ""}
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               {event.is_free ? (
@@ -53,8 +53,10 @@ export function EventCard({
                 >
                   Free
                 </Badge>
-              ) : (
+              ) : event.price != null ? (
                 <span className="text-xs font-semibold text-primary">${event.price}</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">See details</span>
               )}
               <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
             </div>
@@ -134,7 +136,7 @@ export function EventCard({
                   event.is_free ? "text-green-600 dark:text-green-400" : "text-primary"
                 )}
               >
-                {event.is_free ? "Free" : `$${event.price}`}
+                {formatEventPrice(event.price, event.is_free)}
               </span>
               <span className="text-xs text-muted-foreground">Details →</span>
             </div>
@@ -177,7 +179,7 @@ export function EventCard({
                 {event.title}
               </p>
               <p className="text-white/80 text-xs mt-0.5">
-                {format(startDate, "EEE, MMM d")} · {event.venue_name}
+                {format(startDate, "EEE, MMM d")}{event.venue_name ? ` · ${event.venue_name}` : ""}
               </p>
             </div>
           </div>
@@ -189,7 +191,7 @@ export function EventCard({
                   event.is_free ? "text-green-600 dark:text-green-400" : "text-primary"
                 )}
               >
-                {event.is_free ? "Free" : `$${event.price}/child`}
+                {event.is_free ? "Free" : event.price != null ? `$${event.price}/child` : "See details"}
               </span>
               {event.avg_rating && <StarRating value={event.avg_rating} readonly size="sm" />}
             </div>
@@ -246,7 +248,7 @@ export function EventCard({
             <span
               className={cn("text-sm font-bold", event.is_free ? "text-green-600" : "text-primary")}
             >
-              {event.is_free ? "Free" : `$${event.price}`}
+              {formatEventPrice(event.price, event.is_free)}
             </span>
             {event.avg_rating && event.rating_count ? (
               <div className="flex items-center gap-1">

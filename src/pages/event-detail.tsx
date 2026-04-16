@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { format } from "date-fns"
 import { ArrowLeft, MapPin, Clock, Users, Star, CalendarPlus, Share2, Info } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatEventPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -135,7 +135,7 @@ export function EventDetailPage() {
         : "TBD",
       icon: Clock,
     },
-    { label: "Price", value: event.is_free ? "Free" : `$${event.price}`, icon: Star },
+    { label: "Price", value: formatEventPrice(event.price, event.is_free), icon: Star },
     { label: "Capacity", value: "12 Spots", icon: Users },
     {
       label: "Rating",
@@ -285,7 +285,9 @@ export function EventDetailPage() {
             <a href={event.source_url || "#"} target="_blank" rel="noopener noreferrer">
               {event.is_free
                 ? "Reserve Your Spot (Free)"
-                : `Book Now · $${(event.price ?? 0) * attendees}`}
+                : event.price != null
+                  ? `Book Now · $${event.price * attendees}`
+                  : "Book Now"}
             </a>
           </Button>
           <Button
