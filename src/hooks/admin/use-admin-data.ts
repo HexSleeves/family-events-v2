@@ -397,6 +397,11 @@ export function useAdminSourceRuns() {
       }
       return (data ?? []) as AdminSourceRun[]
     },
+    // Poll every 3s while any run is still active; stop when all complete.
+    refetchInterval: (query) => {
+      const runs = query.state.data
+      return runs?.some((r) => r.status === "running") ? 3000 : false
+    },
   })
 }
 

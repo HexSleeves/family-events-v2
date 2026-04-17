@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import {
   CircleCheck as CheckCircle,
@@ -21,31 +22,63 @@ const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string;
     running: { icon: RefreshCw, color: "text-blue-600", label: "Running" },
   }
 
+function ElapsedTimer({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    const start = new Date(startedAt).getTime()
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [startedAt])
+
+  const mins = Math.floor(elapsed / 60)
+  const secs = elapsed % 60
+  return (
+    <span className="tabular-nums">
+      {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} elapsed
+    </span>
+  )
+}
+
 export function AdminLogsPage() {
   const { data: logs = [] } = useAdminSourceRuns()
+  const hasRunning = logs.some((r) => r.status === "running")
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-extrabold text-foreground">Ingestion Logs</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Scrape run history and diagnostics</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-extrabold text-foreground">Ingestion Logs</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Scrape run history and diagnostics</p>
+        </div>
+        {hasRunning && (
+          <div className="flex items-center gap-1.5 text-xs text-blue-600">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            <span>Live</span>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
         {logs.map((run) => {
           const status = STATUS_CONFIG[run.status as RunStatus]
-          const duration = run.completed_at
-            ? Math.round(
-                (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) / 1000
-              )
-            : null
+          const isRunning = run.status === "running"
+          const duration =
+            !isRunning && run.completed_at
+              ? Math.round(
+                  (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) /
+                    1000
+                )
+              : null
 
           return (
-            <Card key={run.id} className="border-border/60">
+            <Card key={run.id} className={cn("border-border/60", isRunning && "border-blue-500/30 bg-blue-500/5")}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div className={cn("mt-0.5 shrink-0", status.color)}>
-                    <status.icon className="h-5 w-5" />
+                    <status.icon className={cn("h-5 w-5", isRunning && "animate-spin")} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -60,7 +93,7 @@ export function AdminLogsPage() {
                               ? "destructive"
                               : "outline"
                         }
-                        className="text-[10px]"
+                        className={cn("text-[10px]", isRunning && "border-blue-500/40 text-blue-600")}
                       >
                         {status.label}
                       </Badge>
@@ -70,14 +103,21 @@ export function AdminLogsPage() {
                         <Clock className="h-3 w-3" />
                         {format(new Date(run.started_at), "MMM d, h:mm a")}
                       </span>
-                      {duration !== null && <span>{duration}s duration</span>}
+                      {isRunning ? (
+                        <ElapsedTimer startedAt={run.started_at} />
+                      ) : (
+                        duration !== null && <span>{duration}s duration</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 mt-1.5 text-xs flex-wrap">
-                      <span className="text-green-600 font-medium">
+                      <span className={cn("font-medium", run.events_imported > 0 ? "text-green-600" : "text-muted-foreground")}>
                         +{run.events_imported} imported
                       </span>
                       <span className="text-muted-foreground">{run.events_skipped} skipped</span>
                       <span className="text-muted-foreground">{run.events_found} found</span>
+                      {isRunning && (
+                        <span className="text-blue-600 animate-pulse">updating when complete...</span>
+                      )}
                     </div>
                     {run.error_log && (
                       <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/20 p-2">
