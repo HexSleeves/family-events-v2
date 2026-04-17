@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
 import { FavoriteButton } from "@/components/favorite-button"
+import { EventMapMini } from "@/components/event-map-mini"
 import { StarRating } from "@/components/star-rating"
 import { useAuth } from "@/contexts/auth-context"
 import { useEvent } from "@/hooks/use-events"
@@ -238,13 +239,20 @@ export function EventDetailPage() {
           <div className="flex items-start gap-3 mb-3">
             <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-foreground">{event.venue_name}</p>
-              <p className="text-sm text-muted-foreground">{event.address}</p>
+              {event.venue_name && (
+                <p className="text-sm font-semibold text-foreground">{event.venue_name}</p>
+              )}
+              {event.address && event.address !== event.venue_name && (
+                <p className="text-sm text-muted-foreground">{event.address}</p>
+              )}
             </div>
           </div>
-          <div className="rounded-xl bg-muted/50 border border-border/60 h-36 flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">Map view</p>
-          </div>
+          <EventMapMini
+            latitude={event.latitude}
+            longitude={event.longitude}
+            venueName={event.venue_name}
+            address={event.address}
+          />
         </div>
 
         <Separator />

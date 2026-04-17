@@ -15,6 +15,7 @@ import { DashboardPage } from "@/pages/dashboard"
 import { ExplorePage } from "@/pages/explore"
 import { EventDetailPage } from "@/pages/event-detail"
 import { CalendarViewPage } from "@/pages/calendar-view"
+import { MapViewPage } from "@/pages/map-view"
 import { MyEventsPage } from "@/pages/my-events"
 import { ProfilePage } from "@/pages/profile"
 
@@ -44,6 +45,7 @@ export default function App() {
                   <Route element={<AppLayout />}>
                     <Route index element={<DashboardPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
+                    <Route path="/map" element={<MapViewPage />} />
                     <Route path="/events/:id" element={<EventDetailPage />} />
                     <Route path="/calendar" element={<CalendarViewPage />} />
                     <Route path="/saved" element={<MyEventsPage />} />

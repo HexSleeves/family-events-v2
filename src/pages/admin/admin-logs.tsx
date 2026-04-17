@@ -114,10 +114,9 @@ export function AdminLogsPage() {
                         +{run.events_imported} imported
                       </span>
                       <span className="text-muted-foreground">{run.events_skipped} skipped</span>
-                      <span className="text-muted-foreground">{run.events_found} found</span>
-                      {isRunning && (
-                        <span className="text-blue-600 animate-pulse">updating when complete...</span>
-                      )}
+                      <span className="text-muted-foreground">
+                        {run.events_found > 0 ? `${run.events_found} found` : isRunning ? "fetching…" : "0 found"}
+                      </span>
                     </div>
                     {run.error_log && (
                       <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/20 p-2">

@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Hop as Home,
   Compass,
+  Map as MapIcon,
   Bookmark,
   User,
   Search,
@@ -33,6 +34,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Compass },
+  { to: "/map", label: "Map", icon: MapIcon },
   { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/profile", label: "Profile", icon: User },
 ]
