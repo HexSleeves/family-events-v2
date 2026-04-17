@@ -13,6 +13,8 @@
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "check": "tsc --noEmit && eslint src && prettier --check src",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:stop:id": "supabase stop --project-id",
@@ -72,6 +74,7 @@
     "supabase": "^2.91.2",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.8"
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }

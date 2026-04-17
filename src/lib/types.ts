@@ -159,6 +159,7 @@ export interface Event {
   images: string[]
   status: "draft" | "published" | "rejected" | "archived"
   ai_confidence: number | null
+  ai_tag_provider: "openai" | "keyword-fallback" | null
   recurrence_info: Json | null
   is_featured: boolean
   view_count: number
@@ -250,6 +251,6 @@ export interface EventFilters {
   isFree?: boolean
   tagSlugs?: string[]
   keyword?: string
-  isFeatures?: boolean
+  isFeatured?: boolean
   status?: Event["status"]
 }

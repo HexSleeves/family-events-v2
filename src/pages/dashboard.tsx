@@ -53,9 +53,14 @@ export function DashboardPage() {
   const savedEvents = events.filter((event) => isFavorited(event.id)).slice(0, 3)
   const todayEvents = events
     .filter((e) => {
-      const d = new Date(e.start_datetime)
-      const today = new Date()
-      return d.getDate() === today.getDate() && d.getMonth() === today.getMonth()
+      const tz = e.timezone || selectedCity?.timezone || "UTC"
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: tz,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      return fmt.format(new Date(e.start_datetime)) === fmt.format(new Date())
     })
     .slice(0, 2)
 
@@ -353,7 +358,7 @@ export function DashboardPage() {
             Never miss a playdate.
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Join 5,000+ local parents getting a weekly curated list of weekend toddler events.
+            Get a weekly curated list of weekend family events in your city.
           </p>
           <Button className="w-full sm:w-auto" asChild>
             <Link to="/sign-up">Get Started Free</Link>

@@ -1,20 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
+import { sanitizePostgrestLike } from "@/lib/utils"
+import { enrichEvents } from "@/lib/enrich-events"
 import type {
   City,
   Comment,
   Event,
   EventSource,
-  EventTag,
   EventWithDetails,
   Rating,
   SourceRun,
-  Tag,
 } from "@/lib/types"
-
-interface EventTagWithTag extends EventTag {
-  tag: Tag | null
-}
 
 export interface AdminComment extends Comment {
   user_profiles: { display_name: string | null } | null
@@ -44,59 +40,8 @@ interface AdminStats {
 }
 
 async function enrichAdminEvents(events: Event[]): Promise<EventWithDetails[]> {
-  if (events.length === 0) {
-    return []
-  }
-
-  const eventIds = events.map((event) => event.id)
-  const cityIds = [...new Set(events.map((event) => event.city_id).filter(Boolean))] as string[]
-
-  const [{ data: tagRowsRaw, error: tagsError }, { data: cityRows, error: citiesError }] =
-    await Promise.all([
-      supabase
-        .from("event_tags")
-        .select("event_id, tag_id, confidence, is_manual_override, created_at, tag:tags(*)")
-        .in("event_id", eventIds),
-      cityIds.length > 0
-        ? supabase.from("cities").select("*").in("id", cityIds)
-        : Promise.resolve({ data: [], error: null }),
-    ])
-
-  if (tagsError) {
-    throw tagsError
-  }
-  if (citiesError) {
-    throw citiesError
-  }
-
-  const cityMap = new Map<string, City>()
-  for (const city of (cityRows ?? []) as City[]) {
-    cityMap.set(city.id, city)
-  }
-
-  const tagsByEvent = new Map<string, Array<EventTag & { tag: Tag }>>()
-  for (const row of (tagRowsRaw ?? []) as EventTagWithTag[]) {
-    if (!row.tag) {
-      continue
-    }
-
-    const current = tagsByEvent.get(row.event_id) ?? []
-    current.push({
-      event_id: row.event_id,
-      tag_id: row.tag_id,
-      confidence: row.confidence,
-      is_manual_override: row.is_manual_override,
-      created_at: row.created_at,
-      tag: row.tag,
-    })
-    tagsByEvent.set(row.event_id, current)
-  }
-
-  return events.map((event) => ({
-    ...event,
-    city: event.city_id ? (cityMap.get(event.city_id) ?? null) : null,
-    tags: tagsByEvent.get(event.id) ?? [],
-  }))
+  // Admin views don't need per-user state (favorites, calendar) or rating stats.
+  return enrichEvents(events, { includeRatings: false, includeUserState: false })
 }
 
 export function useAdminEvents(keyword: string, status: Event["status"] | "all") {
@@ -108,8 +53,8 @@ export function useAdminEvents(keyword: string, status: Event["status"] | "all")
       if (status !== "all") {
         query = query.eq("status", status)
       }
-      if (keyword.trim()) {
-        const sanitized = keyword.trim().replaceAll("%", "")
+      const sanitized = sanitizePostgrestLike(keyword)
+      if (sanitized) {
         query = query.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
       }
 

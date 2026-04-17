@@ -75,6 +75,7 @@ export function AdminSourcesPage() {
   const updateSource = useUpdateAdminSource()
   const triggerScrape = useTriggerSourceScrape()
 
+  const [scrapingSourceId, setScrapingSourceId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newSource, setNewSource] = useState({
     name: "",
@@ -84,11 +85,14 @@ export function AdminSourcesPage() {
   })
 
   async function handleScrape(sourceId: string) {
+    setScrapingSourceId(sourceId)
     try {
       await triggerScrape.mutateAsync({ sourceId })
       toast.success("Scrape started!", { description: "Ingestion run queued." })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to trigger scrape.")
+    } finally {
+      setScrapingSourceId(null)
     }
   }
 
@@ -261,13 +265,13 @@ export function AdminSourcesPage() {
                       variant="outline"
                       size="sm"
                       className="gap-1.5 text-xs h-8"
-                      disabled={triggerScrape.isPending || !source.is_active}
+                      disabled={scrapingSourceId !== null || !source.is_active}
                       onClick={() => handleScrape(source.id)}
                     >
                       <RefreshCw
-                        className={`h-3 w-3 ${triggerScrape.isPending ? "animate-spin" : ""}`}
+                        className={`h-3 w-3 ${scrapingSourceId === source.id ? "animate-spin" : ""}`}
                       />
-                      {triggerScrape.isPending ? "Running..." : "Scrape Now"}
+                      {scrapingSourceId === source.id ? "Running..." : "Scrape Now"}
                     </Button>
                   </div>
                 </div>
