@@ -68,8 +68,7 @@ async function fetchEvents(
     p_age_max: filters.ageMax ?? undefined,
     p_is_free: filters.isFree ?? undefined,
     p_is_featured: effectiveFeatured ?? undefined,
-    p_tag_slugs:
-      filters.tagSlugs && filters.tagSlugs.length > 0 ? filters.tagSlugs : undefined,
+    p_tag_slugs: filters.tagSlugs && filters.tagSlugs.length > 0 ? filters.tagSlugs : undefined,
     p_keyword: keyword ?? undefined,
     p_status: filters.status ?? "published",
     p_limit: limit,

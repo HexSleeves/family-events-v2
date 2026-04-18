@@ -35,11 +35,7 @@ function ElapsedTimer({ startedAt }: { startedAt: string }) {
 
   const mins = Math.floor(elapsed / 60)
   const secs = elapsed % 60
-  return (
-    <span className="tabular-nums">
-      {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} elapsed
-    </span>
-  )
+  return <span className="tabular-nums">{mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} elapsed</span>
 }
 
 export function AdminLogsPage() {
@@ -68,13 +64,15 @@ export function AdminLogsPage() {
           const duration =
             !isRunning && run.completed_at
               ? Math.round(
-                  (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) /
-                    1000
+                  (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) / 1000
                 )
               : null
 
           return (
-            <Card key={run.id} className={cn("border-border/60", isRunning && "border-blue-500/30 bg-blue-500/5")}>
+            <Card
+              key={run.id}
+              className={cn("border-border/60", isRunning && "border-blue-500/30 bg-blue-500/5")}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div className={cn("mt-0.5 shrink-0", status.color)}>
@@ -93,7 +91,10 @@ export function AdminLogsPage() {
                               ? "destructive"
                               : "outline"
                         }
-                        className={cn("text-[10px]", isRunning && "border-blue-500/40 text-blue-600")}
+                        className={cn(
+                          "text-[10px]",
+                          isRunning && "border-blue-500/40 text-blue-600"
+                        )}
                       >
                         {status.label}
                       </Badge>
@@ -110,12 +111,21 @@ export function AdminLogsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1.5 text-xs flex-wrap">
-                      <span className={cn("font-medium", run.events_imported > 0 ? "text-green-600" : "text-muted-foreground")}>
+                      <span
+                        className={cn(
+                          "font-medium",
+                          run.events_imported > 0 ? "text-green-600" : "text-muted-foreground"
+                        )}
+                      >
                         +{run.events_imported} imported
                       </span>
                       <span className="text-muted-foreground">{run.events_skipped} skipped</span>
                       <span className="text-muted-foreground">
-                        {run.events_found > 0 ? `${run.events_found} found` : isRunning ? "fetching…" : "0 found"}
+                        {run.events_found > 0
+                          ? `${run.events_found} found`
+                          : isRunning
+                            ? "fetching…"
+                            : "0 found"}
                       </span>
                     </div>
                     {run.error_log && (

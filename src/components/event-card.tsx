@@ -43,7 +43,8 @@ export function EventCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{event.title}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {format(startDate, "EEE, MMM d")}{event.venue_name ? ` · ${event.venue_name}` : ""}
+              {format(startDate, "EEE, MMM d")}
+              {event.venue_name ? ` · ${event.venue_name}` : ""}
             </p>
             <div className="flex items-center gap-1.5 mt-1">
               {event.is_free ? (
@@ -179,7 +180,8 @@ export function EventCard({
                 {event.title}
               </p>
               <p className="text-white/80 text-xs mt-0.5">
-                {format(startDate, "EEE, MMM d")}{event.venue_name ? ` · ${event.venue_name}` : ""}
+                {format(startDate, "EEE, MMM d")}
+                {event.venue_name ? ` · ${event.venue_name}` : ""}
               </p>
             </div>
           </div>
@@ -191,7 +193,11 @@ export function EventCard({
                   event.is_free ? "text-green-600 dark:text-green-400" : "text-primary"
                 )}
               >
-                {event.is_free ? "Free" : event.price != null ? `$${event.price}/child` : "See details"}
+                {event.is_free
+                  ? "Free"
+                  : event.price != null
+                    ? `$${event.price}/child`
+                    : "See details"}
               </span>
               {event.avg_rating && <StarRating value={event.avg_rating} readonly size="sm" />}
             </div>

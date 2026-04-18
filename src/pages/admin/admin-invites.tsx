@@ -14,7 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   generateInviteCode,
   useAdminInviteCodes,
@@ -201,9 +207,15 @@ export function AdminInvitesPage() {
                       <Badge variant="outline" className="text-[10px]">
                         {code.used_count}/{code.max_uses} used
                       </Badge>
-                      {expired && <Badge variant="destructive" className="text-[10px]">Expired</Badge>}
+                      {expired && (
+                        <Badge variant="destructive" className="text-[10px]">
+                          Expired
+                        </Badge>
+                      )}
                       {exhausted && !expired && (
-                        <Badge variant="secondary" className="text-[10px]">Exhausted</Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          Exhausted
+                        </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
@@ -246,9 +258,11 @@ export function AdminInvitesPage() {
       <div className="text-xs text-muted-foreground border-t border-border/40 pt-4 space-y-1">
         <p className="font-semibold">Gate status</p>
         <p>
-          The signup gate is controlled by the <code className="font-mono text-[11px]">app.settings.require_invite</code>{" "}
-          database setting. When <code className="font-mono text-[11px]">true</code>, sign-up requires a code.
-          Toggle it via Supabase Studio SQL editor or with the flag in <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
+          The signup gate is controlled by the{" "}
+          <code className="font-mono text-[11px]">app.settings.require_invite</code> database
+          setting. When <code className="font-mono text-[11px]">true</code>, sign-up requires a
+          code. Toggle it via Supabase Studio SQL editor or with the flag in{" "}
+          <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
         </p>
         <p className="pt-1">Ignored expiry labels: {Object.values(EXPIRY_LABELS).join(", ")}.</p>
       </div>

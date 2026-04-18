@@ -35,7 +35,9 @@ function RecenterOnCity({ lat, lng }: { lat: number; lng: number }) {
   return null
 }
 
-function hasCoords(e: EventWithDetails): e is EventWithDetails & { latitude: number; longitude: number } {
+function hasCoords(
+  e: EventWithDetails
+): e is EventWithDetails & { latitude: number; longitude: number } {
   return typeof e.latitude === "number" && typeof e.longitude === "number"
 }
 

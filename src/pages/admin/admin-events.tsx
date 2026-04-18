@@ -35,10 +35,9 @@ export function AdminEventsPage() {
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
 
   const draftEvents = events.filter((e) => e.status === "draft")
-  const selectedDraftIds = [...selectedIds].filter((id) =>
-    draftEvents.some((e) => e.id === id)
-  )
-  const allDraftsSelected = draftEvents.length > 0 && draftEvents.every((e) => selectedIds.has(e.id))
+  const selectedDraftIds = [...selectedIds].filter((id) => draftEvents.some((e) => e.id === id))
+  const allDraftsSelected =
+    draftEvents.length > 0 && draftEvents.every((e) => selectedIds.has(e.id))
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -160,12 +159,7 @@ export function AdminEventsPage() {
           />
         </div>
         {draftEvents.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={toggleSelectAll}
-          >
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={toggleSelectAll}>
             <Checkbox
               checked={allDraftsSelected}
               className="h-3.5 w-3.5"
@@ -202,11 +196,7 @@ export function AdminEventsPage() {
               <XCircle className="h-3.5 w-3.5" />
               Reject selected
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelectedIds(new Set())}
-            >
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
               Clear
             </Button>
           </div>
