@@ -3,9 +3,12 @@ import { QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppErrorBoundary } from "@/components/app-error-boundary"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { PublicOnlyRoute } from "@/components/auth/public-only-route"
 import { AuthProvider } from "@/contexts/auth-context"
 import { AppProvider } from "@/contexts/app-context"
 import { Toaster } from "@/components/ui/sonner"
+import { HOME_PATH } from "@/lib/access-control"
 import { queryClient } from "@/lib/query-client"
 
 import { AppLayout } from "@/layouts/app-layout"
@@ -16,6 +19,7 @@ import { ExplorePage } from "@/pages/explore"
 import { EventDetailPage } from "@/pages/event-detail"
 import { CalendarViewPage } from "@/pages/calendar-view"
 import { MapViewPage } from "@/pages/map-view"
+import { MarketingPage } from "@/pages/marketing"
 import { MyEventsPage } from "@/pages/my-events"
 import { ProfilePage } from "@/pages/profile"
 
@@ -28,6 +32,7 @@ import { AdminEventsPage } from "@/pages/admin/admin-events"
 import { AdminCitiesPage } from "@/pages/admin/admin-cities"
 import { AdminCommentsPage } from "@/pages/admin/admin-comments"
 import { AdminRatingsPage } from "@/pages/admin/admin-ratings"
+import { AdminAccessPage } from "@/pages/admin/admin-access"
 import { AdminInvitesPage } from "@/pages/admin/admin-invites"
 import { AdminLogsPage } from "@/pages/admin/admin-logs"
 
@@ -36,15 +41,25 @@ export default function App() {
     <ThemeProvider storageKey="family-events-theme">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <AppProvider>
-            <BrowserRouter>
-              <AppErrorBoundary>
-                <Routes>
+          <BrowserRouter>
+            <AppErrorBoundary>
+              <Routes>
+                <Route index element={<MarketingPage />} />
+
+                <Route element={<PublicOnlyRoute />}>
                   <Route path="/sign-in" element={<SignInPage />} />
                   <Route path="/sign-up" element={<SignUpPage />} />
+                </Route>
 
-                  <Route element={<AppLayout />}>
-                    <Route index element={<DashboardPage />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    element={
+                      <AppProvider>
+                        <AppLayout />
+                      </AppProvider>
+                    }
+                  >
+                    <Route path={HOME_PATH} element={<DashboardPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
                     <Route path="/map" element={<MapViewPage />} />
                     <Route path="/events/:id" element={<EventDetailPage />} />
@@ -60,16 +75,17 @@ export default function App() {
                     <Route path="cities" element={<AdminCitiesPage />} />
                     <Route path="comments" element={<AdminCommentsPage />} />
                     <Route path="ratings" element={<AdminRatingsPage />} />
+                    <Route path="access" element={<AdminAccessPage />} />
                     <Route path="invites" element={<AdminInvitesPage />} />
                     <Route path="logs" element={<AdminLogsPage />} />
                   </Route>
+                </Route>
 
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AppErrorBoundary>
-            </BrowserRouter>
-            <Toaster richColors position="bottom-right" />
-          </AppProvider>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AppErrorBoundary>
+          </BrowserRouter>
+          <Toaster richColors position="bottom-right" />
         </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

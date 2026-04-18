@@ -397,6 +397,44 @@ export type Database = {
           },
         ]
       }
+      user_access: {
+        Row: {
+          created_at: string
+          disabled_at: string | null
+          disabled_reason: string | null
+          enabled_at: string | null
+          is_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          enabled_at?: string | null
+          is_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          enabled_at?: string | null
+          is_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ratings: {
         Row: {
           created_at: string
@@ -661,10 +699,15 @@ export type Database = {
       }
     }
     Functions: {
+      claim_pending_invite_access: { Args: never; Returns: boolean }
       invites_required: { Args: never; Returns: boolean }
       invoke_scrape_source: {
         Args: { source_uuid: string }
         Returns: undefined
+      }
+      redeem_invite_for_email: {
+        Args: { p_code: string; p_email: string }
+        Returns: boolean
       }
       redeem_invite: { Args: { p_code: string }; Returns: boolean }
       run_due_source_scrapes: { Args: never; Returns: undefined }

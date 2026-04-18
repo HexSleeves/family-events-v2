@@ -8,6 +8,7 @@ import {
   Star,
   FileText,
   Ticket,
+  Users,
   ArrowLeft,
   Zap,
 } from "lucide-react"
@@ -27,6 +28,7 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/contexts/auth-context"
+import { HOME_PATH } from "@/lib/access-control"
 
 const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -35,6 +37,7 @@ const ADMIN_NAV = [
   { to: "/admin/cities", label: "Cities", icon: MapPin },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/ratings", label: "Ratings", icon: Star },
+  { to: "/admin/access", label: "Access", icon: Users },
   { to: "/admin/invites", label: "Invite Codes", icon: Ticket },
   { to: "/admin/logs", label: "Ingestion Logs", icon: FileText },
 ]
@@ -52,7 +55,7 @@ export function AdminLayout() {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/" replace />
+    return <Navigate to={HOME_PATH} replace />
   }
 
   function isActive(to: string, exact?: boolean) {
@@ -100,7 +103,7 @@ export function AdminLayout() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Back to site">
-                  <Link to="/">
+                  <Link to={HOME_PATH}>
                     <ArrowLeft />
                     <span>Back to Site</span>
                   </Link>

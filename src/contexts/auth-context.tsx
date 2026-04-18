@@ -1,13 +1,16 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import type { UserProfile } from "@/lib/types"
+import { evaluateAccessState } from "@/lib/access-control"
+import type { UserAccess, UserProfile } from "@/lib/types"
 
 interface AuthContextValue {
   session: Session | null
   user: User | null
   profile: UserProfile | null
+  access: UserAccess | null
   isAdmin: boolean
+  isEnabled: boolean
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>
@@ -21,61 +24,159 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [access, setAccess] = useState<UserAccess | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase.from("user_profiles").select("*").eq("id", userId).maybeSingle()
-    setProfile((data ?? null) as UserProfile | null)
+  function resetAuthState() {
+    setSession(null)
+    setUser(null)
+    setProfile(null)
+    setAccess(null)
+  }
+
+  async function fetchProfile(userId: string): Promise<UserProfile | null> {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    return (data ?? null) as UserProfile | null
+  }
+
+  async function fetchAccess(userId: string): Promise<UserAccess | null> {
+    const { data, error } = await supabase
+      .from("user_access")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    return (data ?? null) as UserAccess | null
+  }
+
+  async function claimPendingInviteAccess() {
+    const { error } = await supabase.rpc("claim_pending_invite_access")
+    if (error) {
+      throw error
+    }
+  }
+
+  function accessErrorMessage(reason: ReturnType<typeof evaluateAccessState>["reason"]) {
+    if (reason === "disabled") {
+      return "Your account has been disabled."
+    }
+
+    if (reason === "missing-access") {
+      return "Your account does not have access yet."
+    }
+
+    return "Sign in required."
+  }
+
+  async function syncSession(sessionValue: Session | null) {
+    if (!sessionValue?.user) {
+      resetAuthState()
+      return
+    }
+
+    try {
+      setSession(sessionValue)
+      setUser(sessionValue.user)
+
+      await claimPendingInviteAccess().catch(() => {})
+
+      const [profileData, accessData] = await Promise.all([
+        fetchProfile(sessionValue.user.id),
+        fetchAccess(sessionValue.user.id),
+      ])
+
+      const accessState = evaluateAccessState({ user: { id: sessionValue.user.id } }, accessData)
+      if (!accessState.isAllowed) {
+        await supabase.auth.signOut()
+        resetAuthState()
+        throw new Error(accessErrorMessage(accessState.reason))
+      }
+
+      setProfile(profileData)
+      setAccess(accessData)
+    } catch (error) {
+      resetAuthState()
+      throw error
+    }
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id)
+    if (!session) {
+      return
+    }
+
+    await syncSession(session)
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setIsLoading(false))
-      } else {
-        setIsLoading(false)
-      }
+      syncSession(session)
+        .catch(() => {})
+        .finally(() => setIsLoading(false))
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        ;(async () => {
-          await fetchProfile(session.user.id)
-        })()
-      } else {
-        setProfile(null)
-      }
+      setIsLoading(true)
+      void syncSession(session)
+        .catch(() => {})
+        .finally(() => setIsLoading(false))
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (!error && data.session) {
+      try {
+        await syncSession(data.session)
+      } catch (authError) {
+        return {
+          error: authError instanceof Error ? authError : new Error("Sign in failed"),
+        }
+      }
+    }
     return { error }
   }
 
   async function signUp(email: string, password: string, displayName: string) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { display_name: displayName } },
     })
+
+    if (!error && data.session) {
+      try {
+        await syncSession(data.session)
+      } catch (authError) {
+        return {
+          error: authError instanceof Error ? authError : new Error("Sign up failed"),
+        }
+      }
+    }
+
     return { error }
   }
 
   async function signOut() {
     await supabase.auth.signOut()
+    resetAuthState()
   }
 
   return (
@@ -84,7 +185,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user,
         profile,
+        access,
         isAdmin: profile?.role === "admin",
+        isEnabled: access?.is_enabled === true,
         isLoading,
         signIn,
         signUp,

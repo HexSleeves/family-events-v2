@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { HOME_PATH } from "@/lib/access-control"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +33,7 @@ import { useApp } from "@/contexts/app-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: Home },
+  { to: HOME_PATH, label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/map", label: "Map", icon: MapIcon },
   { to: "/saved", label: "Saved", icon: Bookmark },
@@ -47,7 +48,7 @@ export function AppLayout() {
   const isMobile = useIsMobile()
 
   function isActive(to: string) {
-    if (to === "/") return location.pathname === "/"
+    if (to === HOME_PATH) return location.pathname === HOME_PATH
     return location.pathname.startsWith(to)
   }
 
@@ -61,7 +62,7 @@ export function AppLayout() {
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/60">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
+          <Link to={HOME_PATH} className="flex items-center gap-2 shrink-0">
             <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center">
               <span className="text-primary-foreground text-sm font-black">F</span>
             </div>

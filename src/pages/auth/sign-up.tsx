@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
+import { HOME_PATH } from "@/lib/access-control"
 import { redeemInvite, useInvitesRequired } from "@/hooks/use-invites"
 import { toast } from "sonner"
 
@@ -39,7 +40,7 @@ export function SignUpPage() {
       }
       let ok = false
       try {
-        ok = await redeemInvite(code)
+        ok = await redeemInvite(code, email)
       } catch (err) {
         toast.error("Couldn't verify invite code", {
           description: err instanceof Error ? err.message : "Try again.",
@@ -60,7 +61,7 @@ export function SignUpPage() {
       toast.error("Sign up failed", { description: error.message })
     } else {
       toast.success("Account created!", { description: "Welcome to Family Events!" })
-      navigate("/")
+      navigate(HOME_PATH)
     }
   }
 
@@ -137,7 +138,7 @@ export function SignUpPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading || inviteCheckLoading}>
-                {loading ? "Creating account..." : "Create Free Account"}
+                {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
           </CardContent>

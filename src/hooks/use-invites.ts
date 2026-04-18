@@ -16,8 +16,11 @@ export function useInvitesRequired() {
 }
 
 // Atomic consume. Returns true on success; false if invalid/expired/exhausted.
-export async function redeemInvite(code: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc("redeem_invite", { p_code: code })
+export async function redeemInvite(code: string, email: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("redeem_invite_for_email", {
+    p_code: code,
+    p_email: email,
+  })
   if (error) throw error
   return Boolean(data)
 }

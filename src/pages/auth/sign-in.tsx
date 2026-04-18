@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
+import { HOME_PATH } from "@/lib/access-control"
 import { toast } from "sonner"
 
 export function SignInPage() {
@@ -23,7 +24,7 @@ export function SignInPage() {
       toast.error("Sign in failed", { description: error.message })
     } else {
       toast.success("Welcome back!")
-      navigate("/")
+      navigate(HOME_PATH)
     }
   }
 
@@ -75,7 +76,7 @@ export function SignInPage() {
         <p className="text-center text-sm text-muted-foreground mt-4">
           Don't have an account?{" "}
           <Link to="/sign-up" className="text-primary font-medium hover:underline">
-            Join free
+            Use invite
           </Link>
         </p>
       </div>

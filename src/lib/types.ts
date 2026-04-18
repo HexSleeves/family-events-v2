@@ -3,6 +3,11 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export interface Database {
   public: {
     Tables: {
+      user_access: {
+        Row: UserAccess
+        Insert: Omit<UserAccess, "created_at" | "updated_at">
+        Update: Partial<Omit<UserAccess, "user_id" | "created_at">>
+      }
       invite_codes: {
         Row: InviteCode
         Insert: Omit<InviteCode, "created_at" | "used_count">
@@ -85,6 +90,16 @@ export interface InviteCode {
   notes: string | null
   created_by: string | null
   created_at: string
+}
+
+export interface UserAccess {
+  user_id: string
+  is_enabled: boolean
+  enabled_at: string | null
+  disabled_at: string | null
+  disabled_reason: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface City {
