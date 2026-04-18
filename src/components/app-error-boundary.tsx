@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import { AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Sentry } from "@/lib/sentry"
 
 type ErrorBoundaryProps = {
   children: ReactNode
@@ -27,6 +28,14 @@ class AppErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    Sentry.withScope((scope) => {
+      scope.setLevel("fatal")
+      scope.setContext("react", {
+        componentStack: errorInfo.componentStack,
+      })
+      Sentry.captureException(error)
+    })
+
     console.error("Unhandled UI error:", error, errorInfo)
   }
 
