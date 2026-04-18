@@ -46,7 +46,7 @@ In Railway dashboard → Variables tab → add:
 | `VITE_SUPABASE_ANON_KEY` | `eyJhb...` | Supabase Dashboard → Settings → API → anon/public |
 
 **Why these matter at build time:** Vite replaces `import.meta.env.VITE_*` at
-build, not runtime. Railway passes build-time env vars to Nixpacks, which
+build, not runtime. Railway passes build-time env vars to Railpack, which
 bakes them into the bundled JS. If you set them AFTER a build, you must
 trigger a new build for changes to take effect.
 
@@ -68,8 +68,9 @@ Or trigger manually: `railway up`.
 
 Build/start behaviour is defined in `railway.json`:
 
-- **Builder:** Nixpacks (auto-detects pnpm, runs `pnpm install && pnpm build`)
-- **Node version:** pinned to 23 via `nixpacks.toml`
+- **Builder:** Railpack
+- **Node version:** read from `package.json` → `engines.node`
+- **pnpm version:** read from `package.json` → `packageManager`
 - **Start command:** `pnpm start` → `serve -s dist -l $PORT`
   - `-s` = single-page mode (all 404s → `index.html`, needed for React Router)
   - `$PORT` = Railway-injected runtime port
@@ -108,8 +109,5 @@ Supabase Dashboard → Authentication → URL Configuration → add Railway URL
 
 **Build out of memory:**
 Railway's default container is 8GB. Vite + TypeScript on a large tree can
-spike. If it fails, add to `nixpacks.toml`:
-```toml
-[variables]
-NODE_OPTIONS = "--max-old-space-size=6144"
-```
+spike. If it fails, add `NODE_OPTIONS=--max-old-space-size=6144` in Railway
+service variables and redeploy.
