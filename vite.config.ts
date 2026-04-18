@@ -21,14 +21,16 @@ const buildEnv = createEnv({
 export default defineConfig(({ mode }) => {
   const plugins = [react(), tailwindcss()]
 
-  if (buildEnv.SENTRY_AUTH_TOKEN && buildEnv.SENTRY_ORG && buildEnv.SENTRY_PROJECT) {
+  const release = buildEnv.SENTRY_RELEASE ?? buildEnv.RAILWAY_GIT_COMMIT_SHA
+
+  if (buildEnv.SENTRY_AUTH_TOKEN && buildEnv.SENTRY_ORG && buildEnv.SENTRY_PROJECT && release) {
     plugins.push(
       sentryVitePlugin({
         authToken: buildEnv.SENTRY_AUTH_TOKEN,
         org: buildEnv.SENTRY_ORG,
         project: buildEnv.SENTRY_PROJECT,
         release: {
-          name: buildEnv.SENTRY_RELEASE ?? buildEnv.RAILWAY_GIT_COMMIT_SHA,
+          name: release,
         },
         sourcemaps: {
           assets: "./dist/**",

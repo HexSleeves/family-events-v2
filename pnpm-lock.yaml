@@ -14,9 +14,6 @@ importers:
       '@sentry/react':
         specifier: ^10.49.0
         version: 10.49.0(react@19.2.5)
-      '@sentry/vite-plugin':
-        specifier: ^5.2.0
-        version: 5.2.0
       '@supabase/supabase-js':
         specifier: ^2.103.3
         version: 2.103.3
@@ -114,6 +111,9 @@ importers:
       '@rolldown/binding-linux-x64-gnu':
         specifier: 1.0.0-rc.16
         version: 1.0.0-rc.16
+      '@sentry/vite-plugin':
+        specifier: ^5.2.0
+        version: 5.2.0
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21

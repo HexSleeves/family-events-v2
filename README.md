@@ -9,8 +9,9 @@ This project validates client environment variables with [`@t3-oss/env-core`](ht
 Create a `.env.local` file for local development:
 
 ```bash
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+# Replace with your actual Supabase project credentials
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=public-anon-key
 
 # Optional app environment name (defaults to Vite mode)
 VITE_APP_ENV=development

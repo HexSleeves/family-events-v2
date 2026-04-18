@@ -15,9 +15,17 @@ function redactUrl(url: string): string {
   try {
     const parsed = new URL(url)
     parsed.search = ""
+    parsed.hash = ""
     return parsed.toString()
   } catch {
-    return url
+    try {
+      const parsed = new URL(url, "http://localhost")
+      parsed.search = ""
+      parsed.hash = ""
+      return parsed.toString()
+    } catch {
+      return url.replace(/[?#].*$/, "")
+    }
   }
 }
 
