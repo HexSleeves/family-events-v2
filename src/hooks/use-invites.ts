@@ -2,6 +2,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import type { InviteCode } from "@/lib/types"
 
+export function resolveInviteRequirement(
+  inviteRequired: boolean | undefined,
+  inviteCheckFailed: boolean
+): boolean {
+  if (inviteCheckFailed) {
+    return true
+  }
+
+  return inviteRequired ?? true
+}
+
 // Used by sign-up page: do we need to collect a code?
 export function useInvitesRequired() {
   return useQuery({

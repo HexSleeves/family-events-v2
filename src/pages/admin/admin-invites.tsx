@@ -261,8 +261,8 @@ export function AdminInvitesPage() {
           The signup gate is controlled by the{" "}
           <code className="font-mono text-[11px]">app.settings.require_invite</code> database
           setting. When <code className="font-mono text-[11px]">true</code>, sign-up requires a
-          code. Toggle it via Supabase Studio SQL editor or with the flag in{" "}
-          <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
+          code. Unset now defaults to <code className="font-mono text-[11px]">true</code>. Local
+          override lives in <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
         </p>
         <p className="pt-1">Ignored expiry labels: {Object.values(EXPIRY_LABELS).join(", ")}.</p>
       </div>

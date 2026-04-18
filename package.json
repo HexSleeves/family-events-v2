@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "supabase:start": "bash scripts/supabase.sh start",
+    "supabase:dev": "bash scripts/supabase.sh start && npm run setup:local && bash scripts/supabase.sh functions serve",
     "supabase:stop": "bash scripts/supabase.sh stop",
     "supabase:stop:id": "bash scripts/supabase.sh stop --project-id",
     "supabase:status": "bash scripts/supabase.sh status",
