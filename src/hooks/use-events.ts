@@ -58,20 +58,25 @@ async function fetchEvents(
   const keyword = filters.keyword?.trim() ? normalizeKeyword(filters.keyword) : null
   const effectiveFeatured = filters.isFeatured ?? null
 
-  const { data, error } = await supabase.rpc("search_events", {
-    p_city_id: filters.cityId ?? null,
-    p_date_from: filters.dateFrom ? toIsoDate(filters.dateFrom) : null,
-    p_date_to: filters.dateTo ? toIsoDate(filters.dateTo) : null,
-    p_age_min: filters.ageMin ?? null,
-    p_age_max: filters.ageMax ?? null,
-    p_is_free: filters.isFree ?? null,
-    p_is_featured: effectiveFeatured,
-    p_tag_slugs: filters.tagSlugs && filters.tagSlugs.length > 0 ? filters.tagSlugs : null,
-    p_keyword: keyword ?? null,
+  // Generated Postgres RPC types require `undefined` for unset optional params.
+  // Our callers still use `null` idiomatically, so normalise at the boundary.
+  const rpcArgs = {
+    p_city_id: filters.cityId ?? undefined,
+    p_date_from: filters.dateFrom ? toIsoDate(filters.dateFrom) : undefined,
+    p_date_to: filters.dateTo ? toIsoDate(filters.dateTo) : undefined,
+    p_age_min: filters.ageMin ?? undefined,
+    p_age_max: filters.ageMax ?? undefined,
+    p_is_free: filters.isFree ?? undefined,
+    p_is_featured: effectiveFeatured ?? undefined,
+    p_tag_slugs:
+      filters.tagSlugs && filters.tagSlugs.length > 0 ? filters.tagSlugs : undefined,
+    p_keyword: keyword ?? undefined,
     p_status: filters.status ?? "published",
     p_limit: limit,
     p_offset: offset,
-  })
+  }
+
+  const { data, error } = await supabase.rpc("search_events", rpcArgs)
 
   if (error) {
     throw error
@@ -90,7 +95,7 @@ async function fetchEventById(eventId: string, userId?: string): Promise<EventWi
     return null
   }
 
-  const [event] = await enrichEvents([data], { userId })
+  const [event] = await enrichEvents([data as unknown as Event], { userId })
   return event ?? null
 }
 
@@ -110,7 +115,7 @@ async function fetchEventsByIds(eventIds: string[], userId?: string): Promise<Ev
     throw error
   }
 
-  return enrichEvents(data ?? [], { userId })
+  return enrichEvents((data ?? []) as unknown as Event[], { userId })
 }
 
 export function useEvents(options: UseEventsOptions = {}) {

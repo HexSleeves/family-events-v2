@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function fetchProfile(userId: string) {
     const { data } = await supabase.from("user_profiles").select("*").eq("id", userId).maybeSingle()
-    setProfile(data)
+    setProfile((data ?? null) as UserProfile | null)
   }
 
   async function refreshProfile() {

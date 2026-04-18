@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { User, LogOut, Shield, Moon, Sun, Monitor } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,15 +27,13 @@ export function ProfilePage() {
   const navigate = useNavigate()
   const updateProfile = useUpdateProfile(user?.id)
 
-  const [displayName, setDisplayName] = useState(profile?.display_name ?? "")
-  const [childName, setChildName] = useState(profile?.child_name ?? "")
-  const [childAge, setChildAge] = useState(profile?.child_age?.toString() ?? "")
+  const [displayNameDraft, setDisplayNameDraft] = useState<string | null>(null)
+  const [childNameDraft, setChildNameDraft] = useState<string | null>(null)
+  const [childAgeDraft, setChildAgeDraft] = useState<string | null>(null)
 
-  useEffect(() => {
-    setDisplayName(profile?.display_name ?? "")
-    setChildName(profile?.child_name ?? "")
-    setChildAge(profile?.child_age?.toString() ?? "")
-  }, [profile?.child_age, profile?.child_name, profile?.display_name])
+  const displayName = displayNameDraft ?? profile?.display_name ?? ""
+  const childName = childNameDraft ?? profile?.child_name ?? ""
+  const childAge = childAgeDraft ?? profile?.child_age?.toString() ?? ""
 
   async function handleSignOut() {
     await signOut()
@@ -55,6 +53,9 @@ export function ProfilePage() {
         city_preference_id: selectedCity?.id ?? null,
       })
       await refreshProfile()
+      setDisplayNameDraft(null)
+      setChildNameDraft(null)
+      setChildAgeDraft(null)
       toast.success("Profile updated!")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update profile.")
@@ -108,13 +109,13 @@ export function ProfilePage() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>Your Name</Label>
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <Input value={displayName} onChange={(e) => setDisplayNameDraft(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Child's Name (optional)</Label>
             <Input
               value={childName}
-              onChange={(e) => setChildName(e.target.value)}
+              onChange={(e) => setChildNameDraft(e.target.value)}
               placeholder="e.g. Leo"
             />
           </div>
@@ -125,7 +126,7 @@ export function ProfilePage() {
               min={0}
               max={18}
               value={childAge}
-              onChange={(e) => setChildAge(e.target.value)}
+              onChange={(e) => setChildAgeDraft(e.target.value)}
               placeholder="e.g. 3"
             />
           </div>

@@ -28,6 +28,7 @@ import { AdminEventsPage } from "@/pages/admin/admin-events"
 import { AdminCitiesPage } from "@/pages/admin/admin-cities"
 import { AdminCommentsPage } from "@/pages/admin/admin-comments"
 import { AdminRatingsPage } from "@/pages/admin/admin-ratings"
+import { AdminInvitesPage } from "@/pages/admin/admin-invites"
 import { AdminLogsPage } from "@/pages/admin/admin-logs"
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
                     <Route path="cities" element={<AdminCitiesPage />} />
                     <Route path="comments" element={<AdminCommentsPage />} />
                     <Route path="ratings" element={<AdminRatingsPage />} />
+                    <Route path="invites" element={<AdminInvitesPage />} />
                     <Route path="logs" element={<AdminLogsPage />} />
                   </Route>
 

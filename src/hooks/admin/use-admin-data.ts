@@ -63,7 +63,7 @@ export function useAdminEvents(keyword: string, status: Event["status"] | "all")
         throw error
       }
 
-      return enrichAdminEvents(data ?? [])
+      return enrichAdminEvents((data ?? []) as unknown as Event[])
     },
   })
 }
@@ -158,7 +158,7 @@ export function useAdminSources() {
       if (error) {
         throw error
       }
-      return data ?? []
+      return (data ?? []) as unknown as EventSource[]
     },
   })
 }

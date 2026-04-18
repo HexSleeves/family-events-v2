@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Star,
   FileText,
+  Ticket,
   ArrowLeft,
   Zap,
 } from "lucide-react"
@@ -34,6 +35,7 @@ const ADMIN_NAV = [
   { to: "/admin/cities", label: "Cities", icon: MapPin },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare },
   { to: "/admin/ratings", label: "Ratings", icon: Star },
+  { to: "/admin/invites", label: "Invite Codes", icon: Ticket },
   { to: "/admin/logs", label: "Ingestion Logs", icon: FileText },
 ]
 

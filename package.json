@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "start": "serve -s dist -l ${PORT:-3000}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
@@ -15,24 +16,24 @@
     "check": "tsc --noEmit && eslint src && prettier --check src",
     "test": "vitest run",
     "test:watch": "vitest",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:stop:id": "supabase stop --project-id",
-    "supabase:status": "supabase status",
-    "supabase:migrate": "supabase db push",
-    "supabase:db:reset": "supabase db reset && npm run setup:local",
+    "supabase:start": "bash scripts/supabase.sh start",
+    "supabase:stop": "bash scripts/supabase.sh stop",
+    "supabase:stop:id": "bash scripts/supabase.sh stop --project-id",
+    "supabase:status": "bash scripts/supabase.sh status",
+    "supabase:migrate": "bash scripts/supabase.sh db push",
+    "supabase:db:reset": "bash scripts/supabase.sh db reset && npm run setup:local",
     "setup:local": "bash scripts/setup-local.sh",
-    "supabase:db:pull": "supabase db pull",
-    "supabase:migration:new": "supabase migration new",
-    "supabase:migration:up": "supabase migration up",
-    "supabase:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
-    "supabase:functions:serve": "supabase functions serve",
-    "supabase:functions:deploy:tag-event": "supabase functions deploy tag-event",
-    "supabase:functions:deploy:scrape-source": "supabase functions deploy scrape-source"
+    "supabase:db:pull": "bash scripts/supabase.sh db pull",
+    "supabase:migration:new": "bash scripts/supabase.sh migration new",
+    "supabase:migration:up": "bash scripts/supabase.sh migration up",
+    "supabase:types": "bash scripts/supabase.sh gen types typescript --local --schema public > src/lib/database.types.ts",
+    "supabase:functions:serve": "bash scripts/supabase.sh functions serve",
+    "supabase:functions:deploy:tag-event": "bash scripts/supabase.sh functions deploy tag-event",
+    "supabase:functions:deploy:scrape-source": "bash scripts/supabase.sh functions deploy scrape-source"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@supabase/supabase-js": "^2.103.2",
+    "@supabase/supabase-js": "^2.103.3",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-query-devtools": "^5.99.0",
@@ -65,20 +66,30 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.16",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.0",
+    "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "prettier": "^3.8.3",
-    "supabase": "^2.91.2",
-    "typescript": "~6.0.2",
+    "serve": "^14.2.6",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { format } from "date-fns"
 import { ArrowLeft, MapPin, Clock, Users, Star, CalendarPlus, Share2, Info } from "lucide-react"
@@ -30,22 +30,32 @@ export function EventDetailPage() {
   const toggleCalendarEvent = useToggleCalendarEvent(user?.id)
 
   const [attendees, setAttendees] = useState(1)
-  const [userRating, setUserRating] = useState(0)
+  const [userRatingOverride, setUserRatingOverride] = useState<{
+    eventId: string
+    score: number
+  } | null>(null)
   const [comment, setComment] = useState("")
-  const [isFavorited, setIsFavorited] = useState<boolean>(false)
-  const [isInCalendar, setIsInCalendar] = useState(false)
+  const [favoritedOverride, setFavoritedOverride] = useState<{
+    eventId: string
+    value: boolean
+  } | null>(null)
+  const [calendarOverride, setCalendarOverride] = useState<{
+    eventId: string
+    value: boolean
+  } | null>(null)
 
-  useEffect(() => {
-    setUserRating(userRatingData?.score ?? 0)
-  }, [userRatingData?.score])
-
-  useEffect(() => {
-    setIsFavorited(Boolean(event?.is_favorited))
-  }, [event?.is_favorited])
-
-  useEffect(() => {
-    setIsInCalendar(Boolean(event?.is_in_calendar))
-  }, [event?.is_in_calendar])
+  const userRating =
+    userRatingOverride && userRatingOverride.eventId === id
+      ? userRatingOverride.score
+      : (userRatingData?.score ?? 0)
+  const isFavorited =
+    favoritedOverride && favoritedOverride.eventId === id
+      ? favoritedOverride.value
+      : Boolean(event?.is_favorited)
+  const isInCalendar =
+    calendarOverride && calendarOverride.eventId === id
+      ? calendarOverride.value
+      : Boolean(event?.is_in_calendar)
 
   if (isEventLoading) {
     return (
@@ -84,13 +94,14 @@ export function EventDetailPage() {
       })
       return
     }
+    if (!event) return
 
     try {
       const nextState = await toggleCalendarEvent.mutateAsync({
         eventId: event.id,
         isInCalendar,
       })
-      setIsInCalendar(nextState)
+      setCalendarOverride({ eventId: event.id, value: nextState })
       toast.success(nextState ? "Added to your calendar!" : "Removed from calendar")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update calendar.")
@@ -102,12 +113,14 @@ export function EventDetailPage() {
       toast("Sign in to leave a rating")
       return
     }
+    if (!event) return
 
-    setUserRating(nextScore)
+    setUserRatingOverride({ eventId: event.id, score: nextScore })
     try {
       await upsertRating.mutateAsync({ eventId: event.id, score: nextScore })
       toast.success("Rating saved!")
     } catch (error) {
+      setUserRatingOverride((prev) => (prev?.eventId === event.id ? null : prev))
       toast.error(error instanceof Error ? error.message : "Failed to save your rating.")
     }
   }
@@ -118,6 +131,7 @@ export function EventDetailPage() {
       toast("Sign in to leave a comment")
       return
     }
+    if (!event) return
 
     try {
       await addComment.mutateAsync({ eventId: event.id, body: comment.trim() })
@@ -164,7 +178,7 @@ export function EventDetailPage() {
           <FavoriteButton
             eventId={event.id}
             isFavorited={isFavorited}
-            onToggle={(_, state) => setIsFavorited(state)}
+            onToggle={(_, state) => setFavoritedOverride({ eventId: event.id, value: state })}
             variant="overlay"
           />
           <button className="h-9 w-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md">
