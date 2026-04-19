@@ -1,37 +1,42 @@
-import * as Sentry from "@sentry/react"
-import { env } from "@/env"
+import * as Sentry from "@sentry/react";
+import { env } from "@/env";
 
-const SENTRY_DSN = env.VITE_SENTRY_DSN
-const APP_ENV = env.VITE_APP_ENV ?? import.meta.env.MODE
-const SENTRY_TRACES_SAMPLE_RATE = env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 0.1
-const SENTRY_REPLAYS_SESSION_SAMPLE_RATE = env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? 0.05
-const SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE = env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE ?? 1
+const DEFAULT_SENTRY_DSN =
+  "https://263ac2c3dd0ccd1042bb24d49fa991f0@o4509663848497152.ingest.us.sentry.io/4511242137960448";
+const SENTRY_DSN = env.VITE_SENTRY_DSN ?? DEFAULT_SENTRY_DSN;
+const APP_ENV = env.VITE_APP_ENV ?? import.meta.env.MODE;
+const SENTRY_TRACES_SAMPLE_RATE = env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 1.0;
+const SENTRY_REPLAYS_SESSION_SAMPLE_RATE =
+  env.VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ?? 0.05;
+const SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE =
+  env.VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE ?? 1;
 
 function hasSentryDsn(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function redactUrl(url: string): string {
   try {
-    const parsed = new URL(url)
-    parsed.search = ""
-    parsed.hash = ""
-    return parsed.toString()
+    const parsed = new URL(url);
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString();
   } catch {
     try {
-      const parsed = new URL(url, "http://localhost")
-      parsed.search = ""
-      parsed.hash = ""
-      return parsed.toString()
+      const parsed = new URL(url, "http://localhost");
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.toString();
     } catch {
-      return url.replace(/[?#].*$/, "")
+      return url.replace(/[?#].*$/, "");
     }
   }
 }
 
 export function initSentry() {
+  console.log("initSentry", SENTRY_DSN);
   if (!hasSentryDsn(SENTRY_DSN)) {
-    return
+    return;
   }
 
   Sentry.init({
@@ -48,11 +53,14 @@ export function initSentry() {
       Sentry.globalHandlersIntegration(),
       Sentry.linkedErrorsIntegration(),
       Sentry.dedupeIntegration(),
+      Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
     ],
+    tracePropagationTargets: ["localhost"],
     tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE,
     replaysSessionSampleRate: SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
     replaysOnErrorSampleRate: SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
-    sendDefaultPii: false,
+    sendDefaultPii: true,
+    enableLogs: true,
     ignoreErrors: [
       "ResizeObserver loop completed with undelivered notifications.",
       "Network request failed",
@@ -61,10 +69,10 @@ export function initSentry() {
     denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
     beforeSend(event) {
       if (event.request?.url) {
-        event.request.url = redactUrl(event.request.url)
+        event.request.url = redactUrl(event.request.url);
       }
 
-      return event
+      return event;
     },
     beforeBreadcrumb(breadcrumb) {
       if (breadcrumb.type === "http" && breadcrumb.data?.url) {
@@ -74,12 +82,12 @@ export function initSentry() {
             ...breadcrumb.data,
             url: redactUrl(String(breadcrumb.data.url)),
           },
-        }
+        };
       }
 
-      return breadcrumb
+      return breadcrumb;
     },
-  })
+  });
 }
 
-export { Sentry }
+export { Sentry };

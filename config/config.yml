@@ -1,0 +1,13 @@
+# Please see the relevant documentation.
+# Performance tuning: https://docs.sentry.io/product/relay/operating-guidelines/
+# All config options: https://docs.sentry.io/product/relay/options/
+relay:
+  mode: managed
+  instance: default
+  upstream: https://sentry.io/
+  advertised_upstream: null
+  host: 0.0.0.0
+  port: 3000
+  internal_host: null
+  internal_port: null
+
