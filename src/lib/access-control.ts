@@ -8,6 +8,29 @@ export type AccessReason = "allowed" | "signed-out" | "missing-access" | "disabl
 
 interface SessionLike {
   user?: { id: string }
+  expires_at?: number | null
+}
+
+export function isSessionExpired(
+  session: SessionLike | null,
+  nowSeconds = Math.floor(Date.now() / 1000)
+): boolean {
+  if (!session?.expires_at) {
+    return false
+  }
+
+  return session.expires_at <= nowSeconds
+}
+
+export function getSessionExpiryTimeoutMs(
+  session: SessionLike | null,
+  nowMs = Date.now()
+): number | null {
+  if (!session?.expires_at) {
+    return null
+  }
+
+  return Math.max(session.expires_at * 1000 - nowMs, 0)
 }
 
 export function evaluateAccessState(

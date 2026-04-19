@@ -1,7 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import { evaluateAccessState } from "@/lib/access-control"
+import {
+  evaluateAccessState,
+  getSessionExpiryTimeoutMs,
+  isSessionExpired,
+} from "@/lib/access-control"
 import type { UserAccess, UserProfile } from "@/lib/types"
 
 interface AuthContextValue {
@@ -26,12 +30,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [access, setAccess] = useState<UserAccess | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const expiryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function resetAuthState() {
+    if (expiryTimeoutRef.current) {
+      clearTimeout(expiryTimeoutRef.current)
+      expiryTimeoutRef.current = null
+    }
     setSession(null)
     setUser(null)
     setProfile(null)
     setAccess(null)
+  }
+
+  async function forceSignOut() {
+    await supabase.auth.signOut()
+    resetAuthState()
+  }
+
+  function scheduleSessionExpiry(sessionValue: Session | null) {
+    if (expiryTimeoutRef.current) {
+      clearTimeout(expiryTimeoutRef.current)
+      expiryTimeoutRef.current = null
+    }
+
+    const timeoutMs = getSessionExpiryTimeoutMs(sessionValue)
+    if (timeoutMs === null) {
+      return
+    }
+
+    expiryTimeoutRef.current = setTimeout(() => {
+      void forceSignOut().finally(() => setIsLoading(false))
+    }, timeoutMs)
   }
 
   async function fetchProfile(userId: string): Promise<UserProfile | null> {
@@ -87,9 +117,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    if (isSessionExpired(sessionValue)) {
+      await forceSignOut()
+      throw new Error("Session expired")
+    }
+
     try {
       setSession(sessionValue)
       setUser(sessionValue.user)
+      scheduleSessionExpiry(sessionValue)
 
       await claimPendingInviteAccess().catch(() => {})
 
@@ -100,8 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const accessState = evaluateAccessState({ user: { id: sessionValue.user.id } }, accessData)
       if (!accessState.isAllowed) {
-        await supabase.auth.signOut()
-        resetAuthState()
+        await forceSignOut()
         throw new Error(accessErrorMessage(accessState.reason))
       }
 
@@ -137,7 +172,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .finally(() => setIsLoading(false))
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      if (expiryTimeoutRef.current) {
+        clearTimeout(expiryTimeoutRef.current)
+      }
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function signIn(email: string, password: string) {
@@ -175,8 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
-    resetAuthState()
+    await forceSignOut()
   }
 
   return (

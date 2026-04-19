@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { evaluateAccessState, HOME_PATH, isPublicPath } from "./access-control"
+import {
+  evaluateAccessState,
+  getSessionExpiryTimeoutMs,
+  HOME_PATH,
+  isPublicPath,
+  isSessionExpired,
+} from "./access-control"
 import type { UserAccess } from "@/lib/types"
 
 function accessRow(overrides: Partial<UserAccess> = {}): UserAccess {
@@ -71,5 +77,41 @@ describe("isPublicPath", () => {
   it("keeps the authenticated landing page off the public allowlist", () => {
     expect(HOME_PATH).toBe("/home")
     expect(isPublicPath(HOME_PATH)).toBe(false)
+  })
+})
+
+describe("isSessionExpired", () => {
+  it("returns false when the session has no expiry timestamp", () => {
+    expect(isSessionExpired({ user: { id: "user-1" } })).toBe(false)
+  })
+
+  it("returns false when the session expiry is still in the future", () => {
+    expect(isSessionExpired({ user: { id: "user-1" }, expires_at: 1_800_000_100 }, 1_800_000_000)).toBe(
+      false
+    )
+  })
+
+  it("returns true when the session expiry is in the past", () => {
+    expect(isSessionExpired({ user: { id: "user-1" }, expires_at: 1_799_999_999 }, 1_800_000_000)).toBe(
+      true
+    )
+  })
+})
+
+describe("getSessionExpiryTimeoutMs", () => {
+  it("returns null when there is no expiry timestamp", () => {
+    expect(getSessionExpiryTimeoutMs({ user: { id: "user-1" } }, 1_800_000_000_000)).toBeNull()
+  })
+
+  it("returns the remaining milliseconds until expiry", () => {
+    expect(
+      getSessionExpiryTimeoutMs({ user: { id: "user-1" }, expires_at: 1_800_000_100 }, 1_800_000_000_000)
+    ).toBe(100_000)
+  })
+
+  it("returns zero when the session is already expired", () => {
+    expect(
+      getSessionExpiryTimeoutMs({ user: { id: "user-1" }, expires_at: 1_799_999_999 }, 1_800_000_000_000)
+    ).toBe(0)
   })
 })
