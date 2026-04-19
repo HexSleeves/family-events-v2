@@ -7,18 +7,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { HOME_PATH } from "@/lib/access-control"
-import { redeemInvite, useInvitesRequired } from "@/hooks/use-invites"
+import { redeemInvite, resolveInviteRequirement, useInvitesRequired } from "@/hooks/use-invites"
 import { toast } from "sonner"
 
 export function SignUpPage() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
-  const { data: inviteRequired = false, isLoading: inviteCheckLoading } = useInvitesRequired()
+  const {
+    data: inviteRequired,
+    isLoading: inviteCheckLoading,
+    isError: inviteCheckFailed,
+  } = useInvitesRequired()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [inviteCode, setInviteCode] = useState("")
   const [loading, setLoading] = useState(false)
+  const requiresInvite = resolveInviteRequirement(inviteRequired, inviteCheckFailed)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,7 +36,7 @@ export function SignUpPage() {
 
     // Atomic consume of the code BEFORE creating the user. If signup fails after,
     // the code is wasted; for a beta that's acceptable and simpler than compensation.
-    if (inviteRequired) {
+    if (requiresInvite) {
       const code = inviteCode.trim().toUpperCase()
       if (!code) {
         toast.error("An invite code is required to sign up right now.")
@@ -76,7 +81,7 @@ export function SignUpPage() {
           </Link>
           <h1 className="text-2xl font-extrabold text-foreground">Create your account</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {inviteRequired
+            {requiresInvite
               ? "Closed beta — enter your invite code to get in"
               : "Discover the best family events near you"}
           </p>
@@ -85,7 +90,7 @@ export function SignUpPage() {
         <Card className="border-border/60">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {inviteRequired && (
+              {requiresInvite && (
                 <div className="space-y-1.5">
                   <Label htmlFor="invite-code" className="flex items-center gap-1.5">
                     <Ticket className="h-3.5 w-3.5 text-primary" />
