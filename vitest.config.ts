@@ -10,6 +10,10 @@ export default defineConfig({
     },
   },
   test: {
+    env: {
+      VITE_SUPABASE_URL: "https://example.supabase.co",
+      VITE_SUPABASE_ANON_KEY: "test-anon-key",
+    },
     environment: "node",
     include: [
       "src/**/*.test.ts",
