@@ -13,7 +13,7 @@ import { FavoriteButton } from "@/components/favorite-button"
 import { EventMapMini } from "@/components/event-map-mini"
 import { StarRating } from "@/components/star-rating"
 import { useAuth } from "@/contexts/auth-context"
-import { useEvent } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useComments, useAddComment } from "@/hooks/use-comments"
 import { useUpsertRating, useUserRating } from "@/hooks/use-ratings"
 import { useToggleCalendarEvent } from "@/hooks/use-calendar-events"
@@ -22,7 +22,18 @@ import { toast } from "sonner"
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
-  const { data: event, isLoading: isEventLoading, isError: isEventError } = useEvent(id, user?.id)
+  // Single-event enriched fetch: the RPC's p_event_ids path collapses the
+  // former event + tags + ratings + favorite + calendar fan-out into one row.
+  const {
+    data: events,
+    isLoading: isEventLoading,
+    isError: isEventError,
+  } = useEnrichedEvents({
+    eventIds: id ? [id] : undefined,
+    userId: user?.id,
+    enabled: Boolean(id),
+  })
+  const event = events?.[0]
   const { data: comments = [] } = useComments(id)
   const { data: userRatingData } = useUserRating(user?.id, id)
   const addComment = useAddComment(user?.id)

@@ -78,6 +78,11 @@ export interface Database {
         Insert: Omit<AdminAuditLog, "id" | "created_at">
         Update: never
       }
+      event_ai_traces: {
+        Row: EventAiTrace
+        Insert: Omit<EventAiTrace, "id" | "created_at">
+        Update: never
+      }
     }
   }
 }
@@ -196,6 +201,45 @@ export interface Event {
   search_vector: string | null
   created_at: string
   updated_at: string
+}
+
+export interface EventAiTracePredictedTag {
+  slug: string
+  confidence: number
+  reason: string | null
+  matched_keywords?: string[]
+}
+
+export interface EventAiTracePredictedFields {
+  age_min: number | null
+  age_max: number | null
+  price: number | null
+  is_free: boolean | null
+  venue_name: string | null
+}
+
+export interface EventAiTrace {
+  id: string
+  event_id: string
+  source_run_id: string | null
+  trigger_type: "import" | "reclassify" | "manual-review"
+  provider: "openai" | "keyword-fallback"
+  model: string | null
+  status: "success" | "fallback" | "error"
+  input_title: string
+  input_description: string | null
+  available_tag_slugs: Json | null
+  predicted_tags: Json | null
+  predicted_fields: Json | null
+  reasoning_summary: string | null
+  fallback_reason: string | null
+  processing_ms: number | null
+  created_at: string
+}
+
+export interface EventAiTraceWithParsed extends EventAiTrace {
+  parsed_predicted_tags: EventAiTracePredictedTag[]
+  parsed_predicted_fields: EventAiTracePredictedFields | null
 }
 
 export interface EventWithDetails extends Event {

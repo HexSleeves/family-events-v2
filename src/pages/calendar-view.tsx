@@ -20,7 +20,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
-import { useEvents, useEventsByIds } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useFavorites } from "@/hooks/use-favorites"
 import { useCalendarEvents } from "@/hooks/use-calendar-events"
 
@@ -41,13 +41,11 @@ export function CalendarViewPage() {
     data: monthEvents = [],
     isLoading: isMonthEventsLoading,
     isError: isMonthEventsError,
-  } = useEvents({
-    filters: {
-      cityId: selectedCity?.id,
-      dateFrom: monthStart.toISOString(),
-      dateTo: monthEnd.toISOString(),
-    },
+  } = useEnrichedEvents({
+    cityId: selectedCity?.id,
     userId: user?.id,
+    dateFrom: monthStart,
+    dateTo: monthEnd,
   })
 
   const { data: favorites = [] } = useFavorites(user?.id)
@@ -61,10 +59,10 @@ export function CalendarViewPage() {
   }, [calendarEvents, favorites])
 
   const savedIdsArray = useMemo(() => [...savedEventIds], [savedEventIds])
-  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEventsByIds(
-    savedIdsArray,
-    user?.id
-  )
+  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEnrichedEvents({
+    eventIds: savedIdsArray,
+    userId: user?.id,
+  })
 
   const baseFavoritedIds = useMemo(
     () =>

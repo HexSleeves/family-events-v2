@@ -12,7 +12,7 @@ import { AgeRangeBadge, TagBadge } from "@/components/tag-badge"
 import { useAuth } from "@/contexts/auth-context"
 import { useFavorites, useToggleFavorite } from "@/hooks/use-favorites"
 import { useCalendarEvents, useToggleCalendarEvent } from "@/hooks/use-calendar-events"
-import { useEventsByIds } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useUpsertRating } from "@/hooks/use-ratings"
 import type { EventWithDetails } from "@/lib/types"
 import { formatEventPrice } from "@/lib/utils"
@@ -30,11 +30,14 @@ export function MyEventsPage() {
   const favoriteIds = new Set(favorites.map((favorite) => favorite.event_id))
   const calendarIds = new Set(calendarEvents.map((calendarEvent) => calendarEvent.event_id))
   const savedIds = new Set([...favoriteIds, ...calendarIds])
+  const savedEventIds = [...savedIds]
 
-  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEventsByIds(
-    [...savedIds],
-    user?.id
-  )
+  // useEnrichedEvents sorts the id array before hashing the query key, so
+  // cache hits survive insertion-order churn in the parent sets.
+  const { data: savedEvents = [], isLoading: isSavedEventsLoading } = useEnrichedEvents({
+    eventIds: savedEventIds,
+    userId: user?.id,
+  })
 
   const now = new Date()
   const upcomingEvents = savedEvents.filter((event) => new Date(event.start_datetime) >= now)

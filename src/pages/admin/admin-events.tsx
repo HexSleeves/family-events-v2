@@ -1,5 +1,16 @@
 import { useState } from "react"
-import { Check, X, Eye, Tag, Search, CheckCheck, XCircle } from "lucide-react"
+import {
+  Check,
+  X,
+  Eye,
+  Tag,
+  Search,
+  CheckCheck,
+  XCircle,
+  Bot,
+  Sparkles,
+  AlertTriangle,
+} from "lucide-react"
 import { format } from "date-fns"
 import { cn, formatEventPrice } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -7,8 +18,12 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
 import {
+  useAdminEventAiTrace,
   useAdminEvents,
   useBatchUpdateAdminEventStatus,
   useUpdateAdminEventStatus,
@@ -19,6 +34,16 @@ import { toast } from "sonner"
 
 type EventStatus = "draft" | "published" | "rejected" | "archived"
 
+function formatProviderLabel(provider: "openai" | "keyword-fallback" | null | undefined) {
+  if (provider === "openai") {
+    return "OpenAI"
+  }
+  if (provider === "keyword-fallback") {
+    return "Keyword fallback"
+  }
+  return "Unknown"
+}
+
 export function AdminEventsPage() {
   const [keyword, setKeyword] = useState("")
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all")
@@ -27,12 +52,15 @@ export function AdminEventsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const { data: events = [] } = useAdminEvents(keyword, statusFilter)
+  const { data: selectedEventTrace, isLoading: isTraceLoading } = useAdminEventAiTrace(selectedEventId)
   const { data: allTags = [] } = useTags()
   const updateStatusMutation = useUpdateAdminEventStatus()
   const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
   const updateTagsMutation = useUpdateAdminEventTags()
 
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
+  const tagNameById = new Map(allTags.map((tag) => [tag.id, tag.name]))
+  const tagNameBySlug = new Map(allTags.map((tag) => [tag.slug, tag.name]))
 
   const draftEvents = events.filter((e) => e.status === "draft")
   const selectedDraftIds = [...selectedIds].filter((id) => draftEvents.some((e) => e.id === id))
@@ -252,6 +280,12 @@ export function AdminEventsPage() {
                           AI: {Math.round((event.ai_confidence ?? 0) * 100)}%
                         </span>
                       )}
+                      {event.ai_tag_provider && (
+                        <span className="flex items-center gap-1">
+                          <Bot className="h-3 w-3" />
+                          {formatProviderLabel(event.ai_tag_provider)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
@@ -391,6 +425,155 @@ export function AdminEventsPage() {
                 <Button size="sm" variant="outline" className="mt-2" onClick={saveTagOverrides}>
                   Save Tag Overrides
                 </Button>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">AI Tagging Details</p>
+                </div>
+
+                {isTraceLoading ? (
+                  <div className="space-y-2 rounded-xl border border-border/60 p-4">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : selectedEventTrace ? (
+                  <div className="space-y-4 rounded-xl border border-border/60 p-4">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="gap-1">
+                        <Bot className="h-3 w-3" />
+                        {formatProviderLabel(selectedEventTrace.provider)}
+                      </Badge>
+                      {selectedEventTrace.model ? (
+                        <Badge variant="outline">Model: {selectedEventTrace.model}</Badge>
+                      ) : null}
+                      <Badge variant="outline">Status: {selectedEventTrace.status}</Badge>
+                      <Badge variant="outline">
+                        Run: {format(new Date(selectedEventTrace.created_at), "MMM d, h:mm a")}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Summary
+                        </p>
+                        <p className="mt-1 text-sm text-foreground">
+                          {selectedEventTrace.reasoning_summary ?? "No explanation was recorded."}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Fallback reason
+                        </p>
+                        <p className="mt-1 text-sm text-foreground">
+                          {selectedEventTrace.fallback_reason ?? "None"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedEventTrace.status !== "success" && selectedEventTrace.fallback_reason ? (
+                      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{selectedEventTrace.fallback_reason}</span>
+                      </div>
+                    ) : null}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          AI suggested tags
+                        </p>
+                        <div className="mt-2 space-y-2">
+                          {selectedEventTrace.parsed_predicted_tags.length > 0 ? (
+                            selectedEventTrace.parsed_predicted_tags.map((tag) => (
+                              <div key={tag.slug} className="rounded-lg border border-border/60 p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-sm font-medium">
+                                    {tagNameBySlug.get(tag.slug) ?? tag.slug}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {Math.round(tag.confidence * 100)}%
+                                  </span>
+                                </div>
+                                {tag.reason ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">{tag.reason}</p>
+                                ) : null}
+                                {tag.matched_keywords?.length ? (
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Keywords: {tag.matched_keywords.join(", ")}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No AI tag suggestions recorded.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Final admin tags
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {editingTagIds.length > 0 ? (
+                            editingTagIds.map((tagId) => (
+                              <Badge key={tagId} variant="outline">
+                                {tagNameById.get(tagId) ?? tagId}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No final tags selected.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Extracted fields
+                        </p>
+                        <div className="mt-2 space-y-1 text-sm">
+                          <div>
+                            Age: {selectedEventTrace.parsed_predicted_fields?.age_min ?? "—"}
+                            {selectedEventTrace.parsed_predicted_fields?.age_max !== null &&
+                            selectedEventTrace.parsed_predicted_fields?.age_max !== undefined
+                              ? ` to ${selectedEventTrace.parsed_predicted_fields.age_max}`
+                              : ""}
+                          </div>
+                          <div>
+                            Price:{" "}
+                            {formatEventPrice(
+                              selectedEventTrace.parsed_predicted_fields?.price ?? null,
+                              selectedEventTrace.parsed_predicted_fields?.is_free ?? false
+                            )}
+                          </div>
+                          <div>
+                            Venue: {selectedEventTrace.parsed_predicted_fields?.venue_name ?? "—"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Classification input
+                        </p>
+                        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                          <p className="font-medium text-foreground">{selectedEventTrace.input_title}</p>
+                          <p>{selectedEventTrace.input_description ?? "No description captured."}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                    No AI trace has been recorded for this event yet.
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 pt-2">
                 <Button

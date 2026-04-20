@@ -9,11 +9,25 @@ interface UseEnrichedEventsOptions {
   limit?: number
   offset?: number
   enabled?: boolean
+  /**
+   * When set, the RPC returns exactly those events, bypassing the
+   * city/status/limit/offset filters. Used by my-events and event-detail
+   * so saved-ids and single-id fetches share the enriched path.
+   */
+  eventIds?: string[]
+  /** Inclusive lower bound on start_datetime (passed as ISO string to the RPC). */
+  dateFrom?: string | Date
+  /** Inclusive upper bound on start_datetime (passed as ISO string to the RPC). */
+  dateTo?: string | Date
 }
 
 const DEFAULT_LIMIT = 100
 const DEFAULT_OFFSET = 0
 const DEFAULT_STATUS: Event["status"] = "published"
+
+function toIsoDate(value: string | Date): string {
+  return typeof value === "string" ? value : value.toISOString()
+}
 
 // Shape the RPC emits for each tag (jsonb_agg of tag columns).
 interface EnrichedTagJson {
@@ -72,22 +86,71 @@ export function adaptEnrichedRow(row: Record<string, unknown>): EventWithDetails
   }
 }
 
-async function fetchEnrichedEvents(options: UseEnrichedEventsOptions): Promise<EventWithDetails[]> {
+// Exported for unit tests. Mirrors the RPC signature exactly — when
+// p_event_ids is set the server ignores city/status/limit/offset, so we
+// elide those keys client-side to keep the payload honest.
+export function buildEnrichedRpcArgs(options: UseEnrichedEventsOptions) {
   const {
     cityId,
     userId,
     status = DEFAULT_STATUS,
     limit = DEFAULT_LIMIT,
     offset = DEFAULT_OFFSET,
+    eventIds,
+    dateFrom,
+    dateTo,
   } = options
 
-  const { data, error } = await supabase.rpc("events_enriched", {
-    p_city_id: cityId ?? undefined,
-    p_status: status,
-    p_limit: limit,
-    p_offset: offset,
+  return {
+    p_city_id: eventIds ? undefined : (cityId ?? undefined),
+    p_status: eventIds ? undefined : status,
+    p_limit: eventIds ? undefined : limit,
+    p_offset: eventIds ? undefined : offset,
     p_user_id: userId ?? undefined,
-  })
+    p_event_ids: eventIds,
+    p_date_from: dateFrom ? toIsoDate(dateFrom) : undefined,
+    p_date_to: dateTo ? toIsoDate(dateTo) : undefined,
+  }
+}
+
+// Exported for unit tests. Two key shapes:
+//  - by-ids:   ["events-enriched", "by-ids", sortedIds, userId]
+//  - list:     ["events-enriched", { cityId, status, userId, dateFrom, dateTo }]
+// IDs are sorted so caller insertion-order does not fragment the cache.
+export function buildEnrichedQueryKey(options: UseEnrichedEventsOptions) {
+  const {
+    cityId,
+    userId,
+    status = DEFAULT_STATUS,
+    eventIds,
+    dateFrom,
+    dateTo,
+  } = options
+
+  if (eventIds) {
+    const sortedIds = [...eventIds].sort()
+    return ["events-enriched", "by-ids", sortedIds, userId ?? null] as const
+  }
+
+  return [
+    "events-enriched",
+    {
+      cityId: cityId ?? null,
+      status,
+      userId: userId ?? null,
+      dateFrom: dateFrom ? toIsoDate(dateFrom) : null,
+      dateTo: dateTo ? toIsoDate(dateTo) : null,
+    },
+  ] as const
+}
+
+async function fetchEnrichedEvents(options: UseEnrichedEventsOptions): Promise<EventWithDetails[]> {
+  // Short-circuit empty id arrays — RPC would return 0 rows anyway, skip the round-trip.
+  if (options.eventIds && options.eventIds.length === 0) {
+    return []
+  }
+
+  const { data, error } = await supabase.rpc("events_enriched", buildEnrichedRpcArgs(options))
 
   if (error) {
     throw error
@@ -97,21 +160,11 @@ async function fetchEnrichedEvents(options: UseEnrichedEventsOptions): Promise<E
 }
 
 export function useEnrichedEvents(options: UseEnrichedEventsOptions = {}) {
-  const {
-    cityId,
-    userId,
-    status = DEFAULT_STATUS,
-    limit = DEFAULT_LIMIT,
-    offset = DEFAULT_OFFSET,
-    enabled = true,
-  } = options
+  const { enabled = true } = options
 
-  // Canonical key: only the three dimensions that change the result set
-  // identity. limit/offset ride along inside the queryFn so paginated views
-  // still get fresh fetches without fragmenting invalidation.
   return useQuery({
-    queryKey: ["events-enriched", { cityId: cityId ?? null, status, userId: userId ?? null }],
-    queryFn: () => fetchEnrichedEvents({ cityId, userId, status, limit, offset }),
+    queryKey: buildEnrichedQueryKey(options),
+    queryFn: () => fetchEnrichedEvents(options),
     enabled,
   })
 }

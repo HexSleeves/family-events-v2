@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { adaptEnrichedRow } from "./use-enriched-events"
+import {
+  adaptEnrichedRow,
+  buildEnrichedQueryKey,
+  buildEnrichedRpcArgs,
+} from "./use-enriched-events"
 
 function baseRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -96,5 +100,86 @@ describe("adaptEnrichedRow", () => {
     const result = adaptEnrichedRow(baseRow({ images: null }))
     expect(Array.isArray(result.images)).toBe(true)
     expect(result.images).toHaveLength(0)
+  })
+})
+
+describe("buildEnrichedRpcArgs", () => {
+  it("elides city/status/limit/offset when eventIds is set (RPC ignores them)", () => {
+    const args = buildEnrichedRpcArgs({
+      eventIds: ["a", "b"],
+      cityId: "city-1",
+      status: "draft",
+      limit: 50,
+      offset: 10,
+      userId: "user-1",
+    })
+    expect(args.p_event_ids).toEqual(["a", "b"])
+    expect(args.p_city_id).toBeUndefined()
+    expect(args.p_status).toBeUndefined()
+    expect(args.p_limit).toBeUndefined()
+    expect(args.p_offset).toBeUndefined()
+    expect(args.p_user_id).toBe("user-1")
+  })
+
+  it("passes city/status/pagination on the list path and serializes date bounds", () => {
+    const dateFrom = new Date("2026-05-01T00:00:00Z")
+    const dateTo = new Date("2026-05-31T23:59:59Z")
+    const args = buildEnrichedRpcArgs({ cityId: "city-1", dateFrom, dateTo })
+
+    expect(args.p_city_id).toBe("city-1")
+    expect(args.p_status).toBe("published")
+    expect(args.p_limit).toBe(100)
+    expect(args.p_offset).toBe(0)
+    expect(args.p_event_ids).toBeUndefined()
+    expect(args.p_date_from).toBe(dateFrom.toISOString())
+    expect(args.p_date_to).toBe(dateTo.toISOString())
+  })
+
+  it("passes ISO date strings through untouched", () => {
+    const iso = "2026-06-01T12:00:00.000Z"
+    const args = buildEnrichedRpcArgs({ dateFrom: iso })
+    expect(args.p_date_from).toBe(iso)
+  })
+})
+
+describe("buildEnrichedQueryKey", () => {
+  it("emits the by-ids key shape with sorted ids when eventIds is set", () => {
+    const key = buildEnrichedQueryKey({
+      eventIds: ["c", "a", "b"],
+      userId: "user-1",
+      // These fields are ignored on the by-ids path:
+      cityId: "city-1",
+      status: "draft",
+      dateFrom: "2026-05-01T00:00:00Z",
+    })
+    expect(key).toEqual(["events-enriched", "by-ids", ["a", "b", "c"], "user-1"])
+  })
+
+  it("returns a stable by-ids key regardless of caller id order", () => {
+    const a = buildEnrichedQueryKey({ eventIds: ["a", "b", "c"] })
+    const b = buildEnrichedQueryKey({ eventIds: ["c", "b", "a"] })
+    expect(a).toEqual(b)
+  })
+
+  it("includes date bounds in the list-path key so month navigation does not collide", () => {
+    const may = buildEnrichedQueryKey({
+      cityId: "city-1",
+      dateFrom: "2026-05-01T00:00:00Z",
+      dateTo: "2026-05-31T23:59:59Z",
+    })
+    const june = buildEnrichedQueryKey({
+      cityId: "city-1",
+      dateFrom: "2026-06-01T00:00:00Z",
+      dateTo: "2026-06-30T23:59:59Z",
+    })
+    expect(may).not.toEqual(june)
+  })
+
+  it("defaults missing list-path fields to null / 'published'", () => {
+    const key = buildEnrichedQueryKey({})
+    expect(key).toEqual([
+      "events-enriched",
+      { cityId: null, status: "published", userId: null, dateFrom: null, dateTo: null },
+    ])
   })
 })

@@ -1,4 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   graphql_public: {
@@ -197,6 +203,78 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_ai_traces: {
+        Row: {
+          available_tag_slugs: Json
+          created_at: string
+          event_id: string
+          fallback_reason: string | null
+          id: string
+          input_description: string | null
+          input_title: string
+          model: string | null
+          predicted_fields: Json | null
+          predicted_tags: Json
+          processing_ms: number | null
+          provider: string
+          reasoning_summary: string | null
+          source_run_id: string | null
+          status: string
+          trigger_type: string
+        }
+        Insert: {
+          available_tag_slugs?: Json
+          created_at?: string
+          event_id: string
+          fallback_reason?: string | null
+          id?: string
+          input_description?: string | null
+          input_title: string
+          model?: string | null
+          predicted_fields?: Json | null
+          predicted_tags?: Json
+          processing_ms?: number | null
+          provider: string
+          reasoning_summary?: string | null
+          source_run_id?: string | null
+          status?: string
+          trigger_type?: string
+        }
+        Update: {
+          available_tag_slugs?: Json
+          created_at?: string
+          event_id?: string
+          fallback_reason?: string | null
+          id?: string
+          input_description?: string | null
+          input_title?: string
+          model?: string | null
+          predicted_fields?: Json | null
+          predicted_tags?: Json
+          processing_ms?: number | null
+          provider?: string
+          reasoning_summary?: string | null
+          source_run_id?: string | null
+          status?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_ai_traces_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_ai_traces_source_run_id_fkey"
+            columns: ["source_run_id"]
+            isOneToOne: false
+            referencedRelation: "source_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -773,6 +851,9 @@ export type Database = {
       events_enriched: {
         Args: {
           p_city_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_event_ids?: string[]
           p_limit?: number
           p_offset?: number
           p_status?: string
@@ -1456,8 +1537,10 @@ export type Tables<
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1561,3 +1644,4 @@ export const Constants = {
     },
   },
 } as const
+
