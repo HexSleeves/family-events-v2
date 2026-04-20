@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
-import { useEvents } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 
 export function DashboardPage() {
   const { user, profile } = useAuth()
@@ -27,10 +27,8 @@ export function DashboardPage() {
     data: events = [],
     isLoading: isEventsLoading,
     isError: isEventsError,
-  } = useEvents({
-    filters: {
-      cityId: selectedCity?.id,
-    },
+  } = useEnrichedEvents({
+    cityId: selectedCity?.id,
     userId: user?.id,
   })
 

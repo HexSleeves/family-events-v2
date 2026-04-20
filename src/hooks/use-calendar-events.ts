@@ -70,6 +70,7 @@ export function useToggleCalendarEvent(userId: string | undefined) {
     onSuccess: (_isNowInCalendar, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["calendar-events", userId ?? null] })
       void queryClient.invalidateQueries({ queryKey: ["events"] })
+      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
       void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
       void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
     },

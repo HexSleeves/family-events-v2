@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
-import { useEvents } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import type { EventWithDetails } from "@/lib/types"
 
 // Default Leaflet marker icons bundle as-is via Vite — re-wire so pins render.
@@ -44,8 +44,8 @@ function hasCoords(
 export function MapViewPage() {
   const { user } = useAuth()
   const { selectedCity } = useApp()
-  const { data: events = [], isLoading } = useEvents({
-    filters: { cityId: selectedCity?.id },
+  const { data: events = [], isLoading } = useEnrichedEvents({
+    cityId: selectedCity?.id,
     userId: user?.id,
   })
 

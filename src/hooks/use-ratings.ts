@@ -90,6 +90,7 @@ export function useUpsertRating(userId: string | undefined) {
         queryKey: ["rating", userId ?? null, variables.eventId],
       })
       void queryClient.invalidateQueries({ queryKey: ["events"] })
+      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
       void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
       void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
     },

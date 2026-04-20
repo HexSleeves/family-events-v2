@@ -63,6 +63,7 @@ export function useToggleFavorite(userId: string | undefined) {
     onSuccess: (_isNowFavorited, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["favorites", userId ?? null] })
       void queryClient.invalidateQueries({ queryKey: ["events"] })
+      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
       void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
       void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
     },

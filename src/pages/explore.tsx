@@ -12,7 +12,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { useApp } from "@/contexts/app-context"
 import { useAuth } from "@/contexts/auth-context"
-import { useEvents } from "@/hooks/use-events"
+import { useEnrichedEvents } from "@/hooks/use-enriched-events"
+import { matchesAgeFilter } from "@/hooks/use-events"
 import { useTags } from "@/hooks/use-tags"
 
 const CATEGORIES = [
@@ -116,22 +117,54 @@ export function ExplorePage() {
 
   const { data: tags = [] } = useTags()
   const {
-    data: filteredEvents = [],
+    data: allEvents = [],
     isLoading: isEventsLoading,
     isError: isEventsError,
-  } = useEvents({
-    filters: {
-      cityId: selectedCity?.id,
-      keyword: keyword || undefined,
-      dateFrom: dateRange.dateFrom,
-      dateTo: dateRange.dateTo,
-      isFree: onlyFree || undefined,
-      ageMin: ageFilter?.min,
-      ageMax: ageFilter?.max ?? undefined,
-      tagSlugs: combinedTagSlugs.length > 0 ? combinedTagSlugs : undefined,
-    },
+  } = useEnrichedEvents({
+    cityId: selectedCity?.id,
     userId: user?.id,
   })
+
+  // Wave 2.2: the enriched RPC returns the published event list for a city;
+  // explore-specific filters (keyword / date / age / free / tag) run here so
+  // every list page shares a single cache entry.
+  const filteredEvents = useMemo(() => {
+    const trimmedKeyword = keyword.trim().toLowerCase()
+    const from = dateRange.dateFrom ? new Date(dateRange.dateFrom) : null
+    const to = dateRange.dateTo ? new Date(dateRange.dateTo) : null
+    const tagSlugSet = combinedTagSlugs.length > 0 ? new Set(combinedTagSlugs) : null
+
+    return allEvents.filter((event) => {
+      if (trimmedKeyword) {
+        const haystack =
+          `${event.title} ${event.description ?? ""} ${event.venue_name ?? ""}`.toLowerCase()
+        if (!haystack.includes(trimmedKeyword)) {
+          return false
+        }
+      }
+
+      if (from || to) {
+        const start = new Date(event.start_datetime)
+        if (from && start < from) return false
+        if (to && start >= to) return false
+      }
+
+      if (onlyFree && !event.is_free) {
+        return false
+      }
+
+      if (ageFilter && !matchesAgeFilter(event, ageFilter.min, ageFilter.max ?? undefined)) {
+        return false
+      }
+
+      if (tagSlugSet) {
+        const hasMatch = event.tags?.some((et) => tagSlugSet.has(et.tag.slug)) ?? false
+        if (!hasMatch) return false
+      }
+
+      return true
+    })
+  }, [allEvents, keyword, dateRange, onlyFree, ageFilter, combinedTagSlugs])
 
   const baseFavoritedIds = useMemo(
     () => new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id)),
