@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichEvents } from "@/lib/enrich-events"
+import { validateExternalUrl } from "../../../supabase/functions/_shared/url-validation"
 import type {
   UserAccess,
   UserProfile,
@@ -174,6 +175,12 @@ export function useCreateAdminSource() {
 
   return useMutation({
     mutationFn: async (payload: Omit<EventSource, "id" | "created_at" | "updated_at">) => {
+      if (payload.source_type !== "manual") {
+        const validation = validateExternalUrl(payload.url)
+        if (!validation.ok) {
+          throw new Error(validation.reason ?? "Invalid source URL")
+        }
+      }
       const { error } = await supabase.from("event_sources").insert(payload)
       if (error) {
         throw error
@@ -196,6 +203,12 @@ export function useUpdateAdminSource() {
       sourceId: string
       updates: Partial<Omit<EventSource, "id" | "created_at">>
     }) => {
+      if (updates.url !== undefined && updates.source_type !== "manual") {
+        const validation = validateExternalUrl(updates.url)
+        if (!validation.ok) {
+          throw new Error(validation.reason ?? "Invalid source URL")
+        }
+      }
       const { error } = await supabase.from("event_sources").update(updates).eq("id", sourceId)
       if (error) {
         throw error
