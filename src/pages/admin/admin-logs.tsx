@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { useAdminSourceRuns } from "@/hooks/admin/use-admin-data"
+import { useAdminSourceRuns } from "@/hooks/admin/use-admin-source-runs"
 
 type RunStatus = "success" | "error" | "partial" | "running"
 

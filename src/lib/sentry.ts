@@ -34,7 +34,6 @@ function redactUrl(url: string): string {
 }
 
 export function initSentry() {
-  console.log("initSentry", SENTRY_DSN);
   if (!hasSentryDsn(SENTRY_DSN)) {
     return;
   }

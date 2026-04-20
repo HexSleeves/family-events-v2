@@ -1,11 +1,9 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { User, LogOut, Shield, Moon, Sun, Monitor } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -14,10 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  ProfileAdminLink,
+  ProfileGuestState,
+  ProfileSignOutButton,
+  ProfileThemeCard,
+  ProfileUserSummary,
+  resolveSelectedCity,
+} from "@/components/profile/profile-sections"
 import { useAuth } from "@/contexts/auth-context"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/components/theme-provider"
 import { useUpdateProfile } from "@/hooks/use-profile"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
 export function ProfilePage() {
@@ -58,23 +65,12 @@ export function ProfilePage() {
       setChildAgeDraft(null)
       toast.success("Profile updated!")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile.")
+      toast.error(humanizeSupabaseError(error, "Failed to update profile."))
     }
   }
 
   if (!user) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <User className="h-16 w-16 text-muted-foreground/30 mx-auto mb-6" />
-        <h1 className="text-2xl font-extrabold text-foreground mb-2">Your Profile</h1>
-        <p className="text-muted-foreground mb-6">
-          Sign in to manage your profile and preferences.
-        </p>
-        <Button asChild>
-          <Link to="/sign-in">Sign In</Link>
-        </Button>
-      </div>
-    )
+    return <ProfileGuestState signInHref="/sign-in" />
   }
 
   return (
@@ -82,24 +78,12 @@ export function ProfilePage() {
       <h1 className="text-2xl font-extrabold text-foreground">Profile</h1>
 
       {/* User summary */}
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16 border-2 border-primary/20">
-          <AvatarImage src={profile?.avatar_url || undefined} />
-          <AvatarFallback className="text-xl bg-primary text-primary-foreground font-bold">
-            {profile?.display_name?.charAt(0)?.toUpperCase() ?? "U"}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h2 className="text-lg font-bold text-foreground">{profile?.display_name}</h2>
-          <p className="text-sm text-muted-foreground">{profile?.email}</p>
-          {isAdmin && (
-            <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-primary">
-              <Shield className="h-3 w-3" />
-              Admin
-            </span>
-          )}
-        </div>
-      </div>
+      <ProfileUserSummary
+        displayName={profile?.display_name}
+        email={profile?.email}
+        avatarUrl={profile?.avatar_url}
+        isAdmin={isAdmin}
+      />
 
       {/* Profile settings */}
       <Card className="border-border/60">
@@ -135,7 +119,7 @@ export function ProfilePage() {
             <Select
               value={selectedCity?.id ?? ""}
               onValueChange={(val) => {
-                const city = cities.find((c) => c.id === val)
+                const city = resolveSelectedCity(cities, val)
                 if (city) setSelectedCity(city)
               }}
             >
@@ -158,52 +142,14 @@ export function ProfilePage() {
       </Card>
 
       {/* Theme */}
-      <Card className="border-border/60">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Appearance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-2">
-            {(
-              [
-                { value: "light", label: "Light", icon: Sun },
-                { value: "dark", label: "Dark", icon: Moon },
-                { value: "system", label: "System", icon: Monitor },
-              ] as const
-            ).map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => setTheme(value)}
-                className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                  theme === value
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border hover:border-primary/40 text-muted-foreground"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <ProfileThemeCard theme={theme} onThemeChange={setTheme} />
 
       {/* Admin link */}
-      {isAdmin && (
-        <Button variant="outline" className="w-full gap-2 border-primary text-primary" asChild>
-          <Link to="/admin">
-            <Shield className="h-4 w-4" />
-            Open Admin Dashboard
-          </Link>
-        </Button>
-      )}
+      {isAdmin && <ProfileAdminLink href="/admin" />}
 
       <Separator />
 
-      <Button variant="destructive" className="w-full gap-2" onClick={handleSignOut}>
-        <LogOut className="h-4 w-4" />
-        Sign Out
-      </Button>
+      <ProfileSignOutButton onSignOut={handleSignOut} />
     </div>
   )
 }

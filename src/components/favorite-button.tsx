@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Heart } from "lucide-react"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -65,7 +66,7 @@ export function FavoriteButton({
     } catch (error) {
       setOptimistic(currentState)
       onToggle?.(eventId, currentState)
-      toast.error(error instanceof Error ? error.message : "Failed to update favorite.")
+      toast.error(humanizeSupabaseError(error, "Failed to update favorite."))
     } finally {
     }
   }
