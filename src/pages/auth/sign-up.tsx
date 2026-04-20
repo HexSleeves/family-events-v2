@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { HOME_PATH } from "@/lib/access-control"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { redeemInvite, resolveInviteRequirement, useInvitesRequired } from "@/hooks/use-invites"
 import { toast } from "sonner"
 
@@ -48,7 +49,7 @@ export function SignUpPage() {
         ok = await redeemInvite(code, email)
       } catch (err) {
         toast.error("Couldn't verify invite code", {
-          description: err instanceof Error ? err.message : "Try again.",
+          description: humanizeSupabaseError(err, "Try again."),
         })
         setLoading(false)
         return
@@ -63,7 +64,9 @@ export function SignUpPage() {
     const { error } = await signUp(email, password, name)
     setLoading(false)
     if (error) {
-      toast.error("Sign up failed", { description: error.message })
+      toast.error("Sign up failed", {
+        description: humanizeSupabaseError(error, "Please try again."),
+      })
     } else {
       toast.success("Account created!", { description: "Welcome to Family Events!" })
       navigate(HOME_PATH)

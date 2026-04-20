@@ -28,3 +28,4 @@ dist-ssr
 .augment/
 .factory/
 .pi/
+output/playwright/

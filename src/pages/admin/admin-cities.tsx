@@ -18,7 +18,8 @@ import {
   useAdminCities,
   useCreateAdminCity,
   useUpdateAdminCity,
-} from "@/hooks/admin/use-admin-data"
+} from "@/hooks/admin/use-admin-cities"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
 export function AdminCitiesPage() {
@@ -38,7 +39,7 @@ export function AdminCitiesPage() {
     try {
       await updateCity.mutateAsync({ cityId: id, updates: { is_active: !isActive } })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update city.")
+      toast.error(humanizeSupabaseError(error, "Failed to update city."))
     }
   }
 
@@ -56,7 +57,7 @@ export function AdminCitiesPage() {
       setNewCity({ name: "", state: "", country: "US", slug: "", timezone: "America/New_York" })
       toast.success("City added!")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add city.")
+      toast.error(humanizeSupabaseError(error, "Failed to add city."))
     }
   }
 

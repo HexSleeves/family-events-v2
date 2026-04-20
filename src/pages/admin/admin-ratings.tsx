@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { StarRating } from "@/components/star-rating"
-import { useAdminRatings, useDeleteAdminRating } from "@/hooks/admin/use-admin-data"
+import { useAdminRatings, useDeleteAdminRating } from "@/hooks/admin/use-admin-ratings"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
 export function AdminRatingsPage() {
@@ -16,7 +17,7 @@ export function AdminRatingsPage() {
       await deleteRating.mutateAsync({ ratingId: id })
       toast("Rating removed")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove rating.")
+      toast.error(humanizeSupabaseError(error, "Failed to remove rating."))
     }
   }
 

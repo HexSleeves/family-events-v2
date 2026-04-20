@@ -11,7 +11,8 @@ import {
   useDeleteAdminComment,
   useUpdateAdminComment,
   type AdminComment,
-} from "@/hooks/admin/use-admin-data"
+} from "@/hooks/admin/use-admin-comments"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
 export function AdminCommentsPage() {
@@ -27,7 +28,7 @@ export function AdminCommentsPage() {
       })
       toast.success("Comment approved")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to approve comment.")
+      toast.error(humanizeSupabaseError(error, "Failed to approve comment."))
     }
   }
 
@@ -36,7 +37,7 @@ export function AdminCommentsPage() {
       await deleteComment.mutateAsync({ commentId: id })
       toast("Comment removed")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove comment.")
+      toast.error(humanizeSupabaseError(error, "Failed to remove comment."))
     }
   }
 

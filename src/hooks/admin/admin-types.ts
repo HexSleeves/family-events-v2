@@ -1,0 +1,103 @@
+import type {
+  City,
+  Comment,
+  EventAiTrace,
+  EventAiTraceWithParsed,
+  Rating,
+  SourceRun,
+  UserAccess,
+  UserProfile,
+} from "@/lib/types"
+
+export interface AdminComment extends Comment {
+  user_profiles: { display_name: string | null } | null
+  events: { title: string | null } | null
+}
+
+export interface AdminRating extends Rating {
+  user_profiles: { display_name: string | null } | null
+  events: { title: string | null } | null
+}
+
+export interface AdminSourceRun extends SourceRun {
+  event_sources: { name: string | null } | null
+}
+
+export interface AdminUserAccessRecord extends UserAccess {
+  user_profiles: Pick<UserProfile, "display_name" | "email" | "role" | "created_at"> | null
+}
+
+export interface AdminStats {
+  totalEvents: number
+  pendingReview: number
+  published: number
+  activeSources: number
+  sourceErrors: number
+  aiBuckets: {
+    high: number
+    medium: number
+    low: number
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+export function normalizeAiTrace(trace: EventAiTrace | null): EventAiTraceWithParsed | null {
+  if (!trace) {
+    return null
+  }
+
+  const parsed_predicted_tags = Array.isArray(trace.predicted_tags)
+    ? trace.predicted_tags.flatMap((value) => {
+        if (!isRecord(value) || typeof value.slug !== "string") {
+          return []
+        }
+
+        return [
+          {
+            slug: value.slug,
+            confidence: typeof value.confidence === "number" ? value.confidence : 0,
+            reason: typeof value.reason === "string" ? value.reason : null,
+            matched_keywords: Array.isArray(value.matched_keywords)
+              ? value.matched_keywords.filter(
+                  (keyword): keyword is string => typeof keyword === "string"
+                )
+              : undefined,
+          },
+        ]
+      })
+    : []
+
+  const parsed_predicted_fields = isRecord(trace.predicted_fields)
+    ? {
+        age_min:
+          typeof trace.predicted_fields.age_min === "number"
+            ? trace.predicted_fields.age_min
+            : null,
+        age_max:
+          typeof trace.predicted_fields.age_max === "number"
+            ? trace.predicted_fields.age_max
+            : null,
+        price:
+          typeof trace.predicted_fields.price === "number" ? trace.predicted_fields.price : null,
+        is_free:
+          typeof trace.predicted_fields.is_free === "boolean"
+            ? trace.predicted_fields.is_free
+            : null,
+        venue_name:
+          typeof trace.predicted_fields.venue_name === "string"
+            ? trace.predicted_fields.venue_name
+            : null,
+      }
+    : null
+
+  return {
+    ...trace,
+    parsed_predicted_tags,
+    parsed_predicted_fields,
+  }
+}
+
+export type { City }

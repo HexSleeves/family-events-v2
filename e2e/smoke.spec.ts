@@ -25,3 +25,60 @@ test("admin sources opens add-source controls", async ({ page }) => {
   await expect(page.getByPlaceholder("e.g. NYC Parks Family Events")).toBeVisible()
   await expect(page.getByPlaceholder("https://...")).toBeVisible()
 })
+
+test("admin walkthrough covers decomposed admin pages", async ({ page }) => {
+  const checks = [
+    {
+      path: "/admin",
+      heading: "Admin Dashboard",
+      control: page.getByText("Total Events"),
+    },
+    {
+      path: "/admin/sources",
+      heading: "Event Sources",
+      control: page.getByRole("button", { name: "Add Source" }),
+    },
+    {
+      path: "/admin/access",
+      heading: "Account Access",
+      control: page.getByRole("textbox", { name: "Search by name or email" }),
+    },
+    {
+      path: "/admin/invites",
+      heading: "Invite Codes",
+      control: page.getByRole("button", { name: "New code" }),
+    },
+  ]
+
+  for (const check of checks) {
+    await page.goto(check.path)
+    await expect(page.getByRole("heading", { name: check.heading }).last()).toBeVisible()
+    await expect(check.control).toBeVisible()
+  }
+})
+
+test("decomposed member pages render", async ({ page }) => {
+  const checks = [
+    {
+      path: "/calendar",
+      heading: "Your Adventures",
+      control: page.getByRole("tab", { name: "Month" }),
+    },
+    {
+      path: "/saved",
+      heading: "My Events",
+      control: page.getByRole("tab", { name: "Saved Ideas" }),
+    },
+    {
+      path: "/profile",
+      heading: "Profile",
+      control: page.getByRole("button", { name: "Save Changes" }),
+    },
+  ]
+
+  for (const check of checks) {
+    await page.goto(check.path)
+    await expect(page.getByRole("heading", { name: check.heading }).first()).toBeVisible()
+    await expect(check.control).toBeVisible()
+  }
+})

@@ -16,6 +16,7 @@
     "check": "tsc --noEmit && pnpm run lint && pnpm run format:check",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "supabase:start": "bash scripts/supabase.sh start",
     "supabase:dev": "bash scripts/supabase.sh start && npm run setup:local && bash scripts/supabase.sh functions serve",
     "supabase:stop": "bash scripts/supabase.sh stop",
@@ -35,7 +36,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@sentry/react": "^10.49.0",
-    "@supabase/supabase-js": "^2.103.3",
+    "@supabase/supabase-js": "^2.104.0",
     "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.99.2",
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.16",
+    "@playwright/test": "^1.59.1",
     "@sentry/vite-plugin": "^5.2.0",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^25.6.0",
@@ -79,7 +81,7 @@
     "oxlint": "^1.60.0",
     "serve": "^14.2.6",
     "typescript": "~6.0.3",
-    "vite": "^8.0.8",
+    "vite": "^8.0.9",
     "vitest": "^4.1.4"
   },
   "engines": {
