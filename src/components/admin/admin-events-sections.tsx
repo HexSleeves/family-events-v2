@@ -103,7 +103,7 @@ export function AdminEventsToolbar({
           <span
             aria-hidden="true"
             className={cn(
-              "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[4px] border border-input shadow-xs transition-colors",
+              "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-lg border border-input shadow-xs transition-colors",
               allDraftsSelected && "border-primary bg-primary text-primary-foreground"
             )}
           >
