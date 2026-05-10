@@ -1,3 +1,4 @@
+import type { ElementType } from "react"
 import {
   Calendar,
   Circle as XCircle,
@@ -367,5 +368,3 @@ function EmptyCityCard({ label, onAddSource }: EmptyCityCardProps) {
     </Card>
   )
 }
-
-import type { ElementType } from "react"

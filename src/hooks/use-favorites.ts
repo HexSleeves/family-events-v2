@@ -145,7 +145,11 @@ export function handleToggleFavoriteOnError(
   variables: ToggleFavoriteInput,
   context: ToggleFavoriteMutationContext | undefined
 ) {
-  queryClient.setQueryData(qk.favorites.byUser(userId), context?.previousFavorites ?? [])
+  const previousFavorites =
+    context?.previousFavorites ??
+    queryClient.getQueryData<Favorite[]>(qk.favorites.byUser(userId)) ??
+    []
+  queryClient.setQueryData(qk.favorites.byUser(userId), previousFavorites)
   updateEventLikeCaches(queryClient, variables.eventId, variables.isFavorited)
 }
 

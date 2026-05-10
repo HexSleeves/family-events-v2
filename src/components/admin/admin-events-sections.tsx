@@ -335,6 +335,7 @@ function EventCard({
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Review event"
               className="h-8 w-8"
               onClick={() => onOpenReview(event)}
             >
@@ -345,6 +346,7 @@ function EventCard({
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Publish event"
                   className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
                   onClick={() => onUpdateStatus(event.id, "published")}
                 >
@@ -353,6 +355,7 @@ function EventCard({
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Reject event"
                   className="h-8 w-8 text-destructive hover:bg-destructive/10"
                   onClick={() => onUpdateStatus(event.id, "rejected")}
                 >
@@ -364,6 +367,7 @@ function EventCard({
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Archive event"
                 className="h-8 w-8 text-destructive hover:bg-destructive/10"
                 onClick={() => onUpdateStatus(event.id, "archived")}
               >

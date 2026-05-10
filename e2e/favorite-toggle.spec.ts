@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test"
+import type { Locator, Page } from "@playwright/test"
 import { expect, test } from "@playwright/test"
 
 async function exploreHasFavoriteTargets(page: Page): Promise<boolean> {
@@ -20,31 +20,37 @@ async function exploreHasFavoriteTargets(page: Page): Promise<boolean> {
   return true
 }
 
-async function firstFavoriteButton(page: Page) {
-  return page.getByRole("button", { name: /^(Add to favorites|Remove from favorites)$/ }).first()
+async function firstExploreCard(page: Page) {
+  const firstButton = page
+    .getByRole("button", { name: /^(Add to favorites|Remove from favorites)$/ })
+    .first()
+  await expect(firstButton).toBeVisible({ timeout: 20_000 })
+  return firstButton.locator("xpath=ancestor::a[1]")
 }
 
-async function titleOnCardForFavoriteButton(page: Page) {
-  const btn = await firstFavoriteButton(page)
-  const cardLink = btn.locator("xpath=ancestor::a[1]")
-  const title = await cardLink.getByRole("heading", { level: 3 }).textContent()
+function firstFavoriteButtonInCard(card: Locator) {
+  return card.getByRole("button", { name: /^(Add to favorites|Remove from favorites)$/ }).first()
+}
+
+async function titleOnExploreCard(card: Locator) {
+  const title = await card.getByRole("heading", { level: 3 }).textContent()
   return title?.trim() ?? ""
 }
 
 /** Unfavorite first card until aria-label is Add (so add→remove round-trip is deterministic). */
 async function ensureAddOnFirstFavorite(page: Page) {
-  let b = await firstFavoriteButton(page)
+  const card = await firstExploreCard(page)
   for (let i = 0; i < 5; i++) {
+    const b = firstFavoriteButtonInCard(card)
     const label = await b.getAttribute("aria-label")
     if (label === "Add to favorites") {
-      return b
+      return { card, addButton: b }
     }
     await b.click()
-    await page.getByRole("button", { name: "Add to favorites" }).first().waitFor({
+    await card.getByRole("button", { name: "Add to favorites" }).first().waitFor({
       state: "visible",
       timeout: 20_000,
     })
-    b = page.getByRole("button", { name: "Add to favorites" }).first()
   }
   throw new Error("Could not reach Add to favorites on first card")
 }
@@ -57,12 +63,12 @@ test.describe("favorite toggle (regression)", () => {
       return
     }
 
-    const add = await ensureAddOnFirstFavorite(page)
-    await add.click()
-    const remove = page.getByRole("button", { name: "Remove from favorites" }).first()
+    const { card, addButton } = await ensureAddOnFirstFavorite(page)
+    await addButton.click()
+    const remove = card.getByRole("button", { name: "Remove from favorites" }).first()
     await expect(remove).toBeVisible({ timeout: 20_000 })
     await remove.click()
-    await expect(page.getByRole("button", { name: "Add to favorites" }).first()).toBeVisible({
+    await expect(card.getByRole("button", { name: "Add to favorites" }).first()).toBeVisible({
       timeout: 20_000,
     })
   })
@@ -74,12 +80,12 @@ test.describe("favorite toggle (regression)", () => {
       return
     }
 
-    const add = await ensureAddOnFirstFavorite(page)
-    const title = await titleOnCardForFavoriteButton(page)
+    const { card, addButton } = await ensureAddOnFirstFavorite(page)
+    const title = await titleOnExploreCard(card)
     expect(title.length).toBeGreaterThan(0)
 
-    await add.dblclick()
-    await expect(page.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
+    await addButton.dblclick()
+    await expect(card.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
       timeout: 20_000,
     })
 
@@ -100,12 +106,12 @@ test.describe("favorite toggle (regression)", () => {
       return
     }
 
-    const add = await ensureAddOnFirstFavorite(page)
-    const title = await titleOnCardForFavoriteButton(page)
+    const { card, addButton } = await ensureAddOnFirstFavorite(page)
+    const title = await titleOnExploreCard(card)
     expect(title.length).toBeGreaterThan(0)
 
-    await add.click()
-    await expect(page.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
+    await addButton.click()
+    await expect(card.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
       timeout: 20_000,
     })
 

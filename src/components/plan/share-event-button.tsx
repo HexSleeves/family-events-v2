@@ -77,7 +77,7 @@ export function ShareEventButton({ eventId, eventTitle }: ShareEventButtonProps)
     <>
       <Button onClick={handleShare} className="gap-2">
         <Share2 className="h-4 w-4" />
-        Send to Sarah
+        Share plan
       </Button>
 
       <Dialog open={manualOpen} onOpenChange={setManualOpen}>

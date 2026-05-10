@@ -15,18 +15,23 @@ function asImageUrl(images: unknown): string | null {
   if (!Array.isArray(images)) {
     return null
   }
-  const first = images.find((value) => typeof value === "string") as string | undefined
-  if (!first || !first.startsWith("https://")) {
-    return null
-  }
-  return first
+  const firstHttps = images.find(
+    (value): value is string => typeof value === "string" && value.startsWith("https://")
+  )
+  return firstHttps ?? null
 }
 
 export function PublicEventPreviewPage() {
   const { eventId } = useParams<{ eventId: string }>()
   const isValidId = Boolean(eventId && UUID_PATTERN.test(eventId))
 
-  const { data: event, isLoading } = useQuery({
+  const {
+    data: event,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["public-event-preview", eventId],
     enabled: isValidId,
     queryFn: async (): Promise<PublicEventRow | null> => {
@@ -39,7 +44,7 @@ export function PublicEventPreviewPage() {
         .eq("id", eventId)
         .maybeSingle()
       if (error) {
-        return null
+        throw error
       }
       return data
     },
@@ -58,6 +63,35 @@ export function PublicEventPreviewPage() {
   }
 
   const imageUrl = asImageUrl(event?.images) || "/og-fallback.png"
+
+  if (isError) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-10">
+        <Card className="w-full border-border/60">
+          <CardContent className="space-y-3 p-6 text-center">
+            <h1 className="text-xl font-bold text-foreground">
+              We couldn't load this event preview.
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : "Please try again."}
+            </p>
+            <div className="flex justify-center gap-2">
+              <Button
+                onClick={() => {
+                  void refetch()
+                }}
+              >
+                Retry
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Home</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (!event || !event.id) {
     return (

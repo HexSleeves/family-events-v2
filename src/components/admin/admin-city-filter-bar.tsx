@@ -69,6 +69,8 @@ interface CityChipProps {
 function CityChip({ label, count, active, onClick }: CityChipProps) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
         "text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors",
