@@ -1,0 +1,1593 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>family-events-ui Engineering Audit</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f3ee;
+        --panel: #fffaf5;
+        --ink: #211a17;
+        --muted: #6c5d56;
+        --line: #dfd2c8;
+        --p0: #b3261e;
+        --p1: #b85c00;
+        --p2: #2f6f6b;
+        --p3: #625b71;
+        --code: #27201c;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.15;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 4rem);
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-top: 52px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line);
+        font-size: 1.65rem;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+      }
+
+      p {
+        margin: 10px 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      code,
+      pre {
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 12px 0 0;
+        padding: 14px;
+        background: var(--code);
+        color: #fff7ed;
+        border-radius: 8px;
+        font-size: 0.86rem;
+      }
+
+      ul {
+        padding-left: 1.25rem;
+      }
+
+      .hero {
+        display: grid;
+        gap: 18px;
+        padding: 32px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 10px;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+
+      .card,
+      .item {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        border-radius: 8px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .item {
+        margin-top: 18px;
+        overflow: hidden;
+      }
+
+      .item header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+        background: #fffdf9;
+      }
+
+      .item .body {
+        padding: 16px 18px 18px;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #efe7df;
+        color: #574943;
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .priority {
+        display: inline-flex;
+        align-items: center;
+        min-width: 44px;
+        justify-content: center;
+        min-height: 26px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .p0 {
+        background: var(--p0);
+      }
+
+      .p1 {
+        background: var(--p1);
+      }
+
+      .p2 {
+        background: var(--p2);
+      }
+
+      .p3 {
+        background: var(--p3);
+      }
+
+      .field {
+        margin: 12px 0;
+      }
+
+      .field strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+
+      .evidence {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+        padding: 14px;
+        border-left: 4px solid #8b6f5e;
+        background: #fff7ef;
+        color: #3d302a;
+      }
+
+      .toc {
+        columns: 2 280px;
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+
+      .table th,
+      .table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .table th {
+        color: var(--muted);
+        font-size: 0.84rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="small">Repository audit</p>
+          <h1>family-events-ui engineering backlog</h1>
+          <p>
+            Audit scope: React, TypeScript, Supabase, Sentry, TailwindCSS,
+            routing, data fetching, production readiness, security,
+            observability, testing, DX, and long-term maintainability.
+          </p>
+        </div>
+        <div class="meta">
+          <span class="pill">Generated: 2026-05-10</span>
+          <span class="pill">Repo: /Users/lecoqjacob/Projects/personal/family-events-ui</span>
+          <span class="pill">Stack: Vite + React 19 + Supabase</span>
+          <span class="pill">Zustand: not installed</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Executive Summary</h2>
+        <p>
+          The codebase has a solid foundation: Supabase RLS is taken seriously,
+          the enriched events RPC avoids the worst N+1 pattern on the primary
+          event feed, React Query is in place, Sentry is integrated across
+          browser and edge functions, and unit coverage exists for several
+          domain utilities. The main production risks are concentrated in
+          release gating, security hygiene, bundle size, data-access discipline,
+          and observability defaults.
+        </p>
+        <p>
+          The most urgent issues are a tracked credential-looking file, a broken
+          local quality gate, unsafe Sentry defaults, no CI release gate, no
+          route-level code splitting, admin queries that load full tables, and
+          client-side filtering after limited event fetches. The current
+          architecture is workable for an MVP, but the layer-first folder layout
+          and broad query invalidation will become expensive as admin, ingest,
+          discovery, and personalization grow.
+        </p>
+        <div class="evidence">
+          <strong>Verification evidence</strong>
+          <span><code>pnpm run test</code>: 10 files passed, 149 tests passed.</span>
+          <span><code>pnpm exec vite build --mode production</code>: passed, but emitted a 1,724.94 kB JS bundle, 506.54 kB gzip, with Vite chunk-size warning.</span>
+          <span><code>pnpm run check</code>: failed in oxlint at <code>src/pages/admin/admin-events.tsx:52:7</code> for an unused ternary expression.</span>
+          <span><code>pnpm outdated --format list</code>: only <code>react-day-picker 9.14.0 =&gt; 10.0.0</code>.</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>High ROI Fixes</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>1. Remove tracked secret material</h3>
+            <p>
+              <code>config/credentials.json</code> contains a value named
+              <code>secret_key</code>. Rotate it, remove it from git, and add an
+              ignore rule.
+            </p>
+          </div>
+          <div class="card">
+            <h3>2. Restore release gates</h3>
+            <p>
+              Fix the oxlint failure and add CI for typecheck, lint, tests,
+              build, Supabase checks, and e2e smoke.
+            </p>
+          </div>
+          <div class="card">
+            <h3>3. Split routes</h3>
+            <p>
+              Lazy-load admin, map, auth, and marketing pages. This is the
+              fastest path to reducing the 506 kB gzipped JS payload.
+            </p>
+          </div>
+          <div class="card">
+            <h3>4. Lock down Sentry defaults</h3>
+            <p>
+              Remove the default DSN, disable default PII, lower tracing sample
+              rate, and set user context explicitly after auth.
+            </p>
+          </div>
+          <div class="card">
+            <h3>5. Push filtering to Supabase</h3>
+            <p>
+              Explore and dashboard should not fetch a default page then apply
+              keyword, date, age, tag, and distance filters client-side.
+            </p>
+          </div>
+          <div class="card">
+            <h3>6. Replace scattered invalidation</h3>
+            <p>
+              Centralize query keys and mutate cache targets intentionally
+              instead of invalidating broad prefixes after every action.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Priority Backlog</h2>
+
+        <article class="item">
+          <header>
+            <h3>Remove and rotate tracked credential material</h3>
+            <div class="tags">
+              <span class="priority p0">P0</span>
+              <span class="tag">Security</span>
+              <span class="tag">DX</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>config/credentials.json</code> is tracked and contains a
+                field named <code>secret_key</code>. Even if this is for a
+                non-production integration, the repository currently normalizes
+                the pattern of committing secrets. <code>.env.example</code>
+                also includes concrete external project identifiers and a
+                concrete Sentry DSN.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Credential exposure is a production blocker. It can compromise
+                third-party accounts, create expensive incident response work,
+                and poison future audit confidence because nobody can know which
+                clones or caches have the value.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Rotate the key immediately, remove the file from git, replace it
+                with <code>config/credentials.example.json</code>, read runtime
+                secrets from environment variables or Supabase secrets, and add
+                secret scanning to CI.
+              </p>
+              <pre><code>git rm --cached config/credentials.json
+printf "config/credentials.json\nsupabase/.temp/\n" &gt;&gt; .gitignore
+
+# CI
+pnpm dlx gitleaks detect --source . --no-git --redact</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small to Medium, depending on key rotation ownership.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Restore a non-bypassable release gate</h3>
+            <div class="tags">
+              <span class="priority p0">P0</span>
+              <span class="tag">DX</span>
+              <span class="tag">Production Readiness</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                The only GitHub workflow present is
+                <code>.github/workflows/opencode.yml</code>. There is no normal
+                pull-request gate for typecheck, lint, unit tests, build,
+                Supabase validation, or e2e smoke. The local aggregate gate
+                currently fails in <code>src/pages/admin/admin-events.tsx</code>
+                because a ternary expression is used only for side effects.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Regressions can land without detection. The broken local gate
+                also teaches contributors that <code>pnpm run check</code> is
+                noisy rather than authoritative.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Fix the oxlint issue, then add CI that runs the same commands
+                expected before deployment. Include Supabase type generation or
+                schema drift checks so DB contracts cannot silently diverge from
+                frontend code.
+              </p>
+              <pre><code>// src/pages/admin/admin-events.tsx
+setExpandedEventIds((prev) =&gt; {
+  const next = new Set(prev)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    next.add(id)
+  }
+  return next
+})</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small for lint repair, Medium for full CI.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Make Sentry production-safe by default</h3>
+            <div class="tags">
+              <span class="priority p0">P0</span>
+              <span class="tag">Observability</span>
+              <span class="tag">Security</span>
+              <span class="tag">Privacy</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>src/lib/sentry.ts</code> enables Sentry with a hard-coded
+                fallback DSN, <code>tracesSampleRate: 1.0</code>,
+                <code>sendDefaultPii: true</code>, console log capture, and
+                replay integration defaults. User context is not set from the
+                auth provider, so the app sends more ambient data than needed
+                while missing explicit app-level identity metadata.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Local/dev traffic and unintended environments can pollute
+                production telemetry. Full tracing and default PII are expensive
+                and risky. Missing explicit user context makes triage slower and
+                encourages over-collection elsewhere.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Require <code>VITE_SENTRY_DSN</code> in production, disable
+                Sentry entirely when absent, set a low sample rate by
+                environment, disable default PII, and explicitly set redacted
+                user context after auth.
+              </p>
+              <pre><code>const dsn = env.VITE_SENTRY_DSN
+
+if (dsn &amp;&amp; import.meta.env.PROD) {
+  Sentry.init({
+    dsn,
+    environment: env.VITE_SENTRY_ENVIRONMENT ?? import.meta.env.MODE,
+    release: env.VITE_SENTRY_RELEASE,
+    sendDefaultPii: false,
+    tracesSampleRate: Number(env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 0.05),
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0.1,
+  })
+}</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Split the route bundle and lazy-load heavy surfaces</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Performance</span>
+              <span class="tag">React</span>
+              <span class="tag">Architecture</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>src/App.tsx</code> synchronously imports every route:
+                marketing, auth, member pages, maps, and all admin pages.
+                <code>ReactQueryDevtools</code> is also imported in the main
+                graph. The production build emits a 1,724.94 kB JS bundle,
+                506.54 kB gzip, with a Vite chunk warning.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                First-load users pay for admin and map code they may never use.
+                This hurts mobile startup, time to interactive, and perceived
+                quality, especially for families using older devices.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Convert route components to <code>React.lazy</code>, wrap route
+                outlets in small skeleton fallbacks, dynamically import devtools
+                only in development, and split map dependencies behind the map
+                page.
+              </p>
+              <pre><code>import { lazy, Suspense } from "react"
+
+const ExplorePage = lazy(() =&gt;
+  import("@/pages/explore").then((m) =&gt; ({ default: m.ExplorePage })),
+)
+const AdminEventsPage = lazy(() =&gt;
+  import("@/pages/admin/admin-events").then((m) =&gt; ({ default: m.AdminEventsPage })),
+)
+
+&lt;Suspense fallback={&lt;RouteSkeleton /&gt;}&gt;
+  &lt;Routes&gt;...&lt;/Routes&gt;
+&lt;/Suspense&gt;</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Push event search, filters, and pagination into Supabase</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Supabase</span>
+              <span class="tag">Performance</span>
+              <span class="tag">Scalability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Explore fetches enriched events for a city, then applies
+                keyword, age, tag, date, free-only, and distance filtering in
+                React. The RPC defaults to a finite page size, so client-side
+                filtering can produce false empty states when matching events
+                exist outside the first page. The legacy
+                <code>search_events</code> RPC uses <code>ILIKE</code> instead
+                of the existing <code>search_vector</code> index.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Search becomes slower and less correct as event volume grows.
+                More data crosses the network than needed, caching is less
+                effective, and pagination cannot be reasoned about accurately.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Create one server-side discovery RPC that accepts normalized
+                filter parameters, uses full-text search or trigram indexes for
+                keyword search, applies tag and date filters in SQL, and returns
+                a cursor or total-aware page result. Keep client-only filters
+                only for presentation details.
+              </p>
+              <pre><code>select *
+from public.events_enriched_search(
+  p_city_id =&gt; $1,
+  p_query =&gt; $2,
+  p_tag_ids =&gt; $3,
+  p_date_from =&gt; $4,
+  p_date_to =&gt; $5,
+  p_limit =&gt; 24,
+  p_cursor =&gt; $6
+)</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Large.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Replace broad query invalidation with a query-key contract</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">State Management</span>
+              <span class="tag">React Query</span>
+              <span class="tag">Performance</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Favorite, calendar, rating, and admin mutations invalidate
+                multiple broad key prefixes such as <code>["events"]</code>,
+                <code>["events-enriched"]</code>, <code>["event", id]</code>,
+                and <code>["events-by-id"]</code>. Query key shapes are manually
+                repeated across hooks.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Mutations trigger avoidable refetches and make cache behavior
+                hard to predict. As pages multiply, stale UI bugs and
+                unnecessary network traffic will grow.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add a centralized query key factory, use stable normalized
+                params, and update known cache entries directly for simple
+                toggles. Reserve broad invalidation for true cross-cutting
+                changes such as publishing or deleting an event.
+              </p>
+              <pre><code>export const qk = {
+  events: {
+    enriched: (params: EnrichedEventParams) =&gt; ["events", "enriched", normalize(params)] as const,
+    detail: (id: string, userId?: string) =&gt; ["events", "detail", id, userId ?? null] as const,
+  },
+  user: {
+    favorites: (userId: string) =&gt; ["user", userId, "favorites"] as const,
+  },
+}</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Paginate and aggregate admin data server-side</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Supabase</span>
+              <span class="tag">Admin</span>
+              <span class="tag">Scalability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Admin hooks fetch whole tables or broad result sets:
+                <code>useAdminEvents</code> selects all events,
+                <code>useAdminStats</code> fetches all event statuses and
+                source rows to count in the browser, and comments/ratings/access
+                lists fetch unbounded relation payloads.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Admin pages will degrade first as data grows. Full-table fetches
+                increase database load, payload size, browser memory, and RLS
+                policy evaluation cost.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add server-side range pagination, count queries or aggregate
+                RPCs, debounced search, explicit column selection, and cursor
+                state in URLs for shareable admin views.
+              </p>
+              <pre><code>const PAGE_SIZE = 50
+
+supabase
+  .from("events")
+  .select("id,title,status,start_datetime,city_id,created_at,ai_confidence", {
+    count: "exact",
+  })
+  .order("created_at", { ascending: false })
+  .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Harden edge ingestion against SSRF and resource exhaustion</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Security</span>
+              <span class="tag">Supabase Edge Functions</span>
+              <span class="tag">Reliability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Edge functions validate URL literals and private IP patterns,
+                but the code documents that DNS rebinding is not covered.
+                Fetched response bodies are read as full text without a strict
+                byte cap. CORS helpers allow <code>*</code> and broad methods
+                even for service-role/admin flows.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Admin-submitted source URLs can become an SSRF or resource
+                exhaustion path. Overbroad CORS and methods increase the attack
+                surface, even when authorization checks are otherwise strong.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Resolve DNS and reject private resolved addresses before fetch,
+                enforce content-length and streamed byte caps, restrict
+                production origins and methods, and add regression tests for
+                localhost, private network, redirect, oversized, and rebinding
+                cases.
+              </p>
+              <pre><code>const maxBytes = 2_000_000
+const length = Number(response.headers.get("content-length") ?? 0)
+if (length &gt; maxBytes) {
+  throw new Error("Source response too large")
+}</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium to Large.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Stop ignoring data-layer errors in edge dedupe</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Reliability</span>
+              <span class="tag">Supabase</span>
+              <span class="tag">Data Quality</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                The edge dedupe helper reads candidate rows from Supabase but
+                does not check query errors before continuing. A database error
+                can silently degrade deduplication and create duplicate events.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Duplicate events damage user trust, poison recommendation and
+                rating data, and create manual cleanup work for admins.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Treat dedupe reads as required dependencies. If they fail, mark
+                the source run as failed or retryable rather than importing
+                possibly duplicate rows.
+              </p>
+              <pre><code>const { data, error } = await supabase
+  .from("events")
+  .select("id,title,start_datetime,source_id,external_id")
+  .eq("source_id", sourceId)
+
+if (error) {
+  throw new Error(`Dedupe query failed: ${error.message}`)
+}</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Split and memoize auth and app context state</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">React</span>
+              <span class="tag">State Management</span>
+              <span class="tag">Performance</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>AuthProvider</code> stores session, user, profile, access,
+                loading state, and auth actions in one context value that is not
+                memoized. <code>AppProvider</code> keeps city state and
+                localStorage hydration in another broad context. Silent catches
+                hide invite-claim and session-sync failures.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Broad providers force extra renders throughout the app and make
+                auth side effects hard to observe. Silent failures are especially
+                bad in invite and access flows because they look like user error.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Split read-heavy auth data from action functions or memoize the
+                context values. Move profile/access reads into React Query.
+                Capture invite-claim failures with Sentry and a user-visible
+                retry path. Set and clear Sentry user context here.
+              </p>
+              <pre><code>const value = useMemo(
+  () =&gt; ({
+    session,
+    user,
+    profile,
+    access,
+    loading,
+    signIn,
+    signOut,
+    refreshProfile,
+  }),
+  [session, user, profile, access, loading, signIn, signOut, refreshProfile],
+)</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Adopt explicit Supabase column contracts</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Supabase</span>
+              <span class="tag">TypeScript</span>
+              <span class="tag">Maintainability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Many hooks use <code>.select("*")</code> for profiles, access,
+                favorites, calendar, ratings, cities, tags, invite codes, admin
+                events, admin sources, and traces. The app also keeps manual
+                domain types in <code>src/lib/types.ts</code> alongside a large
+                generated <code>database.types.ts</code>.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Payloads grow accidentally when schema changes. UI code becomes
+                coupled to every column, and manual types drift from generated
+                database contracts.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Define named select strings per view model, derive row types
+                from generated Supabase types, and map DB rows to domain models
+                at feature boundaries. Regenerate database types in CI and fail
+                on uncommitted drift.
+              </p>
+              <pre><code>type EventRow = Database["public"]["Tables"]["events"]["Row"]
+
+const EVENT_CARD_COLUMNS =
+  "id,title,description,start_datetime,end_datetime,location_name,image_url,price,status,city_id"
+
+type EventCardRow = Pick&lt;
+  EventRow,
+  "id" | "title" | "description" | "start_datetime" | "end_datetime" |
+    "location_name" | "image_url" | "price" | "status" | "city_id"
+&gt;</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Add Supabase advisor and RLS regression checks to CI</h3>
+            <div class="tags">
+              <span class="priority p1">P1</span>
+              <span class="tag">Security</span>
+              <span class="tag">Database</span>
+              <span class="tag">CI/CD</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                RLS appears thoughtfully implemented, including force-RLS
+                migrations and security-invoker view usage. The missing piece is
+                a repeatable CI gate that proves policies, function search paths,
+                and schema changes remain safe.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Database security can regress through innocent schema changes,
+                view additions, or SECURITY DEFINER functions. Without automated
+                checks, reviewers must catch every subtle Postgres footgun
+                manually.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add Supabase local reset, generated type check, lints/advisors,
+                and RLS tests for anon, authenticated, admin, and service-role
+                behavior. Keep the tests focused on real tables and functions
+                used by the frontend.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Move from layer-first folders to feature modules</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Architecture</span>
+              <span class="tag">Repository Structure</span>
+              <span class="tag">Maintainability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                The frontend is organized by technical layer:
+                <code>pages</code>, <code>components</code>,
+                <code>hooks</code>, <code>lib</code>, and
+                <code>contexts</code>. Feature logic for events, admin, auth,
+                cities, ratings, favorites, and ingestion is spread across these
+                folders.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Cross-feature changes require hunting across the tree. Shared
+                folders become dumping grounds, and code ownership becomes
+                unclear as product areas grow.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Keep <code>components/ui</code> and generic <code>lib</code>
+                utilities global, but move product code into feature modules.
+                Start with admin and events because they already have the
+                largest surface area.
+              </p>
+              <pre><code>src/
+  features/
+    events/
+      api/
+      components/
+      hooks/
+      types.ts
+      utils/
+    admin/
+      events/
+      sources/
+      users/
+      stats/
+    auth/
+    cities/
+  components/ui/
+  lib/supabase/
+  lib/sentry/</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Large if done all at once; Medium if migrated per feature.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Remove legacy event fetch/enrichment paths</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Cleanup</span>
+              <span class="tag">Supabase</span>
+              <span class="tag">Architecture</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>use-enriched-events</code> uses a single RPC and has
+                focused tests. Older paths such as <code>use-events</code> and
+                <code>enrich-events</code> still exist and include multi-query
+                enrichment logic that can fan out into several Supabase calls.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Duplicate data paths create inconsistent behavior and make
+                performance tuning harder. Future contributors may reuse the
+                older path accidentally.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Make the enriched RPC path the only supported event read model,
+                move any still-needed utilities into it, and delete legacy
+                fetch/enrich code after coverage confirms no regressions.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Define a small Zustand boundary or avoid it entirely</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Zustand</span>
+              <span class="tag">State Management</span>
+              <span class="tag">Architecture</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Zustand is not installed or used. The app uses React Query for
+                server cache and React Context/local state for session and UI
+                preferences. If Zustand is introduced without a narrow boundary,
+                it can duplicate React Query and become a second source of truth.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                A poorly scoped global store will increase coupling, create
+                stale server-state bugs, and make auth/cache invalidation harder.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Do not move server data into Zustand. If the app needs it, use a
+                tiny UI-only store for selected city, sidebar state, filters in
+                progress, theme, or map viewport. Use selectors and shallow
+                comparison for render control.
+              </p>
+              <pre><code>import { create } from "zustand"
+
+type AppUiState = {
+  selectedCityId: string | null
+  setSelectedCityId: (cityId: string | null) =&gt; void
+}
+
+export const useAppUiStore = create&lt;AppUiState&gt;((set) =&gt; ({
+  selectedCityId: null,
+  setSelectedCityId: (selectedCityId) =&gt; set({ selectedCityId }),
+}))</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small if adopted narrowly.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Standardize Tailwind styling through variants and tokens</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">TailwindCSS</span>
+              <span class="tag">UI Consistency</span>
+              <span class="tag">Maintainability</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                The app uses design tokens in <code>src/index.css</code>, but
+                many product components still use raw color utilities such as
+                green, blue, amber, and purple status classes. Filter chips,
+                tags, icon actions, and admin statuses repeat custom class
+                strings. One audited event-card class string includes duplicate
+                padding utilities.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Styling will drift across admin and consumer surfaces. Dark mode
+                and brand evolution become expensive because semantic meaning is
+                encoded as raw color names in components.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add semantic variants for status badge, category chip, filter
+                toggle, icon button, and empty state. Prefer token-backed
+                classes and one shared variant map per concept.
+              </p>
+              <pre><code>const statusBadgeVariants = cva("inline-flex rounded-full px-2 py-1 text-xs font-medium", {
+  variants: {
+    status: {
+      published: "bg-success/10 text-success",
+      draft: "bg-muted text-muted-foreground",
+      rejected: "bg-destructive/10 text-destructive",
+    },
+  },
+})</code></pre>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Run an accessibility pass on repeated interactive patterns</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Accessibility</span>
+              <span class="tag">React</span>
+              <span class="tag">UI</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Several icon-only or custom controls need stronger semantics:
+                admin action buttons need labels, the app search button needs an
+                accessible name, bottom nav should expose current state, rating
+                buttons need radiogroup semantics or display-only markup, and
+                favorite actions inside linked cards are a fragile nested
+                interactive pattern.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Keyboard and screen reader users will hit avoidable friction.
+                Accessibility bugs are also often structural bugs that cause
+                flaky clicks and confusing event propagation.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add an a11y checklist to component review, use Radix/shadcn
+                primitives where available, add <code>aria-label</code> and
+                <code>aria-current</code>, separate card link and favorite
+                button hit targets, and add axe coverage for common flows.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Replace external placeholder images and stabilize image layout</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Performance</span>
+              <span class="tag">Privacy</span>
+              <span class="tag">UI</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Event cards and admin preview surfaces fall back to
+                <code>https://picsum.photos</code>. Image tags generally lack
+                explicit dimensions and lazy loading.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Production pages depend on a third-party random-image service,
+                leak user traffic, introduce unpredictable visuals, and risk
+                layout shift.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Use a local deterministic placeholder or Supabase Storage
+                transform pipeline. Add width, height or aspect-ratio,
+                <code>loading="lazy"</code>, and <code>decoding="async"</code>
+                for below-the-fold images.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Add component, browser, and a11y tests for critical flows</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Testing</span>
+              <span class="tag">React</span>
+              <span class="tag">DX</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Unit tests cover many domain utilities, but the React surface is
+                under-tested. The current Vitest setup is primarily node-style
+                tests, while the most expensive regressions will occur in
+                explore filters, auth redirects, event cards, admin moderation,
+                and invite/access flows.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Refactors such as route splitting, feature-folder migration, and
+                data-layer cleanup will be riskier without UI-level safety nets.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add jsdom or browser-mode component tests for core interactive
+                components, Playwright smoke for auth/explore/admin happy paths,
+                and axe checks for repeated controls.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Reduce edge-function timeout and retry ambiguity</h3>
+            <div class="tags">
+              <span class="priority p2">P2</span>
+              <span class="tag">Reliability</span>
+              <span class="tag">Observability</span>
+              <span class="tag">Supabase Edge Functions</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                Source scraping processes due sources sequentially and updates
+                progress while importing. AI tagging calls external services
+                without clear timeout, retry, or circuit-breaker semantics.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                A slow source or model call can consume function time and delay
+                other work. Partial imports become harder to reason about when
+                retry policy is implicit.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Add per-source idempotency locks, bounded concurrency, explicit
+                timeout wrappers around external calls, retryable/non-retryable
+                run status, and Sentry spans for scrape, parse, dedupe, insert,
+                AI tagging, and geocoding phases.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Medium to Large.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Clean generated and local-only artifacts from source control</h3>
+            <div class="tags">
+              <span class="priority p3">P3</span>
+              <span class="tag">Cleanup</span>
+              <span class="tag">DX</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                <code>supabase/.temp/cli-latest</code> is tracked and currently
+                modified. Local output folders exist in the repo root. This
+                creates noise in status and increases the chance of accidental
+                commits.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Dirty working trees reduce signal and make real changes harder
+                to review.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Ignore <code>supabase/.temp/</code> and other tool output
+                folders. Remove already-tracked local temp files from the index.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small.</p></div>
+          </div>
+        </article>
+
+        <article class="item">
+          <header>
+            <h3>Upgrade react-day-picker deliberately</h3>
+            <div class="tags">
+              <span class="priority p3">P3</span>
+              <span class="tag">Dependencies</span>
+              <span class="tag">Maintenance</span>
+            </div>
+          </header>
+          <div class="body">
+            <div class="field">
+              <strong>Problem</strong>
+              <p>
+                The only outdated package reported is
+                <code>react-day-picker 9.14.0 =&gt; 10.0.0</code>.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Impact</strong>
+              <p>
+                Low immediate risk, but date-picker major versions often change
+                class names, keyboard behavior, and selection APIs.
+              </p>
+            </div>
+            <div class="field">
+              <strong>Recommendation</strong>
+              <p>
+                Upgrade in a small isolated PR with calendar/date-input visual
+                checks and keyboard regression testing.
+              </p>
+            </div>
+            <div class="field"><strong>Estimated Effort</strong><p>Small.</p></div>
+          </div>
+        </article>
+      </section>
+
+      <section>
+        <h2>Repository Structure Review</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Problem</th>
+              <th>Recommendation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Folder organization</td>
+              <td>Layer-first folders split feature behavior across pages, hooks, components, lib, and contexts.</td>
+              <td>Move admin, events, auth, cities, ratings, and ingest surfaces into feature modules with local api, hooks, components, and tests.</td>
+            </tr>
+            <tr>
+              <td>Shared utilities</td>
+              <td><code>lib</code> mixes generated DB types, domain utilities, Sentry, Supabase clients, and legacy enrichment code.</td>
+              <td>Keep only cross-feature primitives in global lib. Move domain-specific utilities beside the feature that owns them.</td>
+            </tr>
+            <tr>
+              <td>Dead code</td>
+              <td><code>src/lib/mock-data.ts</code> has no observed production references and likely survived from early prototyping.</td>
+              <td>Delete or move to test fixtures if still useful for stories/tests.</td>
+            </tr>
+            <tr>
+              <td>Generated artifacts</td>
+              <td><code>supabase/.temp/cli-latest</code> is tracked and modified.</td>
+              <td>Ignore Supabase temp output and remove tracked temp files.</td>
+            </tr>
+            <tr>
+              <td>Naming and boundaries</td>
+              <td>Events have multiple read models and duplicated type definitions.</td>
+              <td>Declare one canonical frontend event read model and one mapper from generated DB/RPC types.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>React Review</h2>
+        <ul>
+          <li><strong>Rendering performance:</strong> route-level imports are synchronous and broad. Use lazy imports and route skeletons.</li>
+          <li><strong>Context churn:</strong> auth and app context values should be memoized or split so small state changes do not rerender unrelated consumers.</li>
+          <li><strong>Effect handling:</strong> auth bootstrap and invite claim paths silently catch failures. Capture and expose retryable errors.</li>
+          <li><strong>Composition:</strong> event card action areas need cleaner separation between navigation and inline actions.</li>
+          <li><strong>Forms:</strong> keep zod/react-hook-form patterns consistent. Avoid ad hoc validation in admin forms as they grow.</li>
+          <li><strong>Error boundaries:</strong> add route-level error boundaries for admin, explore, auth, and ingest-related pages.</li>
+          <li><strong>Suspense:</strong> introduce Suspense only at route and heavy-widget boundaries, not around every query.</li>
+          <li><strong>Accessibility:</strong> icon-only actions, star rating, nav current state, and nested interactive card patterns need fixes.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Zustand Review</h2>
+        <p>
+          Zustand is not present. That is not inherently a problem. React Query
+          is the correct owner for server state, and most current global state
+          can remain in context if memoized and kept small.
+        </p>
+        <p>
+          If Zustand is introduced, the production-grade boundary is UI state
+          only: selected city, map viewport, sidebar state, temporary filter
+          drafts, or local preferences. Do not store events, profile rows,
+          access grants, favorites, ratings, or Supabase records in Zustand.
+          Those belong in React Query and Supabase.
+        </p>
+      </section>
+
+      <section>
+        <h2>Supabase Review</h2>
+        <ul>
+          <li><strong>Good:</strong> RLS policy work, force-RLS migrations, security-invoker view usage, and the enriched events RPC show strong security intent.</li>
+          <li><strong>Query efficiency:</strong> replace <code>.select("*")</code>, full-table admin fetches, and client-side Explore filtering.</li>
+          <li><strong>Search:</strong> move keyword search to indexed full-text or trigram search and stop relying on <code>ILIKE '%term%'</code>.</li>
+          <li><strong>Pagination:</strong> make pagination explicit for public discovery and admin lists.</li>
+          <li><strong>Realtime:</strong> define where realtime is required. Most surfaces can use stale-time and targeted invalidation; admin source runs may justify polling or channel subscriptions.</li>
+          <li><strong>Security:</strong> add advisor/RLS checks in CI and reduce edge CORS/method scope.</li>
+          <li><strong>Edge functions:</strong> harden SSRF, response-size limits, dedupe error handling, external-call timeouts, and run idempotency.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Sentry Review</h2>
+        <ul>
+          <li><strong>Coverage:</strong> browser, React Query cache, and edge functions are instrumented. That is a good baseline.</li>
+          <li><strong>Defaults:</strong> hard-coded DSN, full tracing, default PII, and console capture are too aggressive.</li>
+          <li><strong>User context:</strong> set redacted user id, role/access level, and city context after auth; clear on signout.</li>
+          <li><strong>Tracing:</strong> add route names, query mutation names, and edge-function spans for scrape/import phases.</li>
+          <li><strong>Noise:</strong> filter expected auth, validation, aborted fetch, and user-cancelled errors before sending.</li>
+          <li><strong>Source maps:</strong> upload is wired through Vite config. Make release/env required in CI so source maps match deployed artifacts.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>TailwindCSS Review</h2>
+        <ul>
+          <li><strong>Token usage:</strong> the app has CSS variables and Tailwind 4 tokens, but product code still uses raw utility colors.</li>
+          <li><strong>Duplication:</strong> filter chips, badges, admin status labels, and action buttons should use shared variants.</li>
+          <li><strong>Responsive behavior:</strong> verify long event names, locations, and admin row actions on mobile widths.</li>
+          <li><strong>Dark mode:</strong> token definitions exist, but raw color utilities will not automatically adapt cleanly.</li>
+          <li><strong>Palette:</strong> the app leans heavily into a single warm family. Keep the brand, but expand semantic status colors through tokens rather than raw color utilities.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Potential Overengineering</h2>
+        <ul>
+          <li><strong>Zustand migration:</strong> unnecessary unless the team defines a small UI-only boundary. React Query already solves server cache.</li>
+          <li><strong>Realtime everywhere:</strong> most event discovery surfaces do not need realtime. Use it only for source-run progress or collaborative/admin flows.</li>
+          <li><strong>Feature folder rewrite:</strong> valuable, but should be incremental. Start with admin and events instead of moving the whole repo in one PR.</li>
+          <li><strong>Custom design system:</strong> avoid building a large abstraction layer. A few variants for repeated primitives will buy most of the consistency.</li>
+          <li><strong>Premature normalization:</strong> normalize client state only where cached relationships are actually mutated. Do not reimplement a client database.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Things Done Well</h2>
+        <ul>
+          <li>React Query is already the server-state foundation, which avoids many common custom-cache mistakes.</li>
+          <li>The enriched events RPC is a strong direction and has targeted tests around key event enrichment behavior.</li>
+          <li>Supabase RLS and security-invoker view patterns are treated as first-class concerns.</li>
+          <li>Sentry source-map upload and edge-function error capture exist, even though defaults need tightening.</li>
+          <li>The test suite is not empty: 149 unit tests passed during audit.</li>
+          <li>The dependency set is current. Only <code>react-day-picker</code> reported a newer major version.</li>
+          <li>Tailwind tokens and UI primitives provide a foundation for a more consistent design system.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Modernization Opportunities</h2>
+        <ul>
+          <li>Consider TanStack Router if route-level data loading, route error boundaries, and typed URL search params become more important than the current simple React Router setup.</li>
+          <li>Introduce generated Supabase type drift checks and typed RPC wrappers before adding more database functions.</li>
+          <li>Add bundle analysis to CI so route-splitting progress is measured and regressions are visible.</li>
+          <li>Add OpenTelemetry-style span naming consistency across Sentry browser and edge instrumentation.</li>
+          <li>Use database-backed cursor pagination for discovery instead of offset pagination if event volume grows quickly.</li>
+          <li>Add a small UI-state store only after context memoization and query-key cleanup are complete.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Recommended Sequence</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Work</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Rotate/remove tracked credential, fix oxlint failure, add basic CI.</td>
+              <td>Removes release blockers and security risk first.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Harden Sentry defaults, add user context, restrict devtools to development.</td>
+              <td>Improves privacy, telemetry quality, and production confidence.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Route split App, lazy-load admin/map, add bundle analysis.</td>
+              <td>Directly addresses measured build warning and user-facing performance.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Query-key factory, explicit selects, targeted invalidation.</td>
+              <td>Prepares data layer for larger refactors without changing UX.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Server-side discovery filters and admin pagination/aggregates.</td>
+              <td>Addresses the biggest scalability bottlenecks.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Feature-module migration, styling variants, accessibility sweep.</td>
+              <td>Improves long-term maintainability after riskier foundations are stable.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>
