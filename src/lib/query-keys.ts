@@ -66,10 +66,15 @@ function normalizeEventFilters(filters: EventFilters = {}) {
   } as const
 }
 
-function normalizeAdminEventsParams(keyword: string, status: Event["status"] | "all") {
+function normalizeAdminEventsParams(
+  keyword: string,
+  status: Event["status"] | "all",
+  cityFilter: "all" | "none" | string
+) {
   return {
     keyword: sanitizePostgrestLike(keyword),
     status,
+    cityFilter,
   } as const
 }
 
@@ -185,8 +190,13 @@ export const qk = {
     stats: ["admin", "stats"] as const,
     events: {
       all: ["admin", "events"] as const,
-      list: (keyword: string, status: Event["status"] | "all") =>
-        ["admin", "events", normalizeAdminEventsParams(keyword, status)] as const,
+      list: (
+        keyword: string,
+        status: Event["status"] | "all",
+        cityFilter: "all" | "none" | string = "all"
+      ) => ["admin", "events", normalizeAdminEventsParams(keyword, status, cityFilter)] as const,
+      facets: (keyword: string) =>
+        ["admin", "events", "facets", { keyword: sanitizePostgrestLike(keyword) }] as const,
     },
     ratings: ["admin", "ratings"] as const,
     inviteCodes: ["admin", "invite-codes"] as const,

@@ -67,6 +67,32 @@ test.describe("favorite toggle (regression)", () => {
     })
   })
 
+  test("explore: rapid double-tap does not duplicate saved item", async ({ page }) => {
+    const ok = await exploreHasFavoriteTargets(page)
+    if (!ok) {
+      test.skip()
+      return
+    }
+
+    const add = await ensureAddOnFirstFavorite(page)
+    const title = await titleOnCardForFavoriteButton(page)
+    expect(title.length).toBeGreaterThan(0)
+
+    await add.dblclick()
+    await expect(page.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
+      timeout: 20_000,
+    })
+
+    await page.goto("/saved")
+    await page.getByRole("tab", { name: /Saved Ideas/i }).click()
+    await expect(page.getByRole("heading", { name: title, level: 3 })).toHaveCount(1, {
+      timeout: 20_000,
+    })
+
+    await page.getByRole("button", { name: "Remove" }).first().click()
+    await expect(page.getByText("No saved events yet")).toBeVisible({ timeout: 20_000 })
+  })
+
   test("saved: Saved Ideas tab lists event after favoriting on explore", async ({ page }) => {
     const ok = await exploreHasFavoriteTargets(page)
     if (!ok) {

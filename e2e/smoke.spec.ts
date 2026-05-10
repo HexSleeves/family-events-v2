@@ -20,7 +20,7 @@ test("admin sources opens add-source controls", async ({ page }) => {
   await page.goto("/admin/sources")
 
   await expect(page.getByRole("heading", { name: "Event Sources" }).nth(1)).toBeVisible()
-  await page.getByRole("button", { name: "Add Source" }).click()
+  await page.getByRole("button", { name: "Add Source" }).first().click()
   await expect(page.getByRole("heading", { name: "Add Event Source" })).toBeVisible()
   await expect(page.getByPlaceholder("e.g. NYC Parks Family Events")).toBeVisible()
   await expect(page.getByPlaceholder("https://...")).toBeVisible()
@@ -36,7 +36,7 @@ test("admin walkthrough covers decomposed admin pages", async ({ page }) => {
     {
       path: "/admin/sources",
       heading: "Event Sources",
-      control: page.getByRole("button", { name: "Add Source" }),
+      control: page.getByRole("button", { name: "Add Source" }).first(),
     },
     {
       path: "/admin/access",

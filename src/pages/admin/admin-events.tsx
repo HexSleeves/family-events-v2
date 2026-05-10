@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { Event } from "@/lib/types"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import {
@@ -8,7 +8,9 @@ import {
   AdminEventsToolbar,
   AdminEventStatusFilterBar,
 } from "@/components/admin/admin-events-sections"
+import { AdminCityFilterBar } from "@/components/admin/admin-city-filter-bar"
 import {
+  useAdminEventFacets,
   useAdminEvents,
   useBatchUpdateAdminEventStatus,
   useUpdateAdminEventStatus,
@@ -17,6 +19,9 @@ import {
   useAdminEventAiTrace,
   useUpdateAdminEventTags,
 } from "@/hooks/admin/use-admin-event-ai-trace"
+import { useAdminCities } from "@/hooks/admin/use-admin-cities"
+import { useCityFilter } from "@/hooks/admin/use-city-filter"
+import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
 import { useTags } from "@/hooks/use-tags"
 import { toast } from "sonner"
 
@@ -28,8 +33,11 @@ export function AdminEventsPage() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [editingTagIds, setEditingTagIds] = useState<string[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const { value: cityFilter, setValue: setCityFilter } = useCityFilter()
 
-  const { data: events = [] } = useAdminEvents(keyword, statusFilter)
+  const { data: events = [] } = useAdminEvents(keyword, statusFilter, cityFilter)
+  const { data: facets = [] } = useAdminEventFacets(keyword)
+  const { data: cities = [] } = useAdminCities()
   const { data: selectedEventTrace, isLoading: isTraceLoading } =
     useAdminEventAiTrace(selectedEventId)
   const { data: allTags = [] } = useTags()
@@ -46,10 +54,42 @@ export function AdminEventsPage() {
   )
   const allDraftsSelected =
     draftEvents.length > 0 && draftEvents.every((event) => selectedIds.has(event.id))
-  const counts = events.reduce(
-    (acc, event) => ({ ...acc, [event.status]: (acc[event.status] || 0) + 1 }),
-    {} as Record<string, number>
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const row of facets) {
+      const matchesCity =
+        cityFilter === "all"
+          ? true
+          : cityFilter === UNASSIGNED_CITY_KEY
+            ? row.city_id === null
+            : row.city_id === cityFilter
+      if (!matchesCity) continue
+      counts[row.status] = (counts[row.status] ?? 0) + 1
+    }
+    return counts
+  }, [facets, cityFilter])
+
+  const statusTotal = useMemo(
+    () => Object.values(statusCounts).reduce((sum, n) => sum + n, 0),
+    [statusCounts]
   )
+
+  const cityCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const row of facets) {
+      if (statusFilter !== "all" && row.status !== statusFilter) continue
+      const key = row.city_id ?? UNASSIGNED_CITY_KEY
+      counts[key] = (counts[key] ?? 0) + 1
+    }
+    return counts
+  }, [facets, statusFilter])
+
+  const cityTotal = useMemo(
+    () => Object.values(cityCounts).reduce((sum, n) => sum + n, 0),
+    [cityCounts]
+  )
+
   const statusConfig: Record<Event["status"], { label: string; color: string }> = {
     draft: { label: "Draft", color: "bg-muted text-muted-foreground" },
     published: {
@@ -119,9 +159,16 @@ export function AdminEventsPage() {
     <div className="space-y-6">
       <AdminEventStatusFilterBar
         statusFilter={statusFilter}
-        counts={counts}
-        total={events.length}
+        counts={statusCounts}
+        total={statusTotal}
         onChange={handleStatusFilterChange}
+      />
+      <AdminCityFilterBar
+        cities={cities}
+        counts={cityCounts}
+        total={cityTotal}
+        value={cityFilter}
+        onChange={setCityFilter}
       />
       <AdminEventsToolbar
         keyword={keyword}
@@ -141,6 +188,8 @@ export function AdminEventsPage() {
         events={events}
         selectedIds={selectedIds}
         statusConfig={statusConfig}
+        cities={cities}
+        cityFilter={cityFilter}
         onToggleSelect={toggleSelect}
         onOpenReview={(event) => {
           setSelectedEventId(event.id)

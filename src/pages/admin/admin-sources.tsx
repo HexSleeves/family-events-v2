@@ -1,6 +1,9 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { AdminSourcesHeader, AdminSourcesList } from "@/components/admin/admin-sources-sections"
+import { AdminCityFilterBar } from "@/components/admin/admin-city-filter-bar"
 import { useAdminCities } from "@/hooks/admin/use-admin-cities"
+import { useCityFilter } from "@/hooks/admin/use-city-filter"
+import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
 import {
   useAdminSources,
   useCreateAdminSource,
@@ -18,6 +21,7 @@ export function AdminSourcesPage() {
   const createSource = useCreateAdminSource()
   const updateSource = useUpdateAdminSource()
   const triggerScrape = useTriggerSourceScrape()
+  const { value: cityFilter, setValue: setCityFilter } = useCityFilter()
 
   const [scrapingSourceId, setScrapingSourceId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -27,6 +31,15 @@ export function AdminSourcesPage() {
     source_type: "website" as SourceType,
     city_id: "",
   })
+
+  const cityCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const source of sources) {
+      const key = source.city_id ?? UNASSIGNED_CITY_KEY
+      counts[key] = (counts[key] ?? 0) + 1
+    }
+    return counts
+  }, [sources])
 
   async function handleScrape(sourceId: string) {
     setScrapingSourceId(sourceId)
@@ -78,6 +91,11 @@ export function AdminSourcesPage() {
     }
   }
 
+  function openAddDialogForCity(cityId: string) {
+    setNewSource((prev) => ({ ...prev, city_id: cityId }))
+    setDialogOpen(true)
+  }
+
   return (
     <div className="space-y-6">
       <AdminSourcesHeader
@@ -92,12 +110,21 @@ export function AdminSourcesPage() {
         onCityChange={(value) => setNewSource((prev) => ({ ...prev, city_id: value }))}
         onAddSource={handleAddSource}
       />
+      <AdminCityFilterBar
+        cities={cities}
+        counts={cityCounts}
+        total={sources.length}
+        value={cityFilter}
+        onChange={setCityFilter}
+      />
       <AdminSourcesList
         sources={sources}
         cities={cities}
+        cityFilter={cityFilter}
         scrapingSourceId={scrapingSourceId}
         onToggleActive={handleToggleActive}
         onScrape={handleScrape}
+        onAddSourceForCity={openAddDialogForCity}
       />
     </div>
   )

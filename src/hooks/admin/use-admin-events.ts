@@ -3,11 +3,17 @@ import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichAdminEvents } from "./admin-events-shared"
+import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
+import type { CityFilterValue } from "./use-city-filter"
 import type { Event, EventWithDetails } from "@/lib/types"
 
-export function useAdminEvents(keyword: string, status: Event["status"] | "all") {
+export function useAdminEvents(
+  keyword: string,
+  status: Event["status"] | "all",
+  cityFilter: CityFilterValue = "all"
+) {
   return useQuery({
-    queryKey: qk.admin.events.list(keyword, status),
+    queryKey: qk.admin.events.list(keyword, status, cityFilter),
     queryFn: async (): Promise<EventWithDetails[]> => {
       let query = supabase
         .from("events")
@@ -18,6 +24,12 @@ export function useAdminEvents(keyword: string, status: Event["status"] | "all")
 
       if (status !== "all") {
         query = query.eq("status", status)
+      }
+
+      if (cityFilter === UNASSIGNED_CITY_KEY) {
+        query = query.is("city_id", null)
+      } else if (cityFilter !== "all") {
+        query = query.eq("city_id", cityFilter)
       }
 
       const sanitized = sanitizePostgrestLike(keyword)
@@ -31,6 +43,29 @@ export function useAdminEvents(keyword: string, status: Event["status"] | "all")
       }
 
       return enrichAdminEvents((data ?? []) as unknown as Event[])
+    },
+  })
+}
+
+export interface AdminEventFacetRow {
+  city_id: string | null
+  status: Event["status"]
+}
+
+export function useAdminEventFacets(keyword: string) {
+  return useQuery({
+    queryKey: qk.admin.events.facets(keyword),
+    queryFn: async (): Promise<AdminEventFacetRow[]> => {
+      let query = supabase.from("events").select("city_id, status")
+      const sanitized = sanitizePostgrestLike(keyword)
+      if (sanitized) {
+        query = query.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
+      }
+      const { data, error } = await query
+      if (error) {
+        throw error
+      }
+      return (data ?? []) as unknown as AdminEventFacetRow[]
     },
   })
 }

@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import type { Database } from "@/lib/database.types"
 import { qk } from "@/lib/query-keys"
@@ -82,7 +82,20 @@ export function usePlanForToday(options: UsePlanForTodayOptions = {}) {
   })
   const weatherFit = weather.data?.weatherFit ?? "any"
 
-  const dateKey = useMemo(() => todayDateKey(), [])
+  const [dateKey, setDateKey] = useState(() => todayDateKey())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextDateKey = todayDateKey()
+      setDateKey((currentDateKey) =>
+        currentDateKey === nextDateKey ? currentDateKey : nextDateKey
+      )
+    }, 60_000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   return useQuery({
     queryKey: qk.saturdayPlan.byContext({

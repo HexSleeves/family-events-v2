@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import type { QueryClient } from "@tanstack/react-query"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
@@ -163,6 +164,7 @@ export function handleToggleFavoriteOnSettled(
 
 export function useToggleFavorite(userId: string | undefined) {
   const queryClient = useQueryClient()
+  const inFlightEventIdsRef = useRef<Set<string>>(new Set())
 
   return useMutation({
     mutationFn: async ({ eventId, isFavorited }: ToggleFavoriteInput) => {
@@ -170,25 +172,36 @@ export function useToggleFavorite(userId: string | undefined) {
         throw new Error("You must be signed in to favorite events.")
       }
 
-      if (isFavorited) {
+      // Guard rapid double-taps so a second click cannot create duplicate writes for one event.
+      if (inFlightEventIdsRef.current.has(eventId)) {
+        return !isFavorited
+      }
+
+      inFlightEventIdsRef.current.add(eventId)
+
+      try {
+        if (isFavorited) {
+          const { error } = await supabase
+            .from("favorites")
+            .delete()
+            .eq("user_id", userId)
+            .eq("event_id", eventId)
+          if (error) {
+            throw error
+          }
+          return false
+        }
+
         const { error } = await supabase
           .from("favorites")
-          .delete()
-          .eq("user_id", userId)
-          .eq("event_id", eventId)
+          .insert({ user_id: userId, event_id: eventId })
         if (error) {
           throw error
         }
-        return false
+        return true
+      } finally {
+        inFlightEventIdsRef.current.delete(eventId)
       }
-
-      const { error } = await supabase
-        .from("favorites")
-        .insert({ user_id: userId, event_id: eventId })
-      if (error) {
-        throw error
-      }
-      return true
     },
     onMutate: async (variables) => {
       if (!userId) {
