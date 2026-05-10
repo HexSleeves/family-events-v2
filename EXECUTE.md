@@ -57,7 +57,7 @@ begin. Do not proceed without explicit go-ahead.
 - **Tech stack:** React 19 + Vite + TypeScript + Supabase (Postgres + Edge
   Functions Deno) + Tailwind v4 + react-query + react-router v7. No new infra
   services. OpenWeather free tier. Nominatim for geocoding (User-Agent header
-  + 1 req/s rate limit).
+  - 1 req/s rate limit).
 - **Schema column names:** `events.latitude` / `events.longitude`,
   `events.age_min` / `events.age_max`, `profiles.child_age` (integer).
   **Do NOT use** `lat` / `lng` / `min_age` / `max_age` — those names are wrong
@@ -130,7 +130,7 @@ begin. Do not proceed without explicit go-ahead.
 ### Lane D — Hooks (after Lane A + types regen, parallel with C)
 
 - `src/hooks/use-plan-for-today.ts`: composes geolocation + weather + history
-  + RPC; auto-stretches `p_date + 1..+7` if 0 rows (decision 4B); error policy
+  - RPC; auto-stretches `p_date + 1..+7` if 0 rows (decision 4B); error policy
   per decision 10A table.
 - `src/hooks/use-weather.ts`: OpenWeather client, react-query 1h cache, retry
   x2 with backoff, fail silently to `null`.

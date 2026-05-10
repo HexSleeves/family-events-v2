@@ -1,4 +1,5 @@
 import type { Event, EventFilters } from "@/lib/types"
+import { sanitizePostgrestLike } from "@/lib/utils"
 
 const DEFAULT_EVENT_STATUS: Event["status"] = "published"
 
@@ -42,7 +43,7 @@ function normalizeEventFilters(filters: EventFilters = {}) {
     ageMax: nil(filters.ageMax),
     isFree: nil(filters.isFree),
     tagSlugs: sortedUnique(filters.tagSlugs),
-    keyword: filters.keyword?.trim() || null,
+    keyword: sanitizePostgrestLike(filters.keyword ?? "") || null,
     isFeatured: nil(filters.isFeatured),
     status: filters.status ?? DEFAULT_EVENT_STATUS,
   } as const
@@ -50,7 +51,7 @@ function normalizeEventFilters(filters: EventFilters = {}) {
 
 function normalizeAdminEventsParams(keyword: string, status: Event["status"] | "all") {
   return {
-    keyword: keyword.trim(),
+    keyword: sanitizePostgrestLike(keyword),
     status,
   } as const
 }

@@ -27,6 +27,25 @@ describe("qk.events", () => {
     expect(a[0]).toBe("events")
   })
 
+  it("uses the same keyword normalization as the event search RPC boundary", () => {
+    const a = qk.events.list({
+      filters: {
+        keyword: " storytime,or(status.eq.draft) ",
+      },
+      limit: 100,
+      offset: 0,
+    })
+    const b = qk.events.list({
+      filters: {
+        keyword: "storytime or status eq draft",
+      },
+      limit: 100,
+      offset: 0,
+    })
+
+    expect(a).toEqual(b)
+  })
+
   it("keeps event detail namespaces available for broad invalidation", () => {
     expect(qk.events.detailById("event-1")).toEqual(["event", "event-1"])
     expect(qk.events.detail("event-1", "user-1")).toEqual(["event", "event-1", "user-1"])
@@ -41,5 +60,13 @@ describe("qk.enrichedEvents", () => {
       ["a", "b"],
       null,
     ])
+  })
+})
+
+describe("qk.admin.events", () => {
+  it("uses sanitized keyword params for admin event search keys", () => {
+    expect(qk.admin.events.list(" storytime,or(status.eq.draft) ", "all")).toEqual(
+      qk.admin.events.list("storytime or status eq draft", "all")
+    )
   })
 })
