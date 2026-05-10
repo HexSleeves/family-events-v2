@@ -211,10 +211,10 @@ export function useToggleFavorite(userId: string | undefined) {
       if (!userId) {
         return { previousFavorites: [] }
       }
-      if (inFlightEventIdsRef.current.has(variables.eventId)) {
-        return { previousFavorites: [] }
-      }
-      inFlightEventIdsRef.current.add(variables.eventId)
+      // Do NOT touch inFlightEventIdsRef here. It is owned exclusively by
+      // mutationFn (which runs immediately after onMutate). If onMutate also
+      // wrote to the ref, mutationFn's guard would fire on every first call
+      // and skip the network mutation entirely, making favorites unwritable.
       return handleToggleFavoriteOnMutate(queryClient, userId, variables)
     },
     onError: (_error, variables, context) => {
