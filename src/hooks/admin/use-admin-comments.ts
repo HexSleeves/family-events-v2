@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { Comment } from "@/lib/types"
 import type { AdminComment } from "./admin-types"
@@ -7,11 +8,13 @@ export type { AdminComment } from "./admin-types"
 
 export function useAdminComments() {
   return useQuery({
-    queryKey: ["admin", "comments"],
+    queryKey: qk.admin.comments,
     queryFn: async (): Promise<AdminComment[]> => {
       const { data, error } = await supabase
         .from("comments")
-        .select("*, user_profiles(display_name), events(title)")
+        .select(
+          "id, user_id, event_id, body, is_approved, is_flagged, created_at, updated_at, user_profiles(display_name), events(title)"
+        )
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -40,8 +43,8 @@ export function useUpdateAdminComment() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
-      void queryClient.invalidateQueries({ queryKey: ["comments"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.comments })
+      void queryClient.invalidateQueries({ queryKey: qk.comments.all })
     },
   })
 }
@@ -57,8 +60,8 @@ export function useDeleteAdminComment() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
-      void queryClient.invalidateQueries({ queryKey: ["comments"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.comments })
+      void queryClient.invalidateQueries({ queryKey: qk.comments.all })
     },
   })
 }

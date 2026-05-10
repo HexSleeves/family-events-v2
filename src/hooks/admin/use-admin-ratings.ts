@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { AdminRating } from "./admin-types"
 
 export function useAdminRatings() {
   return useQuery({
-    queryKey: ["admin", "ratings"],
+    queryKey: qk.admin.ratings,
     queryFn: async (): Promise<AdminRating[]> => {
       const { data, error } = await supabase
         .from("ratings")
-        .select("*, user_profiles(display_name), events(title)")
+        .select(
+          "id, user_id, event_id, score, created_at, user_profiles(display_name), events(title)"
+        )
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -31,10 +34,10 @@ export function useDeleteAdminRating() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "ratings"] })
-      void queryClient.invalidateQueries({ queryKey: ["ratings"] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["event"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.ratings })
+      void queryClient.invalidateQueries({ queryKey: qk.ratings.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailAll })
     },
   })
 }

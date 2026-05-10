@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichEvents } from "@/lib/enrich-events"
@@ -85,7 +86,13 @@ async function fetchEvents(
 }
 
 async function fetchEventById(eventId: string, userId?: string): Promise<EventWithDetails | null> {
-  const { data, error } = await supabase.from("events").select("*").eq("id", eventId).maybeSingle()
+  const { data, error } = await supabase
+    .from("events")
+    .select(
+      "id, title, description, start_datetime, end_datetime, timezone, venue_name, address, city_id, latitude, longitude, age_min, age_max, price, is_free, source_url, source_name, source_id, images, status, ai_confidence, ai_tag_provider, recurrence_info, is_featured, view_count, search_vector, created_at, updated_at"
+    )
+    .eq("id", eventId)
+    .maybeSingle()
 
   if (error) {
     throw error
@@ -106,7 +113,9 @@ async function fetchEventsByIds(eventIds: string[], userId?: string): Promise<Ev
   const uniqueEventIds = [...new Set(eventIds)]
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(
+      "id, title, description, start_datetime, end_datetime, timezone, venue_name, address, city_id, latitude, longitude, age_min, age_max, price, is_free, source_url, source_name, source_id, images, status, ai_confidence, ai_tag_provider, recurrence_info, is_featured, view_count, search_vector, created_at, updated_at"
+    )
     .in("id", uniqueEventIds)
     .order("start_datetime", { ascending: true })
 
@@ -123,7 +132,12 @@ export function useEvents(options: UseEventsOptions = {}) {
   const resolvedOffset = offset ?? DEFAULT_OFFSET
 
   return useQuery({
-    queryKey: ["events", filters, userId ?? null, resolvedLimit, resolvedOffset],
+    queryKey: qk.events.list({
+      filters,
+      userId,
+      limit: resolvedLimit,
+      offset: resolvedOffset,
+    }),
     queryFn: () => fetchEvents(filters, { userId, limit: resolvedLimit, offset: resolvedOffset }),
     enabled,
   })
@@ -131,7 +145,7 @@ export function useEvents(options: UseEventsOptions = {}) {
 
 export function useEvent(eventId: string | undefined, userId?: string) {
   return useQuery({
-    queryKey: ["event", eventId, userId ?? null],
+    queryKey: qk.events.detail(eventId, userId),
     queryFn: () => fetchEventById(eventId!, userId),
     enabled: Boolean(eventId),
   })
@@ -139,7 +153,7 @@ export function useEvent(eventId: string | undefined, userId?: string) {
 
 export function useEventsByIds(eventIds: string[], userId?: string) {
   return useQuery({
-    queryKey: ["events-by-id", eventIds, userId ?? null],
+    queryKey: qk.events.byIds(eventIds, userId),
     queryFn: () => fetchEventsByIds(eventIds, userId),
   })
 }

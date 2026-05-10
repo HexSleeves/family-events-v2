@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { Event, EventTag, EventWithDetails, Tag } from "@/lib/types"
 
@@ -118,23 +119,7 @@ export function buildEnrichedRpcArgs(options: UseEnrichedEventsOptions) {
 //  - list:     ["events-enriched", { cityId, status, userId, dateFrom, dateTo }]
 // IDs are sorted so caller insertion-order does not fragment the cache.
 export function buildEnrichedQueryKey(options: UseEnrichedEventsOptions) {
-  const { cityId, userId, status = DEFAULT_STATUS, eventIds, dateFrom, dateTo } = options
-
-  if (eventIds) {
-    const sortedIds = [...eventIds].sort()
-    return ["events-enriched", "by-ids", sortedIds, userId ?? null] as const
-  }
-
-  return [
-    "events-enriched",
-    {
-      cityId: cityId ?? null,
-      status,
-      userId: userId ?? null,
-      dateFrom: dateFrom ? toIsoDate(dateFrom) : null,
-      dateTo: dateTo ? toIsoDate(dateTo) : null,
-    },
-  ] as const
+  return qk.enrichedEvents.key(options)
 }
 
 async function fetchEnrichedEvents(options: UseEnrichedEventsOptions): Promise<EventWithDetails[]> {
@@ -162,4 +147,4 @@ export function useEnrichedEvents(options: UseEnrichedEventsOptions = {}) {
   })
 }
 
-export const ENRICHED_EVENTS_QUERY_KEY = "events-enriched" as const
+export const ENRICHED_EVENTS_QUERY_KEY = qk.enrichedEvents.all[0]

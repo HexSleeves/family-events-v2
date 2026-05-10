@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { Favorite } from "@/lib/types"
 
 export function useFavorites(userId: string | undefined) {
   return useQuery({
-    queryKey: ["favorites", userId ?? null],
+    queryKey: qk.favorites.byUser(userId),
     queryFn: async (): Promise<Favorite[]> => {
       if (!userId) {
         return []
@@ -12,7 +13,7 @@ export function useFavorites(userId: string | undefined) {
 
       const { data, error } = await supabase
         .from("favorites")
-        .select("*")
+        .select("id, user_id, event_id, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
 
@@ -61,11 +62,11 @@ export function useToggleFavorite(userId: string | undefined) {
       return true
     },
     onSuccess: (_isNowFavorited, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["favorites", userId ?? null] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
-      void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
-      void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
+      void queryClient.invalidateQueries({ queryKey: qk.favorites.byUser(userId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailById(variables.eventId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
     },
   })
 }

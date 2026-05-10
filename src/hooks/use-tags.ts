@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { Tag } from "@/lib/types"
 
-export const TAGS_QUERY_KEY = ["tags"] as const
+export const TAGS_QUERY_KEY = qk.tags.all
 
 async function fetchTags(): Promise<Tag[]> {
   const { data, error } = await supabase
     .from("tags")
-    .select("*")
+    .select("id, name, slug, color, category, is_system, created_at")
     .order("category", { ascending: true })
     .order("name", { ascending: true })
 
@@ -20,7 +21,7 @@ async function fetchTags(): Promise<Tag[]> {
 
 export function useTags() {
   return useQuery({
-    queryKey: TAGS_QUERY_KEY,
+    queryKey: qk.tags.all,
     queryFn: fetchTags,
   })
 }

@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { AdminUserAccessRecord } from "./admin-types"
 
 export function useAdminUserAccess() {
   return useQuery({
-    queryKey: ["admin", "user-access"],
+    queryKey: qk.admin.userAccess,
     queryFn: async (): Promise<AdminUserAccessRecord[]> => {
       const { data, error } = await supabase
         .from("user_access")
-        .select("*, user_profiles(display_name, email, role, created_at)")
+        .select(
+          "user_id, is_enabled, enabled_at, disabled_at, disabled_reason, created_at, updated_at, user_profiles(display_name, email, role, created_at)"
+        )
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -54,7 +57,7 @@ export function useUpdateAdminUserAccess() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "user-access"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.userAccess })
     },
   })
 }

@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import { validateExternalUrl } from "../../../supabase/functions/_shared/url-validation"
 import type { EventSource } from "@/lib/types"
 
 export function useAdminSources() {
   return useQuery({
-    queryKey: ["admin", "sources"],
+    queryKey: qk.admin.sources,
     queryFn: async (): Promise<EventSource[]> => {
       const { data, error } = await supabase
         .from("event_sources")
-        .select("*")
+        .select(
+          "id, name, url, source_type, city_id, is_active, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
+        )
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -37,7 +40,7 @@ export function useCreateAdminSource() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "sources"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sources })
     },
   })
 }
@@ -65,7 +68,7 @@ export function useUpdateAdminSource() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "sources"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sources })
     },
   })
 }
@@ -86,9 +89,9 @@ export function useTriggerSourceScrape() {
       return data
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "sources"] })
-      void queryClient.invalidateQueries({ queryKey: ["admin", "source-runs"] })
-      void queryClient.invalidateQueries({ queryKey: ["admin", "stats"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sources })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sourceRuns })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.stats })
     },
   })
 }

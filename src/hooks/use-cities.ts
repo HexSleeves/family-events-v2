@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { City } from "@/lib/types"
 
-export const ACTIVE_CITIES_QUERY_KEY = ["cities", "active"] as const
+export const ACTIVE_CITIES_QUERY_KEY = qk.cities.active
 
 async function fetchActiveCities(): Promise<City[]> {
   const { data, error } = await supabase
     .from("cities")
-    .select("*")
+    .select("id, name, state, country, slug, is_active, latitude, longitude, timezone, created_at")
     .eq("is_active", true)
     .order("name", { ascending: true })
 
@@ -20,7 +21,7 @@ async function fetchActiveCities(): Promise<City[]> {
 
 export function useCities() {
   return useQuery({
-    queryKey: ACTIVE_CITIES_QUERY_KEY,
+    queryKey: qk.cities.active,
     queryFn: fetchActiveCities,
   })
 }

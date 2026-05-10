@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { UserProfile } from "@/lib/types"
 
@@ -22,7 +23,9 @@ export function useUpdateProfile(userId: string | undefined) {
         .from("user_profiles")
         .update(payload)
         .eq("id", userId)
-        .select("*")
+        .select(
+          "id, email, display_name, avatar_url, role, city_preference_id, child_name, child_age, created_at, updated_at"
+        )
         .single()
 
       if (error) {
@@ -32,7 +35,7 @@ export function useUpdateProfile(userId: string | undefined) {
       return data as UserProfile
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["user-profile", userId ?? null] })
+      void queryClient.invalidateQueries({ queryKey: qk.userProfile.byUser(userId) })
     },
   })
 }

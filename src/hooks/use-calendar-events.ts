@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { UserCalendarEvent } from "@/lib/types"
 
 export function useCalendarEvents(userId: string | undefined) {
   return useQuery({
-    queryKey: ["calendar-events", userId ?? null],
+    queryKey: qk.calendarEvents.byUser(userId),
     queryFn: async (): Promise<UserCalendarEvent[]> => {
       if (!userId) {
         return []
@@ -12,7 +13,7 @@ export function useCalendarEvents(userId: string | undefined) {
 
       const { data, error } = await supabase
         .from("user_calendar_events")
-        .select("*")
+        .select("id, user_id, event_id, added_at, notes")
         .eq("user_id", userId)
         .order("added_at", { ascending: false })
 
@@ -68,11 +69,11 @@ export function useToggleCalendarEvent(userId: string | undefined) {
       return true
     },
     onSuccess: (_isNowInCalendar, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["calendar-events", userId ?? null] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
-      void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
-      void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
+      void queryClient.invalidateQueries({ queryKey: qk.calendarEvents.byUser(userId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailById(variables.eventId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
     },
   })
 }

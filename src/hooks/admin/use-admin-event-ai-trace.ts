@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import { normalizeAiTrace } from "./admin-types"
 import type { EventAiTrace } from "@/lib/types"
 
 export function useAdminEventAiTrace(eventId: string | null) {
   return useQuery({
-    queryKey: ["admin", "event-ai-trace", eventId],
+    queryKey: qk.admin.eventAiTrace(eventId),
     enabled: Boolean(eventId),
     queryFn: async () => {
       if (!eventId) {
@@ -14,7 +15,9 @@ export function useAdminEventAiTrace(eventId: string | null) {
 
       const { data, error } = await supabase
         .from("event_ai_traces")
-        .select("*")
+        .select(
+          "id, event_id, source_run_id, trigger_type, provider, model, status, input_title, input_description, available_tag_slugs, predicted_tags, predicted_fields, reasoning_summary, fallback_reason, processing_ms, created_at"
+        )
         .eq("event_id", eventId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -99,10 +102,10 @@ export function useUpdateAdminEventTags() {
       return eventId
     },
     onSuccess: (eventId) => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "events"] })
-      void queryClient.invalidateQueries({ queryKey: ["admin", "event-ai-trace", eventId] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["event"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.eventAiTrace(eventId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailAll })
     },
   })
 }

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichAdminEvents } from "./admin-events-shared"
@@ -6,9 +7,14 @@ import type { Event, EventWithDetails } from "@/lib/types"
 
 export function useAdminEvents(keyword: string, status: Event["status"] | "all") {
   return useQuery({
-    queryKey: ["admin", "events", keyword, status],
+    queryKey: qk.admin.events.list(keyword, status),
     queryFn: async (): Promise<EventWithDetails[]> => {
-      let query = supabase.from("events").select("*").order("created_at", { ascending: false })
+      let query = supabase
+        .from("events")
+        .select(
+          "id, title, description, start_datetime, end_datetime, timezone, venue_name, address, city_id, latitude, longitude, age_min, age_max, price, is_free, source_url, source_name, source_id, images, status, ai_confidence, ai_tag_provider, recurrence_info, is_featured, view_count, search_vector, created_at, updated_at"
+        )
+        .order("created_at", { ascending: false })
 
       if (status !== "all") {
         query = query.eq("status", status)
@@ -41,9 +47,9 @@ export function useUpdateAdminEventStatus() {
       return status
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "events"] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["event"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailAll })
     },
   })
 }
@@ -60,9 +66,9 @@ export function useBatchUpdateAdminEventStatus() {
       return { count: eventIds.length, status }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "events"] })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["event"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailAll })
     },
   })
 }

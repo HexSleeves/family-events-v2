@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { City } from "@/lib/types"
 
 export function useAdminCities() {
   return useQuery({
-    queryKey: ["admin", "cities"],
+    queryKey: qk.admin.cities,
     queryFn: async (): Promise<City[]> => {
       const { data, error } = await supabase
         .from("cities")
-        .select("*")
+        .select(
+          "id, name, state, country, slug, is_active, latitude, longitude, timezone, created_at"
+        )
         .order("name", { ascending: true })
       if (error) {
         throw error
@@ -36,8 +39,8 @@ export function useCreateAdminCity() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "cities"] })
-      void queryClient.invalidateQueries({ queryKey: ["cities", "active"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.cities })
+      void queryClient.invalidateQueries({ queryKey: qk.cities.active })
     },
   })
 }
@@ -59,8 +62,8 @@ export function useUpdateAdminCity() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "cities"] })
-      void queryClient.invalidateQueries({ queryKey: ["cities", "active"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.cities })
+      void queryClient.invalidateQueries({ queryKey: qk.cities.active })
     },
   })
 }

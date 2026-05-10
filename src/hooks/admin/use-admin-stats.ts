@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { AdminStats } from "./admin-types"
 
 export function useAdminStats() {
   return useQuery({
-    queryKey: ["admin", "stats"],
+    queryKey: qk.admin.stats,
     queryFn: async (): Promise<AdminStats> => {
       const [{ data: events, error: eventsError }, { data: sources, error: sourcesError }] =
         await Promise.all([

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { Rating } from "@/lib/types"
 
 export function useRatings(eventId: string | undefined) {
   return useQuery({
-    queryKey: ["ratings", eventId ?? null],
+    queryKey: qk.ratings.byEvent(eventId),
     queryFn: async (): Promise<Rating[]> => {
       if (!eventId) {
         return []
@@ -12,7 +13,7 @@ export function useRatings(eventId: string | undefined) {
 
       const { data, error } = await supabase
         .from("ratings")
-        .select("*")
+        .select("id, user_id, event_id, score, created_at")
         .eq("event_id", eventId)
         .order("created_at", { ascending: false })
 
@@ -28,7 +29,7 @@ export function useRatings(eventId: string | undefined) {
 
 export function useUserRating(userId: string | undefined, eventId: string | undefined) {
   return useQuery({
-    queryKey: ["rating", userId ?? null, eventId ?? null],
+    queryKey: qk.ratings.userEvent(userId, eventId),
     queryFn: async (): Promise<Rating | null> => {
       if (!userId || !eventId) {
         return null
@@ -36,7 +37,7 @@ export function useUserRating(userId: string | undefined, eventId: string | unde
 
       const { data, error } = await supabase
         .from("ratings")
-        .select("*")
+        .select("id, user_id, event_id, score, created_at")
         .eq("user_id", userId)
         .eq("event_id", eventId)
         .maybeSingle()
@@ -75,7 +76,7 @@ export function useUpsertRating(userId: string | undefined) {
           },
           { onConflict: "user_id,event_id" }
         )
-        .select("*")
+        .select("id, user_id, event_id, score, created_at")
         .single()
 
       if (error) {
@@ -85,14 +86,14 @@ export function useUpsertRating(userId: string | undefined) {
       return data
     },
     onSuccess: (_rating, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["ratings", variables.eventId] })
+      void queryClient.invalidateQueries({ queryKey: qk.ratings.byEvent(variables.eventId) })
       void queryClient.invalidateQueries({
-        queryKey: ["rating", userId ?? null, variables.eventId],
+        queryKey: qk.ratings.userEvent(userId, variables.eventId),
       })
-      void queryClient.invalidateQueries({ queryKey: ["events"] })
-      void queryClient.invalidateQueries({ queryKey: ["events-enriched"] })
-      void queryClient.invalidateQueries({ queryKey: ["event", variables.eventId] })
-      void queryClient.invalidateQueries({ queryKey: ["events-by-id"] })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailById(variables.eventId) })
+      void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
     },
   })
 }

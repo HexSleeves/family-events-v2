@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { CommentWithProfile } from "@/lib/types"
 
 export function useComments(eventId: string | undefined) {
   return useQuery({
-    queryKey: ["comments", eventId ?? null],
+    queryKey: qk.comments.byEvent(eventId),
     queryFn: async (): Promise<CommentWithProfile[]> => {
       if (!eventId) {
         return []
@@ -12,7 +13,9 @@ export function useComments(eventId: string | undefined) {
 
       const { data, error } = await supabase
         .from("comments")
-        .select("*, user_profiles(display_name, avatar_url)")
+        .select(
+          "id, user_id, event_id, body, is_approved, is_flagged, created_at, updated_at, user_profiles(display_name, avatar_url)"
+        )
         .eq("event_id", eventId)
         .eq("is_approved", true)
         .order("created_at", { ascending: false })
@@ -50,7 +53,7 @@ export function useAddComment(userId: string | undefined) {
           is_approved: true,
           is_flagged: false,
         })
-        .select("*")
+        .select("id, user_id, event_id, body, is_approved, is_flagged, created_at, updated_at")
         .single()
 
       if (error) {
@@ -60,7 +63,7 @@ export function useAddComment(userId: string | undefined) {
       return data
     },
     onSuccess: (_comment, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["comments", variables.eventId] })
+      void queryClient.invalidateQueries({ queryKey: qk.comments.byEvent(variables.eventId) })
     },
   })
 }

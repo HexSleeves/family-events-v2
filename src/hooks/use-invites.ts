@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { InviteCode } from "@/lib/types"
 
@@ -16,7 +17,7 @@ export function resolveInviteRequirement(
 // Used by sign-up page: do we need to collect a code?
 export function useInvitesRequired() {
   return useQuery({
-    queryKey: ["invites-required"],
+    queryKey: qk.invites.required,
     queryFn: async (): Promise<boolean> => {
       const { data, error } = await supabase.rpc("invites_required")
       if (error) throw error
@@ -39,11 +40,11 @@ export async function redeemInvite(code: string, email: string): Promise<boolean
 // Admin: list all codes
 export function useAdminInviteCodes() {
   return useQuery({
-    queryKey: ["admin", "invite-codes"],
+    queryKey: qk.admin.inviteCodes,
     queryFn: async (): Promise<InviteCode[]> => {
       const { data, error } = await supabase
         .from("invite_codes")
-        .select("*")
+        .select("code, max_uses, used_count, expires_at, notes, created_by, created_at")
         .order("created_at", { ascending: false })
       if (error) throw error
       return (data ?? []) as InviteCode[]
@@ -64,7 +65,7 @@ export function useCreateInviteCode() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.inviteCodes })
     },
   })
 }
@@ -77,7 +78,7 @@ export function useDeleteInviteCode() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.inviteCodes })
     },
   })
 }
