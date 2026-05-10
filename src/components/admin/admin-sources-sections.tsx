@@ -198,7 +198,7 @@ interface AdminSourcesListProps {
   sources: EventSource[]
   cities: City[]
   cityFilter: CityFilterValue
-  scrapingSourceId: string | null
+  scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
   onScrape: (sourceId: string) => void
   onAddSourceForCity: (cityId: string) => void
@@ -208,7 +208,7 @@ export function AdminSourcesList({
   sources,
   cities,
   cityFilter,
-  scrapingSourceId,
+  scrapingSourceIds,
   onToggleActive,
   onScrape,
   onAddSourceForCity,
@@ -226,7 +226,7 @@ export function AdminSourcesList({
             key={source.id}
             source={source}
             cities={cities}
-            scrapingSourceId={scrapingSourceId}
+            scrapingSourceIds={scrapingSourceIds}
             onToggleActive={onToggleActive}
             onScrape={onScrape}
           />
@@ -270,7 +270,7 @@ export function AdminSourcesList({
                       key={source.id}
                       source={source}
                       cities={cities}
-                      scrapingSourceId={scrapingSourceId}
+                      scrapingSourceIds={scrapingSourceIds}
                       onToggleActive={onToggleActive}
                       onScrape={onScrape}
                     />
@@ -288,7 +288,7 @@ export function AdminSourcesList({
 interface SourceCardProps {
   source: EventSource
   cities: City[]
-  scrapingSourceId: string | null
+  scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
   onScrape: (sourceId: string) => void
 }
@@ -296,7 +296,7 @@ interface SourceCardProps {
 function SourceCard({
   source,
   cities,
-  scrapingSourceId,
+  scrapingSourceIds,
   onToggleActive,
   onScrape,
 }: SourceCardProps) {
@@ -342,13 +342,13 @@ function SourceCard({
               variant="outline"
               size="sm"
               className="gap-1.5 text-xs h-8"
-              disabled={scrapingSourceId !== null || !source.is_active}
+              disabled={scrapingSourceIds.has(source.id) || !source.is_active}
               onClick={() => onScrape(source.id)}
             >
               <RefreshCw
-                className={cn("h-3 w-3", scrapingSourceId === source.id && "animate-spin")}
+                className={cn("h-3 w-3", scrapingSourceIds.has(source.id) && "animate-spin")}
               />
-              {scrapingSourceId === source.id ? "Running..." : "Scrape Now"}
+              {scrapingSourceIds.has(source.id) ? "Running..." : "Scrape Now"}
             </Button>
           </div>
         </div>

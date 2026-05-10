@@ -23,7 +23,7 @@ export function AdminSourcesPage() {
   const triggerScrape = useTriggerSourceScrape()
   const { value: cityFilter, setValue: setCityFilter } = useCityFilter()
 
-  const [scrapingSourceId, setScrapingSourceId] = useState<string | null>(null)
+  const [scrapingSourceIds, setScrapingSourceIds] = useState<Set<string>>(new Set())
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newSource, setNewSource] = useState({
     name: "",
@@ -42,14 +42,18 @@ export function AdminSourcesPage() {
   }, [sources])
 
   async function handleScrape(sourceId: string) {
-    setScrapingSourceId(sourceId)
+    setScrapingSourceIds((prev) => new Set([...prev, sourceId]))
     try {
       await triggerScrape.mutateAsync({ sourceId })
       toast.success("Scrape started!", { description: "Ingestion run queued." })
     } catch (error) {
       toast.error(humanizeSupabaseError(error, "Failed to trigger scrape."))
     } finally {
-      setScrapingSourceId(null)
+      setScrapingSourceIds((prev) => {
+        const next = new Set(prev)
+        next.delete(sourceId)
+        return next
+      })
     }
   }
 
@@ -121,7 +125,7 @@ export function AdminSourcesPage() {
         sources={sources}
         cities={cities}
         cityFilter={cityFilter}
-        scrapingSourceId={scrapingSourceId}
+        scrapingSourceIds={scrapingSourceIds}
         onToggleActive={handleToggleActive}
         onScrape={handleScrape}
         onAddSourceForCity={openAddDialogForCity}
