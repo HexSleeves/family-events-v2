@@ -292,6 +292,7 @@ function EventCard({
               checked={isSelected}
               onCheckedChange={() => onToggleSelect(event.id)}
               className="mt-1 shrink-0"
+              aria-label={`Select draft ${event.title}`}
             />
           )}
           <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">

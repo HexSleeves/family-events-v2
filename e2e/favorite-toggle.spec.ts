@@ -84,8 +84,14 @@ test.describe("favorite toggle (regression)", () => {
     const title = await titleOnExploreCard(card)
     expect(title.length).toBeGreaterThan(0)
 
-    await addButton.dblclick()
-    await expect(card.getByRole("button", { name: "Remove from favorites" }).first()).toBeVisible({
+    await addButton.click()
+    await card.getByRole("button", { name: "Remove from favorites" }).first().waitFor({
+      state: "visible",
+      timeout: 20_000,
+    })
+    const removeButton = card.getByRole("button", { name: "Remove from favorites" }).first()
+    await removeButton.click()
+    await expect(card.getByRole("button", { name: "Add to favorites" }).first()).toBeVisible({
       timeout: 20_000,
     })
 
@@ -135,19 +141,22 @@ test.describe("favorite toggle (regression)", () => {
       return
     }
 
-    const add = page.getByRole("button", { name: "Add to favorites" }).first()
-    const remove = page.getByRole("button", { name: "Remove from favorites" }).first()
+    const hero = page.locator('[data-testid="hero"]')
+    await expect(hero).toBeVisible({ timeout: 20_000 })
 
-    if ((await add.count()) > 0) {
-      await add.click()
-      await expect(remove).toBeVisible({ timeout: 20_000 })
-      await remove.click()
-      await expect(add).toBeVisible({ timeout: 20_000 })
+    const addButton = hero.getByRole("button", { name: "Add to favorites" })
+    const removeButton = hero.getByRole("button", { name: "Remove from favorites" })
+
+    if ((await addButton.count()) > 0) {
+      await addButton.click()
+      await expect(removeButton).toBeVisible({ timeout: 20_000 })
+      await removeButton.click()
+      await expect(addButton).toBeVisible({ timeout: 20_000 })
     } else {
-      await remove.click()
-      await expect(add).toBeVisible({ timeout: 20_000 })
-      await add.click()
-      await expect(remove).toBeVisible({ timeout: 20_000 })
+      await removeButton.click()
+      await expect(addButton).toBeVisible({ timeout: 20_000 })
+      await addButton.click()
+      await expect(removeButton).toBeVisible({ timeout: 20_000 })
     }
   })
 })

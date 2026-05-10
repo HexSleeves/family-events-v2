@@ -24,6 +24,11 @@ setup("authenticate local admin", async ({ page }) => {
     await emailField.fill(adminEmail)
     await passwordField.fill(adminPassword)
     await page.getByRole("button", { name: "Sign In" }).click()
+  } else {
+    const currentUrl = page.url()
+    if (!currentUrl.match(/\/home$/)) {
+      throw new Error("Sign-in form not visible and not redirected to /home")
+    }
   }
 
   await expect(page).toHaveURL(/\/home$/, { timeout: 30_000 })

@@ -6,6 +6,7 @@ import {
   Clock,
   FileText,
   Globe,
+  HelpCircle,
   Plus,
   RefreshCw,
   Rss,
@@ -49,6 +50,18 @@ const SOURCE_TYPE_ICONS: Record<SourceType, ElementType> = {
   rss: Rss,
   ical: Calendar,
   manual: FileText,
+}
+
+function getSourceIcon(sourceType: string): ElementType {
+  return SOURCE_TYPE_ICONS[sourceType as SourceType] ?? HelpCircle
+}
+
+function getSourceStatus(lastStatus: string | null | undefined): SourceStatus {
+  const validStatuses: SourceStatus[] = ["pending", "success", "error", "partial"]
+  if (lastStatus && validStatuses.includes(lastStatus as SourceStatus)) {
+    return lastStatus as SourceStatus
+  }
+  return "pending"
 }
 
 function StatusIndicator({ status }: { status: SourceStatus }) {
@@ -287,8 +300,9 @@ function SourceCard({
   onToggleActive,
   onScrape,
 }: SourceCardProps) {
-  const TypeIcon = SOURCE_TYPE_ICONS[source.source_type as SourceType]
+  const TypeIcon = getSourceIcon(source.source_type)
   const cityLabel = cities.find((city) => city.id === source.city_id)?.name ?? "Unassigned"
+  const safeStatus = getSourceStatus(source.last_status)
 
   return (
     <Card className="border-border/60">
@@ -307,7 +321,7 @@ function SourceCard({
             </div>
             <p className="text-xs text-muted-foreground truncate mt-0.5">{source.url}</p>
             <div className="flex items-center gap-4 mt-2 flex-wrap">
-              <StatusIndicator status={(source.last_status ?? "pending") as SourceStatus} />
+              <StatusIndicator status={safeStatus} />
               {source.last_scraped_at && (
                 <span className="text-xs text-muted-foreground">
                   Last run {format(new Date(source.last_scraped_at), "MMM d, h:mm a")}
@@ -321,8 +335,8 @@ function SourceCard({
           <div className="flex items-center gap-3 shrink-0">
             <Switch
               checked={source.is_active}
-              onCheckedChange={() => onToggleActive(source.id, source.is_active)}
-              aria-label="Active"
+              onCheckedChange={(checked) => onToggleActive(source.id, checked)}
+              aria-label={`Toggle ${source.name} active`}
             />
             <Button
               variant="outline"

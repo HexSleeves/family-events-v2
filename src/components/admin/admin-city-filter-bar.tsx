@@ -31,7 +31,7 @@ export function AdminCityFilterBar({
   }))
 
   const unassignedCount = counts[UNASSIGNED_CITY_KEY] ?? 0
-  if (unassignedCount > 0) {
+  if (unassignedCount > 0 || value === UNASSIGNED_CITY_KEY) {
     cityChips.push({ key: UNASSIGNED_CITY_KEY, label: "Unassigned", count: unassignedCount })
   }
 

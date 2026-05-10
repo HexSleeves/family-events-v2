@@ -211,6 +211,10 @@ export function useToggleFavorite(userId: string | undefined) {
       if (!userId) {
         return { previousFavorites: [] }
       }
+      if (inFlightEventIdsRef.current.has(variables.eventId)) {
+        return { previousFavorites: [] }
+      }
+      inFlightEventIdsRef.current.add(variables.eventId)
       return handleToggleFavoriteOnMutate(queryClient, userId, variables)
     },
     onError: (_error, variables, context) => {
