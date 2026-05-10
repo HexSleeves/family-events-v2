@@ -56,7 +56,7 @@ async function fetchEvents(
 ): Promise<EventWithDetails[]> {
   const { userId, limit = DEFAULT_LIMIT, offset = 0 } = options
 
-  const keyword = filters.keyword?.trim() ? normalizeKeyword(filters.keyword) : null
+  const keyword = normalizeKeyword(filters.keyword ?? "") || null
   const effectiveFeatured = filters.isFeatured ?? null
 
   // Generated Postgres RPC types require `undefined` for unset optional params.

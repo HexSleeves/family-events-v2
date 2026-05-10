@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { qk } from "@/lib/query-keys"
 import { matchesAgeFilter, normalizeKeyword } from "./use-events"
 import type { Event } from "@/lib/types"
 
@@ -70,5 +71,21 @@ describe("normalizeKeyword", () => {
 
   it("returns empty string for only-reserved input", () => {
     expect(normalizeKeyword(",.()*%_\"'")).toBe("")
+  })
+
+  it("omits reserved-only keyword searches from event list keys", () => {
+    expect(
+      qk.events.list({
+        filters: { keyword: ",.()*%_\"'" },
+        limit: 100,
+        offset: 0,
+      })
+    ).toEqual(
+      qk.events.list({
+        filters: {},
+        limit: 100,
+        offset: 0,
+      })
+    )
   })
 })
