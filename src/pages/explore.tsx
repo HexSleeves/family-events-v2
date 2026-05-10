@@ -23,7 +23,6 @@ export function ExplorePage() {
   const [onlyFree, setOnlyFree] = useState(false)
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
 
   const ageFilter = AGE_OPTIONS.find((option) => option.label === selectedAge)
 
@@ -119,15 +118,6 @@ export function ExplorePage() {
     })
   }, [allEvents, keyword, dateRange, onlyFree, ageFilter, combinedTagSlugs])
 
-  const baseFavoritedIds = useMemo(
-    () => new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id)),
-    [filteredEvents]
-  )
-
-  function isFavorited(eventId: string) {
-    return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
-  }
-
   const activeFilterCount = [
     activeDateFilter,
     selectedAge,
@@ -142,10 +132,6 @@ export function ExplorePage() {
     setOnlyFree(false)
     setSelectedTagSlugs([])
     setActiveCategory(null)
-  }
-
-  function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
   function toggleTagSlug(slug: string) {
@@ -192,8 +178,6 @@ export function ExplorePage() {
         filteredEvents={filteredEvents}
         isEventsLoading={isEventsLoading}
         isEventsError={isEventsError}
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
         onClearAllFilters={clearAllFilters}
       />
       <ExploreNeighborhoodCta />

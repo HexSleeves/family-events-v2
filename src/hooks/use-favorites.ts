@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
@@ -32,6 +33,134 @@ interface ToggleFavoriteInput {
   isFavorited: boolean
 }
 
+interface ToggleFavoriteMutationContext {
+  previousFavorites: Favorite[]
+}
+
+function buildOptimisticFavorites(
+  favorites: Favorite[],
+  userId: string,
+  eventId: string,
+  wasFavorited: boolean
+): Favorite[] {
+  if (wasFavorited) {
+    return favorites.filter((favorite) => favorite.event_id !== eventId)
+  }
+
+  const alreadyExists = favorites.some((favorite) => favorite.event_id === eventId)
+  if (alreadyExists) {
+    return favorites
+  }
+
+  return [
+    {
+      id: `optimistic-${eventId}`,
+      user_id: userId,
+      event_id: eventId,
+      created_at: new Date().toISOString(),
+    },
+    ...favorites,
+  ]
+}
+
+export function applyFavoriteStateToCacheValue<T>(
+  value: T,
+  eventId: string,
+  isFavorited: boolean
+): T {
+  if (Array.isArray(value)) {
+    return value.map((entry) => applyFavoriteStateToCacheValue(entry, eventId, isFavorited)) as T
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>
+    let changed = false
+    const nextRecord: Record<string, unknown> = {}
+
+    for (const [key, entry] of Object.entries(record)) {
+      const nextEntry = applyFavoriteStateToCacheValue(entry, eventId, isFavorited)
+      nextRecord[key] = nextEntry
+      if (nextEntry !== entry) {
+        changed = true
+      }
+    }
+
+    if (record.id === eventId && typeof record.is_favorited === "boolean") {
+      nextRecord.is_favorited = isFavorited
+      changed = true
+    }
+
+    return (changed ? nextRecord : record) as T
+  }
+
+  return value
+}
+
+function updateEventLikeCaches(queryClient: QueryClient, eventId: string, isFavorited: boolean) {
+  const roots = new Set([
+    "event",
+    "events",
+    "events-by-id",
+    "events-enriched",
+    "calendar-events",
+    "saturday-plan",
+  ])
+  queryClient.setQueriesData(
+    {
+      predicate: (query) => {
+        const root = query.queryKey[0]
+        return typeof root === "string" && roots.has(root)
+      },
+    },
+    (oldData) => applyFavoriteStateToCacheValue(oldData, eventId, isFavorited)
+  )
+}
+
+export async function handleToggleFavoriteOnMutate(
+  queryClient: QueryClient,
+  userId: string,
+  variables: ToggleFavoriteInput
+): Promise<ToggleFavoriteMutationContext> {
+  const { eventId, isFavorited } = variables
+
+  await queryClient.cancelQueries({ queryKey: qk.favorites.byUser(userId) })
+  const previousFavorites = queryClient.getQueryData<Favorite[]>(qk.favorites.byUser(userId)) ?? []
+  const optimisticFavorites = buildOptimisticFavorites(
+    previousFavorites,
+    userId,
+    eventId,
+    isFavorited
+  )
+
+  queryClient.setQueryData(qk.favorites.byUser(userId), optimisticFavorites)
+  updateEventLikeCaches(queryClient, eventId, !isFavorited)
+
+  return { previousFavorites }
+}
+
+export function handleToggleFavoriteOnError(
+  queryClient: QueryClient,
+  userId: string,
+  variables: ToggleFavoriteInput,
+  context: ToggleFavoriteMutationContext | undefined
+) {
+  queryClient.setQueryData(qk.favorites.byUser(userId), context?.previousFavorites ?? [])
+  updateEventLikeCaches(queryClient, variables.eventId, variables.isFavorited)
+}
+
+export function handleToggleFavoriteOnSettled(
+  queryClient: QueryClient,
+  userId: string | undefined,
+  eventId: string
+) {
+  void queryClient.invalidateQueries({ queryKey: qk.favorites.byUser(userId) })
+  void queryClient.invalidateQueries({ queryKey: qk.events.all })
+  void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
+  void queryClient.invalidateQueries({ queryKey: qk.events.detailById(eventId) })
+  void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
+  void queryClient.invalidateQueries({ queryKey: qk.saturdayPlan.all })
+}
+
 export function useToggleFavorite(userId: string | undefined) {
   const queryClient = useQueryClient()
 
@@ -61,12 +190,20 @@ export function useToggleFavorite(userId: string | undefined) {
       }
       return true
     },
-    onSuccess: (_isNowFavorited, variables) => {
-      void queryClient.invalidateQueries({ queryKey: qk.favorites.byUser(userId) })
-      void queryClient.invalidateQueries({ queryKey: qk.events.all })
-      void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
-      void queryClient.invalidateQueries({ queryKey: qk.events.detailById(variables.eventId) })
-      void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
+    onMutate: async (variables) => {
+      if (!userId) {
+        return { previousFavorites: [] }
+      }
+      return handleToggleFavoriteOnMutate(queryClient, userId, variables)
+    },
+    onError: (_error, variables, context) => {
+      if (!userId) {
+        return
+      }
+      handleToggleFavoriteOnError(queryClient, userId, variables, context)
+    },
+    onSettled: (_isNowFavorited, _error, variables) => {
+      handleToggleFavoriteOnSettled(queryClient, userId, variables.eventId)
     },
   })
 }

@@ -10,8 +10,18 @@ import { useFavorites, useToggleFavorite } from "@/hooks/use-favorites"
 import { useCalendarEvents, useToggleCalendarEvent } from "@/hooks/use-calendar-events"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useUpsertRating } from "@/hooks/use-ratings"
+import type { Favorite, UserCalendarEvent } from "@/lib/types"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
+
+export function buildSavedEventIds(
+  favorites: Favorite[],
+  calendarEvents: UserCalendarEvent[]
+): string[] {
+  const favoriteIds = new Set(favorites.map((favorite) => favorite.event_id))
+  const calendarIds = new Set(calendarEvents.map((calendarEvent) => calendarEvent.event_id))
+  return [...new Set([...favoriteIds, ...calendarIds])]
+}
 
 export function MyEventsPage() {
   const { user } = useAuth()
@@ -24,8 +34,7 @@ export function MyEventsPage() {
 
   const favoriteIds = new Set(favorites.map((favorite) => favorite.event_id))
   const calendarIds = new Set(calendarEvents.map((calendarEvent) => calendarEvent.event_id))
-  const savedIds = new Set([...favoriteIds, ...calendarIds])
-  const savedEventIds = [...savedIds]
+  const savedEventIds = buildSavedEventIds(favorites, calendarEvents)
 
   // useEnrichedEvents sorts the id array before hashing the query key, so
   // cache hits survive insertion-order churn in the parent sets.

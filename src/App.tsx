@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppErrorBoundary } from "@/components/app-error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { PublicOnlyRoute } from "@/components/auth/public-only-route"
 import { AuthProvider } from "@/contexts/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { AppProvider } from "@/contexts/app-context"
 import { Toaster } from "@/components/ui/sonner"
 import { HOME_PATH } from "@/lib/access-control"
@@ -17,6 +18,11 @@ import { AdminLayout } from "@/layouts/admin-layout"
 const DashboardPage = lazy(() =>
   import("@/pages/dashboard").then((module) => ({
     default: module.DashboardPage,
+  }))
+)
+const SaturdayPlanPage = lazy(() =>
+  import("@/pages/saturday-plan").then((module) => ({
+    default: module.SaturdayPlanPage,
   }))
 )
 const ExplorePage = lazy(() =>
@@ -42,6 +48,11 @@ const MapViewPage = lazy(() =>
 const MarketingPage = lazy(() =>
   import("@/pages/marketing").then((module) => ({
     default: module.MarketingPage,
+  }))
+)
+const PublicEventPreviewPage = lazy(() =>
+  import("@/pages/public-event-preview").then((module) => ({
+    default: module.PublicEventPreviewPage,
   }))
 )
 const MyEventsPage = lazy(() =>
@@ -135,6 +146,44 @@ function RouteFallback() {
   )
 }
 
+function RootLandingRoute() {
+  const location = useLocation()
+  const { user, isEnabled, isLoading } = useAuth()
+  const searchParams = new URLSearchParams(location.search)
+  const showLegacyHome = searchParams.get("legacy") === "1"
+
+  if (!showLegacyHome) {
+    return <MarketingPage />
+  }
+
+  if (isLoading) {
+    return <RouteFallback />
+  }
+
+  if (!user || !isEnabled) {
+    return <Navigate to="/sign-in" replace state={{ from: `${HOME_PATH}?legacy=1` }} />
+  }
+
+  return (
+    <AppProvider>
+      <AppLayout>
+        <DashboardPage />
+      </AppLayout>
+    </AppProvider>
+  )
+}
+
+function HomeRoute() {
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+
+  if (searchParams.get("legacy") === "1") {
+    return <DashboardPage />
+  }
+
+  return <SaturdayPlanPage />
+}
+
 export default function App() {
   return (
     <ThemeProvider storageKey="family-events-theme">
@@ -144,7 +193,8 @@ export default function App() {
             <AppErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
-                  <Route index element={<MarketingPage />} />
+                  <Route index element={<RootLandingRoute />} />
+                  <Route path="/share/:eventId" element={<PublicEventPreviewPage />} />
 
                   <Route element={<PublicOnlyRoute />}>
                     <Route path="/sign-in" element={<SignInPage />} />
@@ -159,7 +209,7 @@ export default function App() {
                         </AppProvider>
                       }
                     >
-                      <Route path={HOME_PATH} element={<DashboardPage />} />
+                      <Route path={HOME_PATH} element={<HomeRoute />} />
                       <Route path="/explore" element={<ExplorePage />} />
                       <Route path="/map" element={<MapViewPage />} />
                       <Route path="/events/:id" element={<EventDetailPage />} />

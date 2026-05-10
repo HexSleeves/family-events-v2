@@ -19,6 +19,16 @@ type EventsKeyOptions = {
   offset: number
 }
 
+type SaturdayPlanKeyOptions = {
+  userId?: string
+  cityId?: string
+  childAge?: number | null
+  latitude?: number | null
+  longitude?: number | null
+  weatherFit?: string | null
+  dateKey: string
+}
+
 function nil<T>(value: T | null | undefined): T | null {
   return value ?? null
 }
@@ -28,6 +38,13 @@ function toIsoDate(value: string | Date | undefined): string | null {
     return null
   }
   return typeof value === "string" ? value : value.toISOString()
+}
+
+function roundedCoordinate(value: number | null | undefined): number | null {
+  if (value == null) {
+    return null
+  }
+  return Number(value.toFixed(4))
 }
 
 function sortedUnique(values: readonly string[] | undefined): readonly string[] {
@@ -123,6 +140,38 @@ export const qk = {
   },
   invites: {
     required: ["invites-required"] as const,
+  },
+  weather: {
+    all: ["weather"] as const,
+    byCoordinates: (latitude: number | null | undefined, longitude: number | null | undefined) =>
+      [
+        "weather",
+        { latitude: roundedCoordinate(latitude), longitude: roundedCoordinate(longitude) },
+      ] as const,
+  },
+  saturdayPlan: {
+    all: ["saturday-plan"] as const,
+    byContext: ({
+      userId,
+      cityId,
+      childAge,
+      latitude,
+      longitude,
+      weatherFit,
+      dateKey,
+    }: SaturdayPlanKeyOptions) =>
+      [
+        "saturday-plan",
+        {
+          userId: nil(userId),
+          cityId: nil(cityId),
+          childAge: childAge ?? null,
+          latitude: roundedCoordinate(latitude),
+          longitude: roundedCoordinate(longitude),
+          weatherFit: weatherFit ?? null,
+          dateKey,
+        },
+      ] as const,
   },
   admin: {
     root: ["admin"] as const,

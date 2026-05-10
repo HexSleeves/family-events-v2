@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
 import {
   Hop as Home,
@@ -40,7 +41,11 @@ const NAV_ITEMS = [
   { to: "/profile", label: "Profile", icon: User },
 ]
 
-export function AppLayout() {
+interface AppLayoutProps {
+  children?: ReactNode
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, profile, signOut, isAdmin } = useAuth()
@@ -199,9 +204,7 @@ export function AppLayout() {
       )}
 
       {/* Page content */}
-      <main className={cn("flex-1", isMobile && "pb-20")}>
-        <Outlet />
-      </main>
+      <main className={cn("flex-1", isMobile && "pb-20")}>{children ?? <Outlet />}</main>
 
       {/* Mobile Bottom Tab Bar */}
       {isMobile && (

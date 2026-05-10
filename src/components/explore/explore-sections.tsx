@@ -340,8 +340,6 @@ interface ExploreEventsSectionProps {
   filteredEvents: EventWithDetails[]
   isEventsLoading: boolean
   isEventsError: boolean
-  isFavorited: (eventId: string) => boolean
-  onFavoriteToggle: (eventId: string, newState: boolean) => void
   onClearAllFilters: () => void
 }
 
@@ -350,8 +348,6 @@ export function ExploreEventsSection({
   filteredEvents,
   isEventsLoading,
   isEventsError,
-  isFavorited,
-  onFavoriteToggle,
   onClearAllFilters,
 }: ExploreEventsSectionProps) {
   const activeCategoryLabel = CATEGORIES.find((category) => category.slug === activeCategory)?.label
@@ -393,12 +389,7 @@ export function ExploreEventsSection({
       ) : (
         <div className="space-y-4">
           {filteredEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={{ ...event, is_favorited: isFavorited(event.id) }}
-              variant="list"
-              onFavoriteToggle={onFavoriteToggle}
-            />
+            <EventCard key={event.id} event={event} variant="list" />
           ))}
         </div>
       )}
