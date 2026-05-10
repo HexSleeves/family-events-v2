@@ -86,15 +86,15 @@ describe("isSessionExpired", () => {
   })
 
   it("returns false when the session expiry is still in the future", () => {
-    expect(isSessionExpired({ user: { id: "user-1" }, expires_at: 1_800_000_100 }, 1_800_000_000)).toBe(
-      false
-    )
+    expect(
+      isSessionExpired({ user: { id: "user-1" }, expires_at: 1_800_000_100 }, 1_800_000_000)
+    ).toBe(false)
   })
 
   it("returns true when the session expiry is in the past", () => {
-    expect(isSessionExpired({ user: { id: "user-1" }, expires_at: 1_799_999_999 }, 1_800_000_000)).toBe(
-      true
-    )
+    expect(
+      isSessionExpired({ user: { id: "user-1" }, expires_at: 1_799_999_999 }, 1_800_000_000)
+    ).toBe(true)
   })
 })
 
@@ -105,13 +105,19 @@ describe("getSessionExpiryTimeoutMs", () => {
 
   it("returns the remaining milliseconds until expiry", () => {
     expect(
-      getSessionExpiryTimeoutMs({ user: { id: "user-1" }, expires_at: 1_800_000_100 }, 1_800_000_000_000)
+      getSessionExpiryTimeoutMs(
+        { user: { id: "user-1" }, expires_at: 1_800_000_100 },
+        1_800_000_000_000
+      )
     ).toBe(100_000)
   })
 
   it("returns zero when the session is already expired", () => {
     expect(
-      getSessionExpiryTimeoutMs({ user: { id: "user-1" }, expires_at: 1_799_999_999 }, 1_800_000_000_000)
+      getSessionExpiryTimeoutMs(
+        { user: { id: "user-1" }, expires_at: 1_799_999_999 },
+        1_800_000_000_000
+      )
     ).toBe(0)
   })
 })

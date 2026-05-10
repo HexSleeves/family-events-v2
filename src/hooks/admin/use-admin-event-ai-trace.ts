@@ -57,7 +57,10 @@ export function useUpdateAdminEventTags() {
       const addedTagIds = dedupedTagIds.filter((tagId) => !previousTagIds.includes(tagId))
       const removedTagIds = previousTagIds.filter((tagId) => !dedupedTagIds.includes(tagId))
 
-      const { error: deleteError } = await supabase.from("event_tags").delete().eq("event_id", eventId)
+      const { error: deleteError } = await supabase
+        .from("event_tags")
+        .delete()
+        .eq("event_id", eventId)
       if (deleteError) {
         throw deleteError
       }

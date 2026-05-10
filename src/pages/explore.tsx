@@ -128,7 +128,13 @@ export function ExplorePage() {
     return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
   }
 
-  const activeFilterCount = [activeDateFilter, selectedAge, onlyFree ? "free" : null, ...selectedTagSlugs, activeCategory].filter(Boolean).length
+  const activeFilterCount = [
+    activeDateFilter,
+    selectedAge,
+    onlyFree ? "free" : null,
+    ...selectedTagSlugs,
+    activeCategory,
+  ].filter(Boolean).length
 
   function clearAllFilters() {
     setActiveDateFilter(null)
@@ -143,7 +149,9 @@ export function ExplorePage() {
   }
 
   function toggleTagSlug(slug: string) {
-    setSelectedTagSlugs((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]))
+    setSelectedTagSlugs((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    )
   }
 
   return (

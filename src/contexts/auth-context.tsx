@@ -6,6 +6,7 @@ import {
   getSessionExpiryTimeoutMs,
   isSessionExpired,
 } from "@/lib/access-control"
+import { clearSentryUserContext, setSentryUserContext } from "@/lib/sentry"
 import type { UserAccess, UserProfile } from "@/lib/types"
 
 interface AuthContextValue {
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setProfile(null)
     setAccess(null)
+    clearSentryUserContext()
   }
 
   async function forceSignOut() {
@@ -142,6 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setProfile(profileData)
       setAccess(accessData)
+      setSentryUserContext({
+        id: sessionValue.user.id,
+        role: profileData?.role,
+        accessEnabled: accessData?.is_enabled,
+      })
     } catch (error) {
       resetAuthState()
       throw error

@@ -82,9 +82,7 @@ export function AdminInvitesPage() {
         newCode={newCode}
         isCreating={createCode.isPending}
         onDialogOpenChange={setDialogOpen}
-        onCodeChange={(value) =>
-          setNewCode((prev) => ({ ...prev, code: value.toUpperCase() }))
-        }
+        onCodeChange={(value) => setNewCode((prev) => ({ ...prev, code: value.toUpperCase() }))}
         onMaxUsesChange={(value) =>
           setNewCode((prev) => ({ ...prev, max_uses: Math.max(1, Number(value)) }))
         }

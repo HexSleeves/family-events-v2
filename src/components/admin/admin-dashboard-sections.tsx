@@ -67,7 +67,9 @@ export function AdminDashboardStatsGrid({ stats, isLoading }: AdminDashboardStat
               <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
-            <p className="text-2xl font-extrabold text-foreground">{isLoading ? "..." : stat.value}</p>
+            <p className="text-2xl font-extrabold text-foreground">
+              {isLoading ? "..." : stat.value}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">{stat.delta}</p>
           </CardContent>
         </Card>
@@ -122,9 +124,14 @@ export function AdminDashboardRecentRuns({ runs, isLoading }: AdminDashboardRece
           <p className="text-sm text-muted-foreground">No ingestion runs yet.</p>
         )}
         {runs.map((run) => (
-          <div key={`${run.source}-${run.time}`} className="flex items-center justify-between gap-3">
+          <div
+            key={`${run.source}-${run.time}`}
+            className="flex items-center justify-between gap-3"
+          >
             <div className="flex items-center gap-2.5 min-w-0">
-              {run.status === "success" && <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />}
+              {run.status === "success" && (
+                <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+              )}
               {run.status === "error" && <XCircle className="h-4 w-4 text-destructive shrink-0" />}
               {run.status === "partial" && (
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />

@@ -1,8 +1,5 @@
 import { useState } from "react"
-import {
-  AdminSourcesHeader,
-  AdminSourcesList,
-} from "@/components/admin/admin-sources-sections"
+import { AdminSourcesHeader, AdminSourcesList } from "@/components/admin/admin-sources-sections"
 import { useAdminCities } from "@/hooks/admin/use-admin-cities"
 import {
   useAdminSources,

@@ -89,8 +89,7 @@ export function DashboardEmptyState() {
       <CardContent className="p-8 text-center space-y-3">
         <h2 className="text-xl font-bold text-foreground">No events yet in this city</h2>
         <p className="text-sm text-muted-foreground">
-          We are still importing local family events. Try exploring another city or check back
-          soon.
+          We are still importing local family events. Try exploring another city or check back soon.
         </p>
         <div className="flex justify-center gap-2">
           <Button variant="outline" asChild>
@@ -349,9 +348,7 @@ export function DashboardParentPulse() {
 export function DashboardGuestCta() {
   return (
     <div className="rounded-2xl border border-border/60 bg-family-warm p-6 text-center">
-      <h3 className="text-xl font-bold text-family-warm-foreground mb-2">
-        Never miss a playdate.
-      </h3>
+      <h3 className="text-xl font-bold text-family-warm-foreground mb-2">Never miss a playdate.</h3>
       <p className="text-sm text-muted-foreground mb-4">
         Get a weekly curated list of weekend family events in your city.
       </p>

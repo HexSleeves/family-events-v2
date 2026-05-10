@@ -84,7 +84,11 @@ export function DashboardPage() {
         onFavoriteToggle={handleFavoriteToggle}
       />
       <DashboardCarouselSection
-        title={user && profile?.child_name ? `Recommended for ${profile.child_name}` : "Happening Near You"}
+        title={
+          user && profile?.child_name
+            ? `Recommended for ${profile.child_name}`
+            : "Happening Near You"
+        }
         icon="recommended"
         events={recommended}
         eventCardVariant="default"
@@ -96,10 +100,7 @@ export function DashboardPage() {
         isFavorited={isFavorited}
         onFavoriteToggle={handleFavoriteToggle}
       />
-      <DashboardSavedSection
-        savedEvents={savedEvents}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
+      <DashboardSavedSection savedEvents={savedEvents} onFavoriteToggle={handleFavoriteToggle} />
       <DashboardParentPulse />
       {!user && <DashboardGuestCta />}
     </div>

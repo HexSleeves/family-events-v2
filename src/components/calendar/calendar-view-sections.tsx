@@ -76,11 +76,23 @@ export function CalendarMonthPanel({
     <div className="lg:col-span-3 space-y-3">
       <div className="bg-card border border-border/60 rounded-2xl overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onPreviousMonth}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={onPreviousMonth}
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-base font-bold text-foreground tracking-tight">{format(currentMonth, "MMMM yyyy")}</h2>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onNextMonth}>
+          <h2 className="text-base font-bold text-foreground tracking-tight">
+            {format(currentMonth, "MMMM yyyy")}
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={onNextMonth}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -88,7 +100,10 @@ export function CalendarMonthPanel({
         <div className="px-4 pb-4 pt-3">
           <div className="grid grid-cols-7 mb-1">
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayLabel) => (
-              <div key={dayLabel} className="text-center text-[11px] font-semibold text-muted-foreground py-2">
+              <div
+                key={dayLabel}
+                className="text-center text-[11px] font-semibold text-muted-foreground py-2"
+              >
                 {dayLabel}
               </div>
             ))}
@@ -283,7 +298,9 @@ export function SavedEventsSection({
             <Bookmark className="h-7 w-7 text-muted-foreground/40" />
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-2">No saved events yet</h3>
-          <p className="text-muted-foreground text-sm mb-5">Browse events and tap the heart to save them here.</p>
+          <p className="text-muted-foreground text-sm mb-5">
+            Browse events and tap the heart to save them here.
+          </p>
           <Button asChild>
             <Link to="/explore">Explore Events</Link>
           </Button>

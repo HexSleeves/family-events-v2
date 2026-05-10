@@ -118,14 +118,7 @@ export function buildEnrichedRpcArgs(options: UseEnrichedEventsOptions) {
 //  - list:     ["events-enriched", { cityId, status, userId, dateFrom, dateTo }]
 // IDs are sorted so caller insertion-order does not fragment the cache.
 export function buildEnrichedQueryKey(options: UseEnrichedEventsOptions) {
-  const {
-    cityId,
-    userId,
-    status = DEFAULT_STATUS,
-    eventIds,
-    dateFrom,
-    dateTo,
-  } = options
+  const { cityId, userId, status = DEFAULT_STATUS, eventIds, dateFrom, dateTo } = options
 
   if (eventIds) {
     const sortedIds = [...eventIds].sort()

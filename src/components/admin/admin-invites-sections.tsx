@@ -86,11 +86,19 @@ export function AdminInvitesHeader({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Max uses</Label>
-                <Input type="number" min={1} value={newCode.max_uses} onChange={(event) => onMaxUsesChange(event.target.value)} />
+                <Input
+                  type="number"
+                  min={1}
+                  value={newCode.max_uses}
+                  onChange={(event) => onMaxUsesChange(event.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Expires in</Label>
-                <Select value={newCode.expires} onValueChange={(value) => onExpiryChange(value as ExpiryOption)}>
+                <Select
+                  value={newCode.expires}
+                  onValueChange={(value) => onExpiryChange(value as ExpiryOption)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -146,12 +154,7 @@ interface AdminInvitesListProps {
   onDelete: (code: string) => void
 }
 
-export function AdminInvitesList({
-  codes,
-  copiedCode,
-  onCopy,
-  onDelete,
-}: AdminInvitesListProps) {
+export function AdminInvitesList({ codes, copiedCode, onCopy, onDelete }: AdminInvitesListProps) {
   return (
     <div className="space-y-2">
       {codes.map((code) => {
@@ -160,7 +163,10 @@ export function AdminInvitesList({
         const dead = expired || exhausted
 
         return (
-          <Card key={code.code} className={dead ? "border-border/40 opacity-60" : "border-border/60"}>
+          <Card
+            key={code.code}
+            className={dead ? "border-border/40 opacity-60" : "border-border/60"}
+          >
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -183,12 +189,19 @@ export function AdminInvitesList({
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                   <span>Created {format(new Date(code.created_at), "MMM d, h:mm a")}</span>
-                  {code.expires_at && <span>Expires {format(new Date(code.expires_at), "MMM d")}</span>}
+                  {code.expires_at && (
+                    <span>Expires {format(new Date(code.expires_at), "MMM d")}</span>
+                  )}
                   {code.notes && <span className="italic">{code.notes}</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <Button variant="outline" size="sm" className="h-8" onClick={() => onCopy(code.code)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => onCopy(code.code)}
+                >
                   {copiedCode === code.code ? (
                     <Check className="h-3.5 w-3.5 text-green-600" />
                   ) : (
@@ -218,10 +231,10 @@ export function AdminInvitesFooter() {
       <p className="font-semibold">Gate status</p>
       <p>
         The signup gate is controlled by the{" "}
-        <code className="font-mono text-[11px]">app.settings.require_invite</code> database
-        setting. When <code className="font-mono text-[11px]">true</code>, sign-up requires a
-        code. Unset now defaults to <code className="font-mono text-[11px]">true</code>. Local
-        override lives in <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
+        <code className="font-mono text-[11px]">app.settings.require_invite</code> database setting.
+        When <code className="font-mono text-[11px]">true</code>, sign-up requires a code. Unset now
+        defaults to <code className="font-mono text-[11px]">true</code>. Local override lives in{" "}
+        <code className="font-mono text-[11px]">scripts/setup-local.sh</code>.
       </p>
     </div>
   )

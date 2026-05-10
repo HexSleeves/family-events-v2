@@ -194,7 +194,10 @@ export function AdminEventsList({
         return (
           <Card
             key={event.id}
-            className={cn("border-border/60 transition-colors", isSelected && "border-primary/50 bg-primary/5")}
+            className={cn(
+              "border-border/60 transition-colors",
+              isSelected && "border-primary/50 bg-primary/5"
+            )}
           >
             <CardContent className="p-4">
               <div className="flex gap-3 items-start">
@@ -213,7 +216,12 @@ export function AdminEventsList({
                     <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
                       {event.title}
                     </h3>
-                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}>
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                        status.color
+                      )}
+                    >
                       {status.label}
                     </span>
                   </div>
@@ -241,7 +249,12 @@ export function AdminEventsList({
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenReview(event)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onOpenReview(event)}
+                  >
                     <Eye className="h-4 w-4" />
                   </Button>
                   {isDraft && (
@@ -335,7 +348,9 @@ export function AdminEventReviewDialog({
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground">Date:</span>{" "}
-                <span className="font-medium">{format(new Date(event.start_datetime), "MMM d, h:mm a")}</span>
+                <span className="font-medium">
+                  {format(new Date(event.start_datetime), "MMM d, h:mm a")}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground">Venue:</span>{" "}
@@ -406,7 +421,9 @@ export function AdminEventReviewDialog({
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Summary
+                      </p>
                       <p className="mt-1 text-sm text-foreground">
                         {selectedEventTrace.reasoning_summary ?? "No explanation was recorded."}
                       </p>
@@ -438,12 +455,16 @@ export function AdminEventReviewDialog({
                           selectedEventTrace.parsed_predicted_tags.map((tag) => (
                             <div key={tag.slug} className="rounded-lg border border-border/60 p-2">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium">{tagNameBySlug.get(tag.slug) ?? tag.slug}</span>
+                                <span className="text-sm font-medium">
+                                  {tagNameBySlug.get(tag.slug) ?? tag.slug}
+                                </span>
                                 <span className="text-xs text-muted-foreground">
                                   {Math.round(tag.confidence * 100)}%
                                 </span>
                               </div>
-                              {tag.reason ? <p className="mt-1 text-xs text-muted-foreground">{tag.reason}</p> : null}
+                              {tag.reason ? (
+                                <p className="mt-1 text-xs text-muted-foreground">{tag.reason}</p>
+                              ) : null}
                               {tag.matched_keywords?.length ? (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                   Keywords: {tag.matched_keywords.join(", ")}
@@ -452,7 +473,9 @@ export function AdminEventReviewDialog({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-muted-foreground">No AI tag suggestions recorded.</p>
+                          <p className="text-sm text-muted-foreground">
+                            No AI tag suggestions recorded.
+                          </p>
                         )}
                       </div>
                     </div>
@@ -495,7 +518,9 @@ export function AdminEventReviewDialog({
                             selectedEventTrace.parsed_predicted_fields?.is_free ?? false
                           )}
                         </div>
-                        <div>Venue: {selectedEventTrace.parsed_predicted_fields?.venue_name ?? "—"}</div>
+                        <div>
+                          Venue: {selectedEventTrace.parsed_predicted_fields?.venue_name ?? "—"}
+                        </div>
                       </div>
                     </div>
 
@@ -504,7 +529,9 @@ export function AdminEventReviewDialog({
                         Classification input
                       </p>
                       <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                        <p className="font-medium text-foreground">{selectedEventTrace.input_title}</p>
+                        <p className="font-medium text-foreground">
+                          {selectedEventTrace.input_title}
+                        </p>
                         <p>{selectedEventTrace.input_description ?? "No description captured."}</p>
                       </div>
                     </div>

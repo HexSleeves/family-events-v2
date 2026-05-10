@@ -8,8 +8,15 @@ import {
   AdminEventsToolbar,
   AdminEventStatusFilterBar,
 } from "@/components/admin/admin-events-sections"
-import { useAdminEvents, useBatchUpdateAdminEventStatus, useUpdateAdminEventStatus } from "@/hooks/admin/use-admin-events"
-import { useAdminEventAiTrace, useUpdateAdminEventTags } from "@/hooks/admin/use-admin-event-ai-trace"
+import {
+  useAdminEvents,
+  useBatchUpdateAdminEventStatus,
+  useUpdateAdminEventStatus,
+} from "@/hooks/admin/use-admin-events"
+import {
+  useAdminEventAiTrace,
+  useUpdateAdminEventTags,
+} from "@/hooks/admin/use-admin-event-ai-trace"
 import { useTags } from "@/hooks/use-tags"
 import { toast } from "sonner"
 
@@ -23,7 +30,8 @@ export function AdminEventsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const { data: events = [] } = useAdminEvents(keyword, statusFilter)
-  const { data: selectedEventTrace, isLoading: isTraceLoading } = useAdminEventAiTrace(selectedEventId)
+  const { data: selectedEventTrace, isLoading: isTraceLoading } =
+    useAdminEventAiTrace(selectedEventId)
   const { data: allTags = [] } = useTags()
   const updateStatusMutation = useUpdateAdminEventStatus()
   const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
@@ -33,15 +41,21 @@ export function AdminEventsPage() {
   const tagNameById = new Map(allTags.map((tag) => [tag.id, tag.name]))
   const tagNameBySlug = new Map(allTags.map((tag) => [tag.slug, tag.name]))
   const draftEvents = events.filter((event) => event.status === "draft")
-  const selectedDraftIds = [...selectedIds].filter((id) => draftEvents.some((event) => event.id === id))
-  const allDraftsSelected = draftEvents.length > 0 && draftEvents.every((event) => selectedIds.has(event.id))
+  const selectedDraftIds = [...selectedIds].filter((id) =>
+    draftEvents.some((event) => event.id === id)
+  )
+  const allDraftsSelected =
+    draftEvents.length > 0 && draftEvents.every((event) => selectedIds.has(event.id))
   const counts = events.reduce(
     (acc, event) => ({ ...acc, [event.status]: (acc[event.status] || 0) + 1 }),
     {} as Record<string, number>
   )
   const statusConfig: Record<Event["status"], { label: string; color: string }> = {
     draft: { label: "Draft", color: "bg-muted text-muted-foreground" },
-    published: { label: "Published", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    published: {
+      label: "Published",
+      color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    },
     rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive" },
     archived: { label: "Archived", color: "bg-muted/50 text-muted-foreground" },
   }
@@ -49,7 +63,11 @@ export function AdminEventsPage() {
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
       return next
     })
   }
@@ -66,7 +84,10 @@ export function AdminEventsPage() {
   async function batchUpdateStatus(newStatus: Event["status"]) {
     if (selectedDraftIds.length === 0) return
     try {
-      const { count } = await batchUpdateStatusMutation.mutateAsync({ eventIds: selectedDraftIds, status: newStatus })
+      const { count } = await batchUpdateStatusMutation.mutateAsync({
+        eventIds: selectedDraftIds,
+        status: newStatus,
+      })
       toast.success(`${count} event${count === 1 ? "" : "s"} ${newStatus}`)
       setSelectedIds(new Set())
     } catch (error) {
@@ -139,7 +160,9 @@ export function AdminEventsPage() {
         tagNameBySlug={tagNameBySlug}
         onToggleTag={(tagId) =>
           setEditingTagIds((current) =>
-            current.includes(tagId) ? current.filter((currentId) => currentId !== tagId) : [...current, tagId]
+            current.includes(tagId)
+              ? current.filter((currentId) => currentId !== tagId)
+              : [...current, tagId]
           )
         }
         onSaveTags={saveTagOverrides}

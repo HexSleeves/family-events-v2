@@ -131,7 +131,10 @@ export function AdminSourcesHeader({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Type</Label>
-                <Select value={newSource.source_type} onValueChange={(value) => onTypeChange(value as SourceType)}>
+                <Select
+                  value={newSource.source_type}
+                  onValueChange={(value) => onTypeChange(value as SourceType)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

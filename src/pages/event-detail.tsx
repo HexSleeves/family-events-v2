@@ -44,9 +44,18 @@ export function EventDetailPage() {
 
   const [attendees, setAttendees] = useState(1)
   const [comment, setComment] = useState("")
-  const [userRatingOverride, setUserRatingOverride] = useState<{ eventId: string; score: number } | null>(null)
-  const [favoritedOverride, setFavoritedOverride] = useState<{ eventId: string; value: boolean } | null>(null)
-  const [calendarOverride, setCalendarOverride] = useState<{ eventId: string; value: boolean } | null>(null)
+  const [userRatingOverride, setUserRatingOverride] = useState<{
+    eventId: string
+    score: number
+  } | null>(null)
+  const [favoritedOverride, setFavoritedOverride] = useState<{
+    eventId: string
+    value: boolean
+  } | null>(null)
+  const [calendarOverride, setCalendarOverride] = useState<{
+    eventId: string
+    value: boolean
+  } | null>(null)
 
   const userRating =
     userRatingOverride && userRatingOverride.eventId === id
@@ -70,7 +79,8 @@ export function EventDetailPage() {
   }
 
   const currentEvent = event
-  const imageUrl = currentEvent.images?.[0] || `https://picsum.photos/seed/${currentEvent.id}/800/500`
+  const imageUrl =
+    currentEvent.images?.[0] || `https://picsum.photos/seed/${currentEvent.id}/800/500`
   const startDate = new Date(currentEvent.start_datetime)
   const infoItems = [
     {
@@ -80,11 +90,17 @@ export function EventDetailPage() {
         : "TBD",
       icon: Clock,
     },
-    { label: "Price", value: formatEventPrice(currentEvent.price, currentEvent.is_free), icon: Star },
+    {
+      label: "Price",
+      value: formatEventPrice(currentEvent.price, currentEvent.is_free),
+      icon: Star,
+    },
     { label: "Capacity", value: "12 Spots", icon: Users },
     {
       label: "Rating",
-      value: currentEvent.avg_rating ? `${currentEvent.avg_rating} (${currentEvent.rating_count})` : "No ratings",
+      value: currentEvent.avg_rating
+        ? `${currentEvent.avg_rating} (${currentEvent.rating_count})`
+        : "No ratings",
       icon: Star,
     },
   ]
@@ -147,7 +163,9 @@ export function EventDetailPage() {
         event={currentEvent}
         imageUrl={imageUrl}
         isFavorited={isFavorited}
-        onFavoriteToggle={(_, state) => setFavoritedOverride({ eventId: currentEvent.id, value: state })}
+        onFavoriteToggle={(_, state) =>
+          setFavoritedOverride({ eventId: currentEvent.id, value: state })
+        }
       />
 
       <EventDetailSectionLayout>

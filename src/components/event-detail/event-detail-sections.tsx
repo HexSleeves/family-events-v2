@@ -1,14 +1,7 @@
 import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
-import {
-  ArrowLeft,
-  CalendarPlus,
-  Clock,
-  Info,
-  MapPin,
-  Share2,
-} from "lucide-react"
+import { ArrowLeft, CalendarPlus, Clock, Info, MapPin, Share2 } from "lucide-react"
 import type { CommentWithProfile, EventWithDetails } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -176,7 +169,9 @@ export function EventDetailLocation({ event }: { event: EventWithDetails }) {
       <div className="flex items-start gap-3 mb-3">
         <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
         <div>
-          {event.venue_name && <p className="text-sm font-semibold text-foreground">{event.venue_name}</p>}
+          {event.venue_name && (
+            <p className="text-sm font-semibold text-foreground">{event.venue_name}</p>
+          )}
           {event.address && event.address !== event.venue_name && (
             <p className="text-sm text-muted-foreground">{event.address}</p>
           )}
@@ -254,7 +249,10 @@ export function EventDetailBooking({
       </Button>
       <Button
         variant="outline"
-        className={cn("w-full h-11 mt-3 gap-2", isInCalendar && "border-primary text-primary bg-primary/5")}
+        className={cn(
+          "w-full h-11 mt-3 gap-2",
+          isInCalendar && "border-primary text-primary bg-primary/5"
+        )}
         onClick={onAddToCalendar}
       >
         <CalendarPlus className="h-4 w-4" />

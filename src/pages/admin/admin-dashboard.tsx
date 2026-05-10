@@ -1,9 +1,4 @@
-import {
-  Calendar,
-  Database,
-  CircleCheck as CheckCircle,
-  Clock,
-} from "lucide-react"
+import { Calendar, Database, CircleCheck as CheckCircle, Clock } from "lucide-react"
 import {
   AdminDashboardConfidenceCard,
   AdminDashboardHeader,
