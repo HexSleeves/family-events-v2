@@ -3,9 +3,7 @@ import { LogOut, Monitor, Moon, Shield, Sun, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import type { Database } from "@/lib/database.types"
-
-type City = Database["public"]["Tables"]["cities"]["Row"]
+import type { CityRow as City } from "@/lib/db"
 type ThemeOption = "light" | "dark" | "system"
 
 interface ProfileGuestStateProps {

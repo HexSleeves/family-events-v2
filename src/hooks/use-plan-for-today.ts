@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import type { Database } from "@/lib/database.types"
+import type { PlanEventsRow } from "@/lib/db"
 import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { City, EventWithDetails } from "@/lib/types"
@@ -8,8 +8,6 @@ import { adaptEnrichedRow } from "@/hooks/use-enriched-events"
 import { useGeolocation } from "@/hooks/use-geolocation"
 import type { WeatherSnapshot } from "@/hooks/use-weather"
 import { useWeather } from "@/hooks/use-weather"
-
-type PlanEventsRow = Database["public"]["Functions"]["plan_events_for_user"]["Returns"][number]
 
 export interface PlannedEvent extends EventWithDetails {
   plan_score: number

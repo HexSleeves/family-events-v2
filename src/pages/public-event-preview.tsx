@@ -2,12 +2,10 @@ import { Link, useParams } from "react-router-dom"
 import { format } from "date-fns"
 import { CalendarDays, MapPin } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
-import type { Database } from "@/lib/database.types"
+import type { PublicEventRow } from "@/lib/db"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-
-type PublicEventRow = Database["public"]["Views"]["public_events"]["Row"]
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
