@@ -19,11 +19,11 @@ const STALE_THRESHOLD_MS = 15 * 60 * 1000
 
 const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string; label: string }> =
   {
-    success:   { icon: CheckCircle,    color: "text-green-600",        label: "Success"    },
-    error:     { icon: XCircle,        color: "text-destructive",       label: "Error"      },
-    partial:   { icon: AlertTriangle,  color: "text-amber-500",         label: "Partial"    },
-    running:   { icon: RefreshCw,      color: "text-blue-600",          label: "Running"    },
-    timed_out: { icon: TimerOff,       color: "text-amber-500",         label: "Timed Out"  },
+    success: { icon: CheckCircle, color: "text-green-600", label: "Success" },
+    error: { icon: XCircle, color: "text-destructive", label: "Error" },
+    partial: { icon: AlertTriangle, color: "text-amber-500", label: "Partial" },
+    running: { icon: RefreshCw, color: "text-blue-600", label: "Running" },
+    timed_out: { icon: TimerOff, color: "text-amber-500", label: "Timed Out" },
   }
 
 function resolveStatus(status: string, startedAt: string): RunStatus {
@@ -129,7 +129,12 @@ export function AdminLogsPage() {
                         <ElapsedTimer startedAt={run.started_at} />
                       ) : (
                         duration !== null && (
-                          <span>{duration >= 60 ? `${Math.floor(duration / 60)}m ${duration % 60}s` : `${duration}s`} {isTimedOut ? "before timeout" : "duration"}</span>
+                          <span>
+                            {duration >= 60
+                              ? `${Math.floor(duration / 60)}m ${duration % 60}s`
+                              : `${duration}s`}{" "}
+                            {isTimedOut ? "before timeout" : "duration"}
+                          </span>
                         )
                       )}
                     </div>

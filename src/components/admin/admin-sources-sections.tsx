@@ -385,7 +385,9 @@ function SourceCard({
                 aria-label={`Toggle ${source.name} active`}
               />
             </div>
-            <div className={`flex items-center gap-1.5 ${!source.is_active ? "opacity-40 pointer-events-none" : ""}`}>
+            <div
+              className={`flex items-center gap-1.5 ${!source.is_active ? "opacity-40 pointer-events-none" : ""}`}
+            >
               <span className="text-xs text-muted-foreground">Auto-approve</span>
               <Switch
                 checked={source.auto_approve}

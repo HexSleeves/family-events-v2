@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react"
-import { Map as MapGL, Marker, Popup, type MapRef } from "react-map-gl/maplibre"
+import {
+  Map as MapGL,
+  Marker,
+  NavigationControl,
+  Popup,
+  type MapRef,
+} from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
-import { useResolvedTheme } from "@/hooks/use-resolved-theme"
+import { useMapStyle } from "@/hooks/use-map-style"
 
-const STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
-const STYLE_DARK = "https://tiles.openfreemap.org/styles/dark-matter"
+const INITIAL_ZOOM = 10
 
 interface EventMapMiniProps {
   latitude: number | null
@@ -32,13 +37,18 @@ function MiniPin() {
 }
 
 export function EventMapMini({ latitude, longitude, venueName, address }: EventMapMiniProps) {
-  const resolvedTheme = useResolvedTheme()
+  const mapStyle = useMapStyle()
   const mapRef = useRef<MapRef>(null)
 
   // Re-center if the event coordinates change after first render.
   useEffect(() => {
     if (latitude == null || longitude == null) return
-    mapRef.current?.flyTo({ center: [longitude, latitude], zoom: 14, speed: 1.2, essential: true })
+    mapRef.current?.flyTo({
+      center: [longitude, latitude],
+      zoom: INITIAL_ZOOM,
+      speed: 1.2,
+      essential: true,
+    })
   }, [latitude, longitude])
 
   if (latitude == null || longitude == null) {
@@ -49,13 +59,11 @@ export function EventMapMini({ latitude, longitude, venueName, address }: EventM
     )
   }
 
-  const mapStyle = resolvedTheme === "dark" ? STYLE_DARK : STYLE_LIGHT
-
   return (
     <div className="rounded-xl overflow-hidden border border-border/60 h-48">
       <MapGL
         ref={mapRef}
-        initialViewState={{ longitude, latitude, zoom: 14 }}
+        initialViewState={{ longitude, latitude, zoom: INITIAL_ZOOM }}
         mapStyle={mapStyle}
         style={{ width: "100%", height: "100%" }}
         attributionControl={{ compact: true }}
@@ -64,6 +72,7 @@ export function EventMapMini({ latitude, longitude, venueName, address }: EventM
         pitchWithRotate={false}
         touchPitch={false}
       >
+        <NavigationControl position="top-right" showCompass={false} />
         <Marker longitude={longitude} latitude={latitude} anchor="bottom">
           <MiniPin />
         </Marker>

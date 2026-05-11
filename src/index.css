@@ -195,17 +195,27 @@
   border-left-color: var(--popover);
 }
 .maplibregl-ctrl-group {
-  background: var(--card);
+  background-color: var(--card);
   border: 1px solid var(--border);
   border-radius: 0.625rem;
   box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
 }
+/* Use background-color only — MapLibre paints + / − icons via background-image
+ * on these buttons, so the `background` shorthand wipes the glyphs entirely. */
 .maplibregl-ctrl-group button {
-  background: transparent;
+  background-color: transparent;
   color: var(--foreground);
 }
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--border);
+}
 .maplibregl-ctrl-group button:hover {
-  background: var(--accent);
+  background-color: var(--accent);
+}
+/* In dark mode the bundled glyphs are dark and disappear against the dark
+ * control surface. Invert them so they read as light icons. */
+.dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(0.92) hue-rotate(180deg);
 }
 .maplibregl-ctrl-attrib {
   background: oklch(from var(--card) l c h / 0.85);

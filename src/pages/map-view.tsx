@@ -10,11 +10,10 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/stores/app-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
-import { useResolvedTheme } from "@/hooks/use-resolved-theme"
+import { useMapStyle } from "@/hooks/use-map-style"
+import { FadeSwap } from "@/components/motion"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { EventWithDetails } from "@/lib/types"
-
-const STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
-const STYLE_DARK = "https://tiles.openfreemap.org/styles/dark-matter"
 
 function hasCoords(
   e: EventWithDetails
@@ -42,31 +41,40 @@ function EventPin() {
 
 export function MapViewPage() {
   const { user } = useAuth()
-  const { selectedCity } = useApp()
-  const resolvedTheme = useResolvedTheme()
+  const { selectedCity, isCitiesLoading } = useApp()
+  const mapStyle = useMapStyle()
   const mapRef = useRef<MapRef>(null)
   const [popupEvent, setPopupEvent] = useState<
     (EventWithDetails & { latitude: number; longitude: number }) | null
   >(null)
 
-  const { data: events = [], isLoading } = useEnrichedEvents({
+  const { data: events = [], isLoading: isEventsLoading } = useEnrichedEvents({
     cityId: selectedCity?.id,
     userId: user?.id,
+    enabled: Boolean(selectedCity?.id),
   })
 
   const mappable = useMemo(() => events.filter(hasCoords), [events])
 
-  const centerLat = selectedCity?.latitude ?? 42.3601
-  const centerLng = selectedCity?.longitude ?? -71.0589
+  const centerLat = selectedCity?.latitude
+  const centerLng = selectedCity?.longitude
 
   // Fly to the new city center smoothly when it changes.
   useEffect(() => {
+    if (centerLat == null || centerLng == null) return
     const map = mapRef.current
     if (!map) return
     map.flyTo({ center: [centerLng, centerLat], zoom: 11, speed: 1.2, essential: true })
   }, [centerLat, centerLng])
 
-  const mapStyle = resolvedTheme === "dark" ? STYLE_DARK : STYLE_LIGHT
+  const bodyKey =
+    !selectedCity || centerLat == null || centerLng == null
+      ? "map-city-loading"
+      : isEventsLoading
+        ? "map-events-loading"
+        : mappable.length === 0
+          ? "map-empty"
+          : "map-content"
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
@@ -74,11 +82,13 @@ export function MapViewPage() {
         <div>
           <h1 className="text-xl font-extrabold text-foreground">Map</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {isLoading
-              ? "Loading events..."
-              : mappable.length > 0
-                ? `${mappable.length} event${mappable.length === 1 ? "" : "s"} in ${selectedCity?.name ?? "your area"}`
-                : `No mapped events in ${selectedCity?.name ?? "your area"} yet`}
+            {!selectedCity || isCitiesLoading
+              ? "Loading your city..."
+              : isEventsLoading
+                ? "Loading events..."
+                : mappable.length > 0
+                  ? `${mappable.length} event${mappable.length === 1 ? "" : "s"} in ${selectedCity.name}`
+                  : `No mapped events in ${selectedCity.name} yet`}
           </p>
         </div>
         {events.length > mappable.length && (
@@ -88,95 +98,99 @@ export function MapViewPage() {
         )}
       </div>
 
-      {mappable.length === 0 && !isLoading ? (
-        <Card className="border-border/60">
-          <CardContent className="p-8 text-center space-y-3">
-            <MapPin className="h-8 w-8 mx-auto text-muted-foreground" />
-            <h2 className="text-lg font-bold">No events with locations yet</h2>
-            <p className="text-sm text-muted-foreground">
-              Published events need latitude + longitude to appear on the map. Try a different city
-              or switch to the explore view.
-            </p>
-            <Button asChild>
-              <Link to="/explore">Browse Explore</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="rounded-2xl overflow-hidden border border-border/60 h-[70vh] min-h-[400px]">
-          <MapGL
-            ref={mapRef}
-            initialViewState={{ longitude: centerLng, latitude: centerLat, zoom: 11 }}
-            mapStyle={mapStyle}
-            style={{ width: "100%", height: "100%" }}
-            attributionControl={{ compact: true }}
-          >
-            <NavigationControl position="top-left" showCompass={false} />
-            {mappable.map((event) => (
-              <Marker
-                key={event.id}
-                longitude={event.longitude}
-                latitude={event.latitude}
-                anchor="bottom"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation()
-                  setPopupEvent(event)
-                }}
-              >
-                <button
-                  type="button"
-                  aria-label={event.title}
-                  className="block transition-transform hover:scale-110 active:scale-95"
+      <FadeSwap stateKey={bodyKey}>
+        {bodyKey === "map-city-loading" ? (
+          <Skeleton className="w-full h-[70vh] min-h-[400px] rounded-2xl" />
+        ) : bodyKey === "map-empty" ? (
+          <Card className="border-border/60">
+            <CardContent className="p-8 text-center space-y-3">
+              <MapPin className="h-8 w-8 mx-auto text-muted-foreground" />
+              <h2 className="text-lg font-bold">No events with locations yet</h2>
+              <p className="text-sm text-muted-foreground">
+                Published events need latitude + longitude to appear on the map. Try a different
+                city or switch to the explore view.
+              </p>
+              <Button asChild>
+                <Link to="/explore">Browse Explore</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="rounded-2xl overflow-hidden border border-border/60 h-[70vh] min-h-[400px]">
+            <MapGL
+              ref={mapRef}
+              initialViewState={{ longitude: centerLng!, latitude: centerLat!, zoom: 11 }}
+              mapStyle={mapStyle}
+              style={{ width: "100%", height: "100%" }}
+              attributionControl={{ compact: true }}
+            >
+              <NavigationControl position="top-left" showCompass={false} />
+              {mappable.map((event) => (
+                <Marker
+                  key={event.id}
+                  longitude={event.longitude}
+                  latitude={event.latitude}
+                  anchor="bottom"
+                  onClick={(e) => {
+                    e.originalEvent.stopPropagation()
+                    setPopupEvent(event)
+                  }}
                 >
-                  <EventPin />
-                </button>
-              </Marker>
-            ))}
-            {popupEvent && (
-              <Popup
-                longitude={popupEvent.longitude}
-                latitude={popupEvent.latitude}
-                anchor="bottom"
-                offset={36}
-                closeButton={false}
-                closeOnClick={false}
-                onClose={() => setPopupEvent(null)}
-                maxWidth="280px"
-              >
-                <div className="space-y-1.5 min-w-[200px]">
-                  <Link
-                    to={`/events/${popupEvent.id}`}
-                    className="font-semibold text-sm text-foreground hover:text-primary block leading-tight"
+                  <button
+                    type="button"
+                    aria-label={event.title}
+                    className="block transition-transform hover:scale-110 active:scale-95"
                   >
-                    {popupEvent.title}
-                  </Link>
-                  {popupEvent.venue_name && (
-                    <p className="text-xs text-muted-foreground">{popupEvent.venue_name}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(popupEvent.start_datetime), "MMM d, h:mm a")}
-                  </p>
-                  <div className="flex gap-1 flex-wrap pt-1">
-                    {popupEvent.is_free && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Free
-                      </Badge>
+                    <EventPin />
+                  </button>
+                </Marker>
+              ))}
+              {popupEvent && (
+                <Popup
+                  longitude={popupEvent.longitude}
+                  latitude={popupEvent.latitude}
+                  anchor="bottom"
+                  offset={36}
+                  closeButton={false}
+                  closeOnClick={false}
+                  onClose={() => setPopupEvent(null)}
+                  maxWidth="280px"
+                >
+                  <div className="space-y-1.5 min-w-[200px]">
+                    <Link
+                      to={`/events/${popupEvent.id}`}
+                      className="font-semibold text-sm text-foreground hover:text-primary block leading-tight"
+                    >
+                      {popupEvent.title}
+                    </Link>
+                    {popupEvent.venue_name && (
+                      <p className="text-xs text-muted-foreground">{popupEvent.venue_name}</p>
                     )}
-                    {popupEvent.age_min !== null && popupEvent.age_max !== null && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Ages {popupEvent.age_min}–{popupEvent.age_max}
-                      </Badge>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(popupEvent.start_datetime), "MMM d, h:mm a")}
+                    </p>
+                    <div className="flex gap-1 flex-wrap pt-1">
+                      {popupEvent.is_free && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Free
+                        </Badge>
+                      )}
+                      {popupEvent.age_min !== null && popupEvent.age_max !== null && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Ages {popupEvent.age_min}–{popupEvent.age_max}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button asChild size="sm" className="w-full h-7 text-xs mt-1">
+                      <Link to={`/events/${popupEvent.id}`}>View Details</Link>
+                    </Button>
                   </div>
-                  <Button asChild size="sm" className="w-full h-7 text-xs mt-1">
-                    <Link to={`/events/${popupEvent.id}`}>View Details</Link>
-                  </Button>
-                </div>
-              </Popup>
-            )}
-          </MapGL>
-        </div>
-      )}
+                </Popup>
+              )}
+            </MapGL>
+          </div>
+        )}
+      </FadeSwap>
     </div>
   )
 }

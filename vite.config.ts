@@ -45,6 +45,7 @@ export default defineConfig(({ mode }) => {
     plugins,
     build: {
       sourcemap: mode !== "development",
+      chunkSizeWarningLimit: 1200,
     },
     resolve: {
       alias: {
