@@ -20,7 +20,7 @@ import {
   ProfileUserSummary,
   resolveSelectedCity,
 } from "@/components/profile/profile-sections"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/contexts/app-context"
 import { useTheme } from "@/components/theme-provider"
 import { useUpdateProfile } from "@/hooks/use-profile"

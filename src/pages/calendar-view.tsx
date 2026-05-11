@@ -15,7 +15,7 @@ import {
   CalendarViewHeader,
   SavedEventsSection,
 } from "@/components/calendar/calendar-view-sections"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/contexts/app-context"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useFavorites } from "@/hooks/use-favorites"

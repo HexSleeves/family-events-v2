@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/contexts/app-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 

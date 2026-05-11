@@ -28,7 +28,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { HOME_PATH } from "@/lib/access-control"
 
 const ADMIN_NAV = [

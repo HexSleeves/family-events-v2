@@ -3,7 +3,7 @@ import { Heart } from "lucide-react"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useToggleFavorite } from "@/hooks/use-favorites"
 import { toast } from "sonner"
 

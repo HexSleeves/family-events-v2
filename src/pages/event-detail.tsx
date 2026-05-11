@@ -16,7 +16,7 @@ import {
   EventDetailSectionLayout,
   EventDetailSummary,
 } from "@/components/event-detail/event-detail-sections"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useToggleCalendarEvent } from "@/hooks/use-calendar-events"
 import { useComments, useAddComment } from "@/hooks/use-comments"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"

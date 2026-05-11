@@ -1,5 +1,5 @@
 import { toast } from "sonner"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { getAdminErrorDetail, humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 
 export function useAdminToast() {

@@ -4,7 +4,7 @@ import {
   AdminAccessHeader,
   AdminAccessList,
 } from "@/components/admin/admin-access-sections"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/stores/auth-store"
 import { useAdminUserAccess, useUpdateAdminUserAccess } from "@/hooks/admin/use-admin-access"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"

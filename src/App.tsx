@@ -1,12 +1,11 @@
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppErrorBoundary } from "@/components/app-error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { PublicOnlyRoute } from "@/components/auth/public-only-route"
-import { AuthProvider } from "@/contexts/auth-context"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth, useAuthStore } from "@/stores/auth-store"
 import { AppProvider } from "@/contexts/app-context"
 import { Toaster } from "@/components/ui/sonner"
 import { HOME_PATH } from "@/lib/access-control"
@@ -151,6 +150,11 @@ function RouteFallback() {
   )
 }
 
+function AuthInit() {
+  useEffect(() => useAuthStore.getState().initAuth(), [])
+  return null
+}
+
 function RootLandingRoute() {
   const location = useLocation()
   const { user, isEnabled, isLoading } = useAuth()
@@ -193,8 +197,8 @@ export default function App() {
   return (
     <ThemeProvider storageKey="family-events-theme">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BrowserRouter>
+        <AuthInit />
+        <BrowserRouter>
             <AppErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
@@ -241,9 +245,8 @@ export default function App() {
                 </Routes>
               </Suspense>
             </AppErrorBoundary>
-          </BrowserRouter>
-          <Toaster richColors position="bottom-right" />
-        </AuthProvider>
+        </BrowserRouter>
+        <Toaster richColors position="bottom-right" />
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>
             <ReactQueryDevtools initialIsOpen={false} />
