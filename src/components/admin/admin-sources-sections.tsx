@@ -140,79 +140,79 @@ export function AdminSourcesHeader({
           Disable Auto-Approve All
         </Button>
         <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
-        <DialogTrigger asChild>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Source
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Event Source</DialogTitle>
-            <DialogDescription>
-              Create a source, then trigger a scrape to import events into the review queue.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Source Name</Label>
-              <Input
-                value={newSource.name}
-                onChange={(event) => onNameChange(event.target.value)}
-                placeholder="e.g. NYC Parks Family Events"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>URL</Label>
-              <Input
-                value={newSource.url}
-                onChange={(event) => onUrlChange(event.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Type</Label>
-                <Select
-                  value={newSource.source_type}
-                  onValueChange={(value) => onTypeChange(value as SourceType)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="website">Website</SelectItem>
-                    <SelectItem value="ical">iCal Feed</SelectItem>
-                    <SelectItem value="rss">RSS Feed</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>City</Label>
-                <Select value={newSource.city_id} onValueChange={onCityChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cities.map((city) => (
-                      <SelectItem key={city.id} value={city.id}>
-                        {city.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onDialogOpenChange(false)}>
-              Cancel
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Source
             </Button>
-            <Button onClick={onAddSource}>Add Source</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Event Source</DialogTitle>
+              <DialogDescription>
+                Create a source, then trigger a scrape to import events into the review queue.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label>Source Name</Label>
+                <Input
+                  value={newSource.name}
+                  onChange={(event) => onNameChange(event.target.value)}
+                  placeholder="e.g. NYC Parks Family Events"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>URL</Label>
+                <Input
+                  value={newSource.url}
+                  onChange={(event) => onUrlChange(event.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Type</Label>
+                  <Select
+                    value={newSource.source_type}
+                    onValueChange={(value) => onTypeChange(value as SourceType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="ical">iCal Feed</SelectItem>
+                      <SelectItem value="rss">RSS Feed</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>City</Label>
+                  <Select value={newSource.city_id} onValueChange={onCityChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.id}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onDialogOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={onAddSource}>Add Source</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
@@ -222,6 +222,7 @@ interface AdminSourcesListProps {
   sources: EventSource[]
   cities: City[]
   cityFilter: CityFilterValue
+  latestErrorBySourceId: ReadonlyMap<string, string>
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
   onToggleAutoApprove: (sourceId: string, autoApprove: boolean) => void
@@ -233,6 +234,7 @@ export function AdminSourcesList({
   sources,
   cities,
   cityFilter,
+  latestErrorBySourceId,
   scrapingSourceIds,
   onToggleActive,
   onToggleAutoApprove,
@@ -252,6 +254,7 @@ export function AdminSourcesList({
             key={source.id}
             source={source}
             cities={cities}
+            errorMessage={latestErrorBySourceId.get(source.id)}
             scrapingSourceIds={scrapingSourceIds}
             onToggleActive={onToggleActive}
             onToggleAutoApprove={onToggleAutoApprove}
@@ -297,6 +300,7 @@ export function AdminSourcesList({
                       key={source.id}
                       source={source}
                       cities={cities}
+                      errorMessage={latestErrorBySourceId.get(source.id)}
                       scrapingSourceIds={scrapingSourceIds}
                       onToggleActive={onToggleActive}
                       onToggleAutoApprove={onToggleAutoApprove}
@@ -316,6 +320,7 @@ export function AdminSourcesList({
 interface SourceCardProps {
   source: EventSource
   cities: City[]
+  errorMessage?: string
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
   onToggleAutoApprove: (sourceId: string, autoApprove: boolean) => void
@@ -325,6 +330,7 @@ interface SourceCardProps {
 function SourceCard({
   source,
   cities,
+  errorMessage,
   scrapingSourceIds,
   onToggleActive,
   onToggleAutoApprove,
@@ -352,6 +358,14 @@ function SourceCard({
             <p className="text-xs text-muted-foreground truncate mt-0.5">{source.url}</p>
             <div className="flex items-center gap-4 mt-2 flex-wrap">
               <StatusIndicator status={safeStatus} />
+              {safeStatus === "error" && errorMessage && (
+                <span
+                  className="text-xs text-destructive/80 truncate max-w-xl"
+                  title={errorMessage}
+                >
+                  {errorMessage}
+                </span>
+              )}
               {source.last_scraped_at && (
                 <span className="text-xs text-muted-foreground">
                   Last run {format(new Date(source.last_scraped_at), "MMM d, h:mm a")}

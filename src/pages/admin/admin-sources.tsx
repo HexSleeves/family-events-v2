@@ -12,6 +12,7 @@ import {
   useUpdateAdminSource,
   useAdminBulkSetAutoApprove,
 } from "@/hooks/admin/use-admin-sources"
+import { useAdminSourceRuns } from "@/hooks/admin/use-admin-source-runs"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
@@ -19,6 +20,7 @@ type SourceType = "website" | "ical" | "rss" | "manual"
 
 export function AdminSourcesPage() {
   const { data: sources = [] } = useAdminSources()
+  const { data: sourceRuns = [] } = useAdminSourceRuns()
   const { data: cities = [] } = useAdminCities()
   const createSource = useCreateAdminSource()
   const updateSource = useUpdateAdminSource()
@@ -46,6 +48,26 @@ export function AdminSourcesPage() {
     }
     return counts
   }, [sources])
+
+  const latestErrorBySourceId = useMemo(() => {
+    const latestRunBySourceId = new Map<string, (typeof sourceRuns)[number]>()
+
+    for (const run of sourceRuns) {
+      if (!run.source_id) continue
+      if (!latestRunBySourceId.has(run.source_id)) {
+        latestRunBySourceId.set(run.source_id, run)
+      }
+    }
+
+    const errors = new Map<string, string>()
+    for (const [sourceId, run] of latestRunBySourceId) {
+      if (run.status === "error" && run.error_log) {
+        errors.set(sourceId, run.error_log)
+      }
+    }
+
+    return errors
+  }, [sourceRuns])
 
   async function handleScrape(sourceId: string) {
     addScrapingId(sourceId)
@@ -82,7 +104,7 @@ export function AdminSourcesPage() {
     try {
       await bulkAutoApprove.mutateAsync(enable)
       toast.success(
-        enable ? "Auto-approve enabled for all sources" : "Auto-approve disabled for all sources",
+        enable ? "Auto-approve enabled for all sources" : "Auto-approve disabled for all sources"
       )
     } catch (error) {
       toastError(error, "Failed to update sources.")
@@ -150,6 +172,7 @@ export function AdminSourcesPage() {
         sources={sources}
         cities={cities}
         cityFilter={cityFilter}
+        latestErrorBySourceId={latestErrorBySourceId}
         scrapingSourceIds={scrapingSourceIds}
         onToggleActive={handleToggleActive}
         onToggleAutoApprove={handleToggleAutoApprove}
