@@ -137,7 +137,7 @@ export function AdminSourcesHeader({
           disabled={isBulkPending}
           onClick={onDisableAllAutoApprove}
         >
-          Disable All Auto
+          Disable Auto-Approve All
         </Button>
         <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
         <DialogTrigger asChild>
