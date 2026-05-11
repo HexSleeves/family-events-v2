@@ -955,6 +955,12 @@ export type Database = {
       }
     }
     Functions: {
+      admin_bulk_set_auto_approve: {
+        Args: {
+          enable: boolean
+        }
+        Returns: undefined
+      }
       admin_cron_run_history: {
         Args: { p_job_name?: string | null; p_limit?: number }
         Returns: {
