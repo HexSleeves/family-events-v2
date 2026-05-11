@@ -1,17 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
+import { useEffect, useRef } from "react"
+import { Map as MapGL, Marker, Popup, type MapRef } from "react-map-gl/maplibre"
+import "maplibre-gl/dist/maplibre-gl.css"
+import { useResolvedTheme } from "@/hooks/use-resolved-theme"
 
-const PinIcon = L.divIcon({
-  className: "",
-  iconSize: [28, 36],
-  iconAnchor: [14, 36],
-  popupAnchor: [0, -38],
-  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 36" width="28" height="36">
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.94 14 22 14 22S28 23.94 28 14C28 6.27 21.73 0 14 0z" fill="hsl(221,83%,53%)" />
-    <circle cx="14" cy="14" r="5.5" fill="white" />
-  </svg>`,
-})
+const STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty"
+const STYLE_DARK = "https://tiles.openfreemap.org/styles/dark-matter"
 
 interface EventMapMiniProps {
   latitude: number | null
@@ -20,7 +13,34 @@ interface EventMapMiniProps {
   address?: string | null
 }
 
+function MiniPin() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 28 36"
+      width={28}
+      height={36}
+      className="drop-shadow"
+    >
+      <path
+        d="M14 0C6.27 0 0 6.27 0 14c0 9.94 14 22 14 22S28 23.94 28 14C28 6.27 21.73 0 14 0z"
+        fill="oklch(0.54 0.215 12)"
+      />
+      <circle cx={14} cy={14} r={5.5} fill="white" />
+    </svg>
+  )
+}
+
 export function EventMapMini({ latitude, longitude, venueName, address }: EventMapMiniProps) {
+  const resolvedTheme = useResolvedTheme()
+  const mapRef = useRef<MapRef>(null)
+
+  // Re-center if the event coordinates change after first render.
+  useEffect(() => {
+    if (latitude == null || longitude == null) return
+    mapRef.current?.flyTo({ center: [longitude, latitude], zoom: 14, speed: 1.2, essential: true })
+  }, [latitude, longitude])
+
   if (latitude == null || longitude == null) {
     return (
       <div className="rounded-xl bg-muted/50 border border-border/60 h-36 flex items-center justify-center">
@@ -29,29 +49,38 @@ export function EventMapMini({ latitude, longitude, venueName, address }: EventM
     )
   }
 
+  const mapStyle = resolvedTheme === "dark" ? STYLE_DARK : STYLE_LIGHT
+
   return (
     <div className="rounded-xl overflow-hidden border border-border/60 h-48">
-      <MapContainer
-        center={[latitude, longitude]}
-        zoom={14}
-        scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
+      <MapGL
+        ref={mapRef}
+        initialViewState={{ longitude, latitude, zoom: 14 }}
+        mapStyle={mapStyle}
+        style={{ width: "100%", height: "100%" }}
+        attributionControl={{ compact: true }}
+        scrollZoom={false}
+        dragRotate={false}
+        pitchWithRotate={false}
+        touchPitch={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={19}
-        />
-        <Marker position={[latitude, longitude]} icon={PinIcon}>
-          {(venueName || address) && (
-            <Popup>
-              {venueName && <p className="font-semibold text-sm">{venueName}</p>}
-              {address && <p className="text-xs text-muted-foreground">{address}</p>}
-            </Popup>
-          )}
+        <Marker longitude={longitude} latitude={latitude} anchor="bottom">
+          <MiniPin />
         </Marker>
-      </MapContainer>
+        {(venueName || address) && (
+          <Popup
+            longitude={longitude}
+            latitude={latitude}
+            anchor="bottom"
+            offset={36}
+            closeButton={false}
+            closeOnClick={false}
+          >
+            {venueName && <p className="font-semibold text-sm text-foreground">{venueName}</p>}
+            {address && <p className="text-xs text-muted-foreground">{address}</p>}
+          </Popup>
+        )}
+      </MapGL>
     </div>
   )
 }

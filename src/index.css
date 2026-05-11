@@ -161,3 +161,57 @@
     opacity: 1;
   }
 }
+
+/* MapLibre overrides — bring popups & controls into the design system. */
+.maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  box-shadow:
+    0 10px 25px -10px oklch(0 0 0 / 0.25),
+    0 4px 6px -2px oklch(0 0 0 / 0.06);
+}
+.maplibregl-popup-close-button {
+  color: var(--muted-foreground);
+  font-size: 1.1rem;
+  padding: 0.25rem 0.4rem;
+}
+.maplibregl-popup-close-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--popover);
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--popover);
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--popover);
+}
+.maplibregl-ctrl-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.maplibregl-ctrl-group button {
+  background: transparent;
+  color: var(--foreground);
+}
+.maplibregl-ctrl-group button:hover {
+  background: var(--accent);
+}
+.maplibregl-ctrl-attrib {
+  background: oklch(from var(--card) l c h / 0.85);
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--primary);
+}
