@@ -11,7 +11,7 @@ export function useAdminSources() {
       const { data, error } = await supabase
         .from("event_sources")
         .select(
-          "id, name, url, source_type, city_id, is_active, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
+          "id, name, url, source_type, city_id, is_active, auto_approve, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
         )
         .order("created_at", { ascending: false })
 
@@ -101,6 +101,20 @@ export function useTriggerSourceScrape() {
         .update({ last_status: "error" })
         .eq("id", variables.sourceId)
         .then(() => queryClient.invalidateQueries({ queryKey: qk.admin.sources }))
+    },
+  })
+}
+
+export function useAdminBulkSetAutoApprove() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (enable: boolean) => {
+      const { error } = await supabase.rpc("admin_bulk_set_auto_approve", { enable })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sources })
     },
   })
 }
