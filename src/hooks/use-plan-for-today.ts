@@ -51,9 +51,9 @@ function fallbackMessageForOffset(offset: number): string | null {
     return null
   }
   if (offset === 1) {
-    return "Nothing today - here's tomorrow."
+    return "Nothing matched today. Tomorrow has the best fit."
   }
-  return "Nothing today - here's this weekend."
+  return `Nothing matched today. Looking ${offset} days ahead.`
 }
 
 function emptyPlan(weatherFit: string, weather: WeatherSnapshot | null): PlanForTodayResult {
@@ -65,7 +65,7 @@ function emptyPlan(weatherFit: string, weather: WeatherSnapshot | null): PlanFor
     events: [],
     heroEvent: null,
     secondaryEvents: [],
-    fallbackMessage: "No family plans found in the next week.",
+    fallbackMessage: "No family plans found in the next 7 days.",
   }
 }
 
@@ -111,7 +111,7 @@ export function usePlanForToday(options: UsePlanForTodayOptions = {}) {
         return emptyPlan(weatherFit, weather.data ?? null)
       }
 
-      // Saturday Plan composition (requested ASCII diagram):
+      // Weekly plan composition:
       //
       //   geo (browser -> city centroid fallback)
       //      + weather (OpenWeather -> "any" fallback)

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FavoriteButton } from "@/components/favorite-button"
 import { ShareEventButton } from "@/components/plan/share-event-button"
+import { SmartImage } from "@/components/motion"
 import { formatEventPrice } from "@/lib/utils"
 import type { PlannedEvent } from "@/hooks/use-plan-for-today"
 
@@ -31,7 +32,12 @@ export function PlanHeroCard({ event }: PlanHeroCardProps) {
   return (
     <Card className="overflow-hidden border-primary/30 bg-card shadow-sm">
       <div className="relative">
-        <img src={imageUrl} alt={event.title} className="h-64 w-full object-cover sm:h-72" />
+        <SmartImage
+          src={imageUrl}
+          alt={event.title}
+          className="h-64 w-full object-cover sm:h-72"
+          placeholderClassName="h-64 w-full sm:h-72"
+        />
         <div className="absolute left-3 top-3">
           <Badge className="bg-primary text-primary-foreground">Best match this week</Badge>
         </div>

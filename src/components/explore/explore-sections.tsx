@@ -9,6 +9,7 @@ import {
   Map,
   Check,
 } from "lucide-react"
+import { AnimatePresence, m } from "motion/react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Card, CardContent } from "@/components/ui/card"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
+import { FadeSwap, StaggerItem, StaggerList, popInVariants } from "@/components/motion"
 import type { EventWithDetails, Tag } from "@/lib/types"
 
 export const CATEGORIES = [
@@ -298,33 +300,62 @@ export function ExploreActiveFilters({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {onlyFree && (
-        <Badge variant="secondary" className="gap-1">
-          Free only
-          <button onClick={() => onOnlyFreeChange(false)}>
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      )}
-      {activeCategory && (
-        <Badge variant="secondary" className="gap-1 capitalize">
-          {activeCategory}
-          <button onClick={() => onActiveCategoryChange(null)}>
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      )}
-      {selectedTagSlugs.map((slug) => {
-        const tag = tags.find((item) => item.slug === slug)
-        return tag ? (
-          <Badge key={slug} variant="secondary" className="gap-1">
-            {tag.name}
-            <button onClick={() => onToggleTagSlug(slug)}>
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ) : null
-      })}
+      <AnimatePresence initial={false}>
+        {onlyFree && (
+          <m.div
+            key="filter-free"
+            layout
+            variants={popInVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Badge variant="secondary" className="gap-1">
+              Free only
+              <button onClick={() => onOnlyFreeChange(false)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </m.div>
+        )}
+        {activeCategory && (
+          <m.div
+            key={`filter-cat-${activeCategory}`}
+            layout
+            variants={popInVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Badge variant="secondary" className="gap-1 capitalize">
+              {activeCategory}
+              <button onClick={() => onActiveCategoryChange(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </m.div>
+        )}
+        {selectedTagSlugs.map((slug) => {
+          const tag = tags.find((item) => item.slug === slug)
+          return tag ? (
+            <m.div
+              key={`filter-tag-${slug}`}
+              layout
+              variants={popInVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <Badge variant="secondary" className="gap-1">
+                {tag.name}
+                <button onClick={() => onToggleTagSlug(slug)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            </m.div>
+          ) : null
+        })}
+      </AnimatePresence>
     </div>
   )
 }
@@ -409,30 +440,44 @@ export function ExploreEventsSection({
         </Card>
       )}
 
-      {isEventsLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <EventCardSkeleton key={`explore-skeleton-${index}`} variant="list" />
-          ))}
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="text-center py-16">
-          <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Try adjusting your filters or search terms
-          </p>
-          <Button variant="outline" onClick={onClearAllFilters}>
-            Clear Filters
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} variant="list" />
-          ))}
-        </div>
-      )}
+      <FadeSwap
+        stateKey={
+          isEventsLoading
+            ? "explore-loading"
+            : filteredEvents.length === 0
+              ? "explore-empty"
+              : "explore-content"
+        }
+      >
+        {isEventsLoading ? (
+          <StaggerList className="space-y-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <StaggerItem key={`explore-skeleton-${index}`}>
+                <EventCardSkeleton variant="list" />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        ) : filteredEvents.length === 0 ? (
+          <div className="text-center py-16">
+            <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Try adjusting your filters or search terms
+            </p>
+            <Button variant="outline" onClick={onClearAllFilters}>
+              Clear Filters
+            </Button>
+          </div>
+        ) : (
+          <StaggerList className="space-y-4">
+            {filteredEvents.map((event) => (
+              <StaggerItem key={event.id}>
+                <EventCard event={event} variant="list" />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        )}
+      </FadeSwap>
     </section>
   )
 }

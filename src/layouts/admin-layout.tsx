@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/stores/auth-store"
 import { HOME_PATH } from "@/lib/access-control"
+import { FadeSwap, PageTransition } from "@/components/motion"
 
 const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -50,9 +51,11 @@ export function AdminLayout() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
+      <FadeSwap stateKey="admin-loading">
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        </div>
+      </FadeSwap>
     )
   }
 
@@ -123,7 +126,9 @@ export function AdminLayout() {
             </h1>
           </header>
           <div className="flex-1 p-6">
-            <Outlet />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
           </div>
         </SidebarInset>
       </div>

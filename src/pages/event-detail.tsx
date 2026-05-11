@@ -21,6 +21,7 @@ import { useToggleCalendarEvent } from "@/hooks/use-calendar-events"
 import { useComments, useAddComment } from "@/hooks/use-comments"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useUpsertRating, useUserRating } from "@/hooks/use-ratings"
+import { FadeSwap } from "@/components/motion"
 import { toast } from "sonner"
 
 export function EventDetailPage() {
@@ -70,12 +71,26 @@ export function EventDetailPage() {
       ? calendarOverride.value
       : Boolean(event?.is_in_calendar)
 
+  const stateKey = isEventLoading
+    ? "event-detail-loading"
+    : isEventError || !event
+      ? "event-detail-error"
+      : "event-detail-content"
+
   if (isEventLoading) {
-    return <EventDetailLoadingState />
+    return (
+      <FadeSwap stateKey={stateKey}>
+        <EventDetailLoadingState />
+      </FadeSwap>
+    )
   }
 
   if (isEventError || !event) {
-    return <EventDetailErrorState />
+    return (
+      <FadeSwap stateKey={stateKey}>
+        <EventDetailErrorState />
+      </FadeSwap>
+    )
   }
 
   const currentEvent = event
@@ -158,7 +173,7 @@ export function EventDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <FadeSwap stateKey={stateKey} className="max-w-2xl mx-auto">
       <EventDetailHero
         event={currentEvent}
         imageUrl={imageUrl}
@@ -196,6 +211,6 @@ export function EventDetailPage() {
           comments={comments}
         />
       </EventDetailSectionLayout>
-    </div>
+    </FadeSwap>
   )
 }

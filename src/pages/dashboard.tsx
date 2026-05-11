@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/stores/app-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
+import { FadeSwap } from "@/components/motion"
 import {
   DashboardCarouselSection,
   DashboardEmptyState,
@@ -62,6 +63,14 @@ export function DashboardPage() {
     ? `Welcome back, ${profile.display_name.split(" ")[0]}!`
     : "Today's adventures"
 
+  const bodyKey = isEventsError
+    ? "dashboard-error"
+    : isEventsLoading
+      ? "dashboard-loading"
+      : events.length === 0
+        ? "dashboard-empty"
+        : "dashboard-content"
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
       <DashboardHeader
@@ -71,38 +80,50 @@ export function DashboardPage() {
         avatarUrl={profile?.avatar_url}
         showAvatar={Boolean(user)}
       />
-      {isEventsError && <DashboardErrorState />}
-      {isEventsLoading && <DashboardLoadingState />}
-      {!isEventsLoading && !isEventsError && events.length === 0 && <DashboardEmptyState />}
-      <DashboardTodaySection todayEvents={todayEvents} />
-      <DashboardCarouselSection
-        title="Featured Events"
-        icon="featured"
-        events={featuredEvents}
-        eventCardVariant="featured"
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
-      <DashboardCarouselSection
-        title={
-          user && profile?.child_name
-            ? `Recommended for ${profile.child_name}`
-            : "Happening Near You"
-        }
-        icon="recommended"
-        events={recommended}
-        eventCardVariant="default"
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
-      <DashboardSoonSection
-        events={happeningSoon}
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
-      />
-      <DashboardSavedSection savedEvents={savedEvents} onFavoriteToggle={handleFavoriteToggle} />
-      <DashboardParentPulse />
-      {!user && <DashboardGuestCta />}
+      <FadeSwap stateKey={bodyKey} className="space-y-8">
+        {bodyKey === "dashboard-error" ? (
+          <DashboardErrorState />
+        ) : bodyKey === "dashboard-loading" ? (
+          <DashboardLoadingState />
+        ) : bodyKey === "dashboard-empty" ? (
+          <DashboardEmptyState />
+        ) : (
+          <>
+            <DashboardTodaySection todayEvents={todayEvents} />
+            <DashboardCarouselSection
+              title="Featured Events"
+              icon="featured"
+              events={featuredEvents}
+              eventCardVariant="featured"
+              isFavorited={isFavorited}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
+            <DashboardCarouselSection
+              title={
+                user && profile?.child_name
+                  ? `Recommended for ${profile.child_name}`
+                  : "Happening Near You"
+              }
+              icon="recommended"
+              events={recommended}
+              eventCardVariant="default"
+              isFavorited={isFavorited}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
+            <DashboardSoonSection
+              events={happeningSoon}
+              isFavorited={isFavorited}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
+            <DashboardSavedSection
+              savedEvents={savedEvents}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
+            <DashboardParentPulse />
+            {!user && <DashboardGuestCta />}
+          </>
+        )}
+      </FadeSwap>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { useAuth, useAuthStore } from "@/stores/auth-store"
 import { Toaster } from "@/components/ui/sonner"
 import { HOME_PATH } from "@/lib/access-control"
 import { queryClient } from "@/lib/query-client"
+import { AppMotionProvider, FadeSwap } from "@/components/motion"
 
 import { AppLayout } from "@/layouts/app-layout"
 import { AdminLayout } from "@/layouts/admin-layout"
@@ -136,16 +137,18 @@ const ReactQueryDevtools = import.meta.env.DEV
 
 function RouteFallback() {
   return (
-    <div className="min-h-[50vh] bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
+    <FadeSwap stateKey="route-fallback">
+      <div className="min-h-[50vh] bg-background px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+          <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+          </div>
         </div>
       </div>
-    </div>
+    </FadeSwap>
   )
 }
 
@@ -195,7 +198,8 @@ export default function App() {
     <ThemeProvider storageKey="family-events-theme">
       <QueryClientProvider client={queryClient}>
         <AuthInit />
-        <BrowserRouter>
+        <AppMotionProvider>
+          <BrowserRouter>
             <AppErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
@@ -236,7 +240,8 @@ export default function App() {
                 </Routes>
               </Suspense>
             </AppErrorBoundary>
-        </BrowserRouter>
+          </BrowserRouter>
+        </AppMotionProvider>
         <Toaster richColors position="bottom-right" />
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>

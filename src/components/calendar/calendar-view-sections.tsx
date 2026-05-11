@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 import type { EventWithDetails } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
+import { FadeSwap, StaggerItem, StaggerList } from "@/components/motion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -89,12 +90,7 @@ export function CalendarWeekPanel({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-base font-bold text-foreground tracking-tight">{weekLabel}</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={onNextWeek}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -330,37 +326,46 @@ export function CalendarSelectedDatePanel({
         )}
       </div>
 
-      {events.length === 0 ? (
-        <div className="py-10 px-4 text-center">
-          <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
-            <CalendarDays className="h-5 w-5 text-muted-foreground/50" />
+      <FadeSwap
+        stateKey={
+          isLoading
+            ? "calendar-selected-loading"
+            : events.length === 0
+              ? "calendar-selected-empty"
+              : "calendar-selected-content"
+        }
+      >
+        {isLoading ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <EventCardSkeleton key={`calendar-skeleton-${index}`} variant="compact" />
+            ))}
           </div>
-          <p className="text-sm font-medium text-foreground mb-1">Nothing planned</p>
-          <p className="text-xs text-muted-foreground mb-4">No events on this day</p>
-          <Button variant="outline" size="sm" className="text-xs h-8" asChild>
-            <Link to="/explore">Browse events</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="divide-y divide-border/40">
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={{ ...event, is_favorited: isFavorited(event.id) }}
-              variant="compact"
-              onFavoriteToggle={onFavoriteToggle}
-            />
-          ))}
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="p-4 space-y-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <EventCardSkeleton key={`calendar-skeleton-${index}`} variant="compact" />
-          ))}
-        </div>
-      )}
+        ) : events.length === 0 ? (
+          <div className="py-10 px-4 text-center">
+            <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <CalendarDays className="h-5 w-5 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">Nothing planned</p>
+            <p className="text-xs text-muted-foreground mb-4">No events on this day</p>
+            <Button variant="outline" size="sm" className="text-xs h-8" asChild>
+              <Link to="/explore">Browse events</Link>
+            </Button>
+          </div>
+        ) : (
+          <StaggerList className="divide-y divide-border/40">
+            {events.map((event) => (
+              <StaggerItem key={event.id}>
+                <EventCard
+                  event={{ ...event, is_favorited: isFavorited(event.id) }}
+                  variant="compact"
+                  onFavoriteToggle={onFavoriteToggle}
+                />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        )}
+      </FadeSwap>
     </div>
   )
 }
@@ -411,37 +416,50 @@ export function SavedEventsSection({
         <h2 className="text-lg font-bold text-foreground">Saved Events</h2>
         <span className="text-sm text-muted-foreground">{savedEvents.length} saved</span>
       </div>
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <EventCardSkeleton key={`saved-events-skeleton-${index}`} />
-          ))}
-        </div>
-      ) : savedEvents.length === 0 ? (
-        <div className="py-16 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <Bookmark className="h-7 w-7 text-muted-foreground/40" />
+      <FadeSwap
+        stateKey={
+          isLoading
+            ? "calendar-saved-loading"
+            : savedEvents.length === 0
+              ? "calendar-saved-empty"
+              : "calendar-saved-content"
+        }
+      >
+        {isLoading ? (
+          <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <StaggerItem key={`saved-events-skeleton-${index}`}>
+                <EventCardSkeleton />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        ) : savedEvents.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Bookmark className="h-7 w-7 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No saved events yet</h3>
+            <p className="text-muted-foreground text-sm mb-5">
+              Browse events and tap the heart to save them here.
+            </p>
+            <Button asChild>
+              <Link to="/explore">Explore Events</Link>
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">No saved events yet</h3>
-          <p className="text-muted-foreground text-sm mb-5">
-            Browse events and tap the heart to save them here.
-          </p>
-          <Button asChild>
-            <Link to="/explore">Explore Events</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {savedEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={{ ...event, is_favorited: isFavorited(event.id) }}
-              variant="default"
-              onFavoriteToggle={onFavoriteToggle}
-            />
-          ))}
-        </div>
-      )}
+        ) : (
+          <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {savedEvents.map((event) => (
+              <StaggerItem key={event.id}>
+                <EventCard
+                  event={{ ...event, is_favorited: isFavorited(event.id) }}
+                  variant="default"
+                  onFavoriteToggle={onFavoriteToggle}
+                />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        )}
+      </FadeSwap>
     </section>
   )
 }

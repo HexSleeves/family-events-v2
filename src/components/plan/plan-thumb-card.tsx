@@ -4,6 +4,7 @@ import { Clock, MapPin } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FavoriteButton } from "@/components/favorite-button"
+import { SmartImage } from "@/components/motion"
 import { formatEventPrice } from "@/lib/utils"
 import type { PlannedEvent } from "@/hooks/use-plan-for-today"
 
@@ -22,7 +23,12 @@ export function PlanThumbCard({ event }: PlanThumbCardProps) {
     <Link to={`/events/${event.id}`} className="block">
       <Card className="overflow-hidden border-border/60 transition-shadow hover:shadow-sm">
         <div className="relative">
-          <img src={imageUrl} alt={event.title} className="h-36 w-full object-cover" />
+          <SmartImage
+            src={imageUrl}
+            alt={event.title}
+            className="h-36 w-full object-cover"
+            placeholderClassName="h-36 w-full"
+          />
           <FavoriteButton
             eventId={event.id}
             isFavorited={event.is_favorited ?? false}

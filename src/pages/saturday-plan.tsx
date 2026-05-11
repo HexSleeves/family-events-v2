@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { PlanHeroCard } from "@/components/plan/plan-hero-card"
 import { PlanThumbCard } from "@/components/plan/plan-thumb-card"
 import { WeatherStrip } from "@/components/plan/weather-strip"
+import { FadeSwap, StaggerItem, StaggerList } from "@/components/motion"
 import { useAuth } from "@/stores/auth-store"
 import { useApp } from "@/stores/app-store"
 import { usePlanForToday } from "@/hooks/use-plan-for-today"
@@ -134,69 +135,76 @@ export function SaturdayPlanPage() {
         />
       </div>
 
-      {isLoading ? <LoadingState /> : null}
+      <FadeSwap
+        stateKey={isLoading ? "plan-loading" : isError ? "plan-error" : "plan-content"}
+        className="space-y-5"
+      >
+        {isLoading ? (
+          <LoadingState />
+        ) : isError ? (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-sm text-destructive">
+                We couldn't load this week's plan right now.
+              </p>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  void refetch()
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {isRefetching ? "Retrying..." : "Retry"}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : plan ? (
+          <>
+            {plan.fallbackMessage ? (
+              <Card className="border-border/60">
+                <CardContent className="p-3 text-sm text-muted-foreground">
+                  {plan.fallbackMessage}
+                </CardContent>
+              </Card>
+            ) : null}
 
-      {isError ? (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="space-y-3 p-4">
-            <p className="text-sm text-destructive">We couldn't load this week's plan right now.</p>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                void refetch()
-              }}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {isRefetching ? "Retrying..." : "Retry"}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+            {plan.heroEvent ? (
+              <PlanHeroCard event={plan.heroEvent} />
+            ) : (
+              <Card className="border-border/60">
+                <CardContent className="space-y-3 p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No family plans found nearby in the next 7 days.
+                  </p>
+                  <Button asChild>
+                    <Link to="/explore">Explore events</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
-      {!isLoading && !isError && plan ? (
-        <>
-          {plan.fallbackMessage ? (
-            <Card className="border-border/60">
-              <CardContent className="p-3 text-sm text-muted-foreground">
-                {plan.fallbackMessage}
-              </CardContent>
-            </Card>
-          ) : null}
+            {plan.secondaryEvents.length > 0 ? (
+              <StaggerList className="grid gap-3 sm:grid-cols-2">
+                {plan.secondaryEvents.map((event) => (
+                  <StaggerItem key={event.id}>
+                    <PlanThumbCard event={event} />
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            ) : null}
 
-          {plan.heroEvent ? (
-            <PlanHeroCard event={plan.heroEvent} />
-          ) : (
-            <Card className="border-border/60">
-              <CardContent className="space-y-3 p-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No family plans found nearby in the next 7 days.
-                </p>
-                <Button asChild>
-                  <Link to="/explore">Explore events</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {plan.secondaryEvents.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {plan.secondaryEvents.map((event) => (
-                <PlanThumbCard key={event.id} event={event} />
-              ))}
+            <div className="flex justify-end">
+              <Button variant="ghost" className="gap-1 text-primary" asChild>
+                <Link to={exploreHref}>
+                  See more options
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
-          ) : null}
-
-          <div className="flex justify-end">
-            <Button variant="ghost" className="gap-1 text-primary" asChild>
-              <Link to={exploreHref}>
-                See more options
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </FadeSwap>
     </div>
   )
 }
