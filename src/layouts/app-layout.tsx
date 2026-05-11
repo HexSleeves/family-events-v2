@@ -4,6 +4,7 @@ import {
   Hop as Home,
   Compass,
   Map as MapIcon,
+  CalendarDays,
   Bookmark,
   User,
   Search,
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { to: HOME_PATH, label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/map", label: "Map", icon: MapIcon },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/profile", label: "Profile", icon: User },
 ]
