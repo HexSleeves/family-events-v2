@@ -20,6 +20,10 @@ function formatDistance(distanceKm: number | null): string | null {
   return `${distanceKm.toFixed(1)} km away`
 }
 
+function formatMatch(score: number): string {
+  return `${Math.round(score * 100)}% match`
+}
+
 export function PlanHeroCard({ event }: PlanHeroCardProps) {
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/1200/630`
   const distanceLabel = formatDistance(event.distance_km)
@@ -29,7 +33,7 @@ export function PlanHeroCard({ event }: PlanHeroCardProps) {
       <div className="relative">
         <img src={imageUrl} alt={event.title} className="h-64 w-full object-cover sm:h-72" />
         <div className="absolute left-3 top-3">
-          <Badge className="bg-primary text-primary-foreground">Top plan pick</Badge>
+          <Badge className="bg-primary text-primary-foreground">Best match this week</Badge>
         </div>
         <div className="absolute right-3 top-3">
           <FavoriteButton
@@ -60,7 +64,7 @@ export function PlanHeroCard({ event }: PlanHeroCardProps) {
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{formatEventPrice(event.price, event.is_free)}</Badge>
           {distanceLabel ? <Badge variant="outline">{distanceLabel}</Badge> : null}
-          <Badge variant="outline">Plan score {event.plan_score.toFixed(2)}</Badge>
+          <Badge variant="outline">{formatMatch(event.plan_score)}</Badge>
         </div>
 
         <div className="flex flex-wrap gap-2">

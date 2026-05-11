@@ -11,6 +11,10 @@ interface PlanThumbCardProps {
   event: PlannedEvent
 }
 
+function formatMatch(score: number): string {
+  return `${Math.round(score * 100)}% match`
+}
+
 export function PlanThumbCard({ event }: PlanThumbCardProps) {
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/640/360`
 
@@ -42,7 +46,7 @@ export function PlanThumbCard({ event }: PlanThumbCardProps) {
           <div className="flex items-center justify-between">
             <Badge variant="secondary">{formatEventPrice(event.price, event.is_free)}</Badge>
             <span className="text-[11px] text-muted-foreground">
-              Score {event.plan_score.toFixed(2)}
+              {formatMatch(event.plan_score)}
             </span>
           </div>
         </CardContent>

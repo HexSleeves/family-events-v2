@@ -187,6 +187,8 @@ export const qk = {
       ["admin", "event-ai-trace", nil(eventId)] as const,
     sources: ["admin", "sources"] as const,
     sourceRuns: ["admin", "source-runs"] as const,
+    sourceRunErrors: (sourceIds: readonly string[]) =>
+      ["admin", "source-run-errors", sortedUnique(sourceIds)] as const,
     stats: ["admin", "stats"] as const,
     events: {
       all: ["admin", "events"] as const,

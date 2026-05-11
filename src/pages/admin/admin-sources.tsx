@@ -12,7 +12,7 @@ import {
   useUpdateAdminSource,
   useAdminBulkSetAutoApprove,
 } from "@/hooks/admin/use-admin-sources"
-import { useAdminSourceRuns } from "@/hooks/admin/use-admin-source-runs"
+import { useAdminSourceRunErrors } from "@/hooks/admin/use-admin-source-runs"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
@@ -20,7 +20,8 @@ type SourceType = "website" | "ical" | "rss" | "manual"
 
 export function AdminSourcesPage() {
   const { data: sources = [] } = useAdminSources()
-  const { data: sourceRuns = [] } = useAdminSourceRuns()
+  const sourceIds = useMemo(() => sources.map((source) => source.id), [sources])
+  const { data: sourceRunErrors = [] } = useAdminSourceRunErrors(sourceIds)
   const { data: cities = [] } = useAdminCities()
   const createSource = useCreateAdminSource()
   const updateSource = useUpdateAdminSource()
@@ -50,24 +51,16 @@ export function AdminSourcesPage() {
   }, [sources])
 
   const latestErrorBySourceId = useMemo(() => {
-    const latestRunBySourceId = new Map<string, (typeof sourceRuns)[number]>()
-
-    for (const run of sourceRuns) {
-      if (!run.source_id) continue
-      if (!latestRunBySourceId.has(run.source_id)) {
-        latestRunBySourceId.set(run.source_id, run)
-      }
-    }
-
     const errors = new Map<string, string>()
-    for (const [sourceId, run] of latestRunBySourceId) {
-      if (run.status === "error" && run.error_log) {
-        errors.set(sourceId, run.error_log)
+    for (const run of sourceRunErrors) {
+      if (!run.source_id) continue
+      if (!errors.has(run.source_id) && run.error_log) {
+        errors.set(run.source_id, run.error_log)
       }
     }
 
     return errors
-  }, [sourceRuns])
+  }, [sourceRunErrors])
 
   async function handleScrape(sourceId: string) {
     addScrapingId(sourceId)

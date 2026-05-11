@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react"
 import { Link } from "react-router-dom"
-import { ArrowRight, RefreshCw } from "lucide-react"
+import { ArrowRight, CalendarDays, MapPin, RefreshCw, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PlanHeroCard } from "@/components/plan/plan-hero-card"
@@ -38,6 +38,42 @@ function LoadingState() {
   )
 }
 
+interface PlanContextBarProps {
+  cityName: string | null | undefined
+  childAge: number | null | undefined
+}
+
+function PlanContextBar({ cityName, childAge }: PlanContextBarProps) {
+  const chips = [
+    {
+      icon: MapPin,
+      label: cityName?.trim() || "Nearby",
+    },
+    {
+      icon: CalendarDays,
+      label: "Today + 7 days",
+    },
+    {
+      icon: Sparkles,
+      label: childAge == null ? "Weather-aware" : `Age ${childAge} fit`,
+    },
+  ]
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {chips.map((chip) => (
+        <div
+          key={chip.label}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground"
+        >
+          <chip.icon className="h-3.5 w-3.5 text-primary" />
+          {chip.label}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function SaturdayPlanPage() {
   const { user, profile } = useAuth()
   const { selectedCity } = useApp()
@@ -65,7 +101,7 @@ export function SaturdayPlanPage() {
       return
     }
     errorToastRef.current = true
-    toast.error("We couldn't load today's plan.", {
+    toast.error("We couldn't load this week's plan.", {
       description: humanizeSupabaseError(error, "Tap retry to try again."),
     })
   }, [error, isError])
@@ -77,13 +113,20 @@ export function SaturdayPlanPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
-      <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Saturday Plan</p>
+      <div className="space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          This week's plan
+        </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
           {profile?.child_name
-            ? `Ready for ${profile.child_name}'s next adventure?`
-            : "Ready for your next family adventure?"}
+            ? `Best family options for ${profile.child_name} this week`
+            : "Best family options this week"}
         </h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          A ranked shortlist from the next 7 days, tuned by distance, weather, age fit, and saved
+          events.
+        </p>
+        <PlanContextBar cityName={selectedCity?.name} childAge={profile?.child_age ?? null} />
         <WeatherStrip
           date={plan?.date ?? null}
           cityName={selectedCity?.name}
@@ -96,9 +139,7 @@ export function SaturdayPlanPage() {
       {isError ? (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="space-y-3 p-4">
-            <p className="text-sm text-destructive">
-              We couldn't load your Saturday plan right now.
-            </p>
+            <p className="text-sm text-destructive">We couldn't load this week's plan right now.</p>
             <Button
               variant="outline"
               className="gap-2"
@@ -129,7 +170,7 @@ export function SaturdayPlanPage() {
             <Card className="border-border/60">
               <CardContent className="space-y-3 p-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No family plans found nearby this week.
+                  No family plans found nearby in the next 7 days.
                 </p>
                 <Button asChild>
                   <Link to="/explore">Explore events</Link>
