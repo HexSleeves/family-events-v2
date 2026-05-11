@@ -200,6 +200,7 @@ interface AdminSourcesListProps {
   cityFilter: CityFilterValue
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
+  onToggleAutoApprove: (sourceId: string, current: boolean) => void
   onScrape: (sourceId: string) => void
   onAddSourceForCity: (cityId: string) => void
 }
@@ -210,6 +211,7 @@ export function AdminSourcesList({
   cityFilter,
   scrapingSourceIds,
   onToggleActive,
+  onToggleAutoApprove,
   onScrape,
   onAddSourceForCity,
 }: AdminSourcesListProps) {
@@ -228,6 +230,7 @@ export function AdminSourcesList({
             cities={cities}
             scrapingSourceIds={scrapingSourceIds}
             onToggleActive={onToggleActive}
+            onToggleAutoApprove={onToggleAutoApprove}
             onScrape={onScrape}
           />
         ))}
@@ -272,6 +275,7 @@ export function AdminSourcesList({
                       cities={cities}
                       scrapingSourceIds={scrapingSourceIds}
                       onToggleActive={onToggleActive}
+                      onToggleAutoApprove={onToggleAutoApprove}
                       onScrape={onScrape}
                     />
                   ))}
@@ -290,6 +294,7 @@ interface SourceCardProps {
   cities: City[]
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
+  onToggleAutoApprove: (sourceId: string, current: boolean) => void
   onScrape: (sourceId: string) => void
 }
 
@@ -298,6 +303,7 @@ function SourceCard({
   cities,
   scrapingSourceIds,
   onToggleActive,
+  onToggleAutoApprove,
   onScrape,
 }: SourceCardProps) {
   const TypeIcon = getSourceIcon(source.source_type)
@@ -333,6 +339,14 @@ function SourceCard({
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Auto</span>
+              <Switch
+                checked={source.auto_approve}
+                onCheckedChange={() => onToggleAutoApprove(source.id, source.auto_approve)}
+                aria-label={`Toggle ${source.name} auto-approve`}
+              />
+            </div>
             <Switch
               checked={source.is_active}
               onCheckedChange={(checked) => onToggleActive(source.id, checked)}
