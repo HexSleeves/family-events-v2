@@ -358,12 +358,12 @@ function SourceCard({
             <p className="text-xs text-muted-foreground truncate mt-0.5">{source.url}</p>
             <div className="flex items-center gap-4 mt-2 flex-wrap">
               <StatusIndicator status={safeStatus} />
-              {safeStatus === "error" && errorMessage && (
+              {safeStatus === "error" && (
                 <span
-                  className="text-xs text-destructive/80 truncate max-w-xl"
+                  className="min-w-0 max-w-xl truncate text-xs text-destructive/80"
                   title={errorMessage}
                 >
-                  {errorMessage}
+                  {errorMessage ?? "No error detail recorded"}
                 </span>
               )}
               {source.last_scraped_at && (
@@ -376,20 +376,24 @@ function SourceCard({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-4 shrink-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Auto</span>
+              <span className="text-xs text-muted-foreground">Active</span>
+              <Switch
+                checked={source.is_active}
+                onCheckedChange={(checked) => onToggleActive(source.id, checked)}
+                aria-label={`Toggle ${source.name} active`}
+              />
+            </div>
+            <div className={`flex items-center gap-1.5 ${!source.is_active ? "opacity-40 pointer-events-none" : ""}`}>
+              <span className="text-xs text-muted-foreground">Auto-approve</span>
               <Switch
                 checked={source.auto_approve}
+                disabled={!source.is_active}
                 onCheckedChange={(checked) => onToggleAutoApprove(source.id, checked)}
                 aria-label={`Toggle ${source.name} auto-approve`}
               />
             </div>
-            <Switch
-              checked={source.is_active}
-              onCheckedChange={(checked) => onToggleActive(source.id, checked)}
-              aria-label={`Toggle ${source.name} active`}
-            />
             <Button
               variant="outline"
               size="sm"
