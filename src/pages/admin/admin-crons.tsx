@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { format, formatDistanceToNow } from "date-fns"
 import {
   Clock,
@@ -7,12 +7,14 @@ import {
   Circle as XCircle,
   Loader2,
   CalendarClock,
+  ChevronDown,
   Pencil,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import {
@@ -41,6 +44,58 @@ const SCHEDULE_PRESETS = [
   { label: "Every 6 hours", value: "0 */6 * * *" },
   { label: "Daily at midnight", value: "0 0 * * *" },
 ] as const
+
+const ALL_RUNS_DOMAIN = "all"
+
+const CADENCE_SUFFIXES = new Set([
+  "hourly",
+  "daily",
+  "weekly",
+  "monthly",
+  "nightly",
+  "quarter-hourly",
+])
+
+const DOMAIN_LABEL_OVERRIDES: Record<string, string> = {
+  ai: "AI",
+  ical: "iCal",
+  rss: "RSS",
+  url: "URL",
+}
+
+export function getCronRunDomain(jobName: string) {
+  const parts = jobName.split("-").filter(Boolean)
+
+  while (parts.length > 1 && CADENCE_SUFFIXES.has(parts[parts.length - 1])) {
+    parts.pop()
+  }
+
+  const key = parts.join("-") || jobName
+  const label =
+    parts
+      .map((part) => DOMAIN_LABEL_OVERRIDES[part] ?? part[0].toUpperCase() + part.slice(1))
+      .join(" ") || jobName
+
+  return { key, label }
+}
+
+export function groupCronRunsByDomain(runs: CronRun[]) {
+  const groups = new Map<string, { key: string; label: string; runs: CronRun[] }>()
+
+  for (const run of runs) {
+    const domain = getCronRunDomain(run.jobname)
+    const group = groups.get(domain.key)
+
+    if (group) {
+      group.runs.push(run)
+      continue
+    }
+
+    groups.set(domain.key, { ...domain, runs: [run] })
+  }
+
+  return [...groups.values()]
+}
 
 // pg_cron uses 'succeeded'/'failed'/'starting' — map to display values
 function normalizeCronStatus(status: string | null): "success" | "failed" | "running" | "unknown" {
@@ -78,6 +133,7 @@ interface ScheduleDialogProps {
 function ScheduleDialog({ job, open, onOpenChange }: ScheduleDialogProps) {
   const [schedule, setSchedule] = useState(job.schedule)
   const setScheduleMutation = useSetCronSchedule()
+  const { toastError } = useAdminToast()
 
   async function handleSave() {
     try {
@@ -149,6 +205,7 @@ interface CronJobCardProps {
 function CronJobCard({ job }: CronJobCardProps) {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
   const toggleJob = useToggleCronJob()
+  const { toastError } = useAdminToast()
 
   async function handleToggle(active: boolean) {
     try {
@@ -260,11 +317,70 @@ function RunHistoryRow({ run }: { run: CronRun }) {
   )
 }
 
+function RunHistoryDomainGroup({
+  group,
+  defaultOpen,
+}: {
+  group: { key: string; label: string; runs: CronRun[] }
+  defaultOpen: boolean
+}) {
+  return (
+    <Collapsible defaultOpen={defaultOpen}>
+      <Card className="border-border/60 bg-transparent">
+        <CollapsibleTrigger className="w-full group">
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+              <h3 className="truncate text-xs font-semibold text-foreground">{group.label}</h3>
+              <Badge variant="outline" className="text-[10px]">
+                {group.runs.length}
+              </Badge>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="border-t border-border/60 px-3">
+            {group.runs.map((run) => (
+              <RunHistoryRow key={run.runid} run={run} />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  )
+}
+
+function RunHistory({ history, selectedDomain }: { history: CronRun[]; selectedDomain: string }) {
+  const groups = useMemo(() => groupCronRunsByDomain(history), [history])
+  const visibleGroups =
+    selectedDomain === ALL_RUNS_DOMAIN
+      ? groups
+      : groups.filter((group) => group.key === selectedDomain)
+
+  if (history.length === 0) {
+    return <p className="text-sm text-muted-foreground py-4 text-center">No run history yet</p>
+  }
+
+  return (
+    <div className="space-y-2">
+      {visibleGroups.map((group) => (
+        <RunHistoryDomainGroup
+          key={group.key}
+          group={group}
+          defaultOpen={selectedDomain !== ALL_RUNS_DOMAIN || groups.length === 1}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function AdminCronsPage() {
   const { data: jobs = [], isLoading: jobsLoading } = useAdminCronJobs()
   const { data: history = [] } = useAdminCronHistory()
   const runDueScrapes = useRunDueScrapes()
   const { toastError } = useAdminToast()
+  const [selectedDomain, setSelectedDomain] = useState(ALL_RUNS_DOMAIN)
+  const historyGroups = useMemo(() => groupCronRunsByDomain(history), [history])
 
   async function handleRunNow() {
     try {
@@ -316,19 +432,31 @@ export function AdminCronsPage() {
 
       {/* Run history */}
       <Card className="border-border/60">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-sm font-semibold">Recent Runs</CardTitle>
+          {historyGroups.length > 1 && (
+            <Tabs value={selectedDomain} onValueChange={setSelectedDomain}>
+              <TabsList className="h-8 max-w-full overflow-x-auto">
+                <TabsTrigger value={ALL_RUNS_DOMAIN} className="text-xs">
+                  All
+                  <Badge variant="secondary" className="ml-1 text-[10px]">
+                    {history.length}
+                  </Badge>
+                </TabsTrigger>
+                {historyGroups.map((group) => (
+                  <TabsTrigger key={group.key} value={group.key} className="text-xs">
+                    {group.label}
+                    <Badge variant="secondary" className="ml-1 text-[10px]">
+                      {group.runs.length}
+                    </Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
         </CardHeader>
         <CardContent className="pt-0">
-          {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No run history yet</p>
-          ) : (
-            <div>
-              {history.map((run) => (
-                <RunHistoryRow key={run.runid} run={run} />
-              ))}
-            </div>
-          )}
+          <RunHistory history={history} selectedDomain={selectedDomain} />
         </CardContent>
       </Card>
     </div>
