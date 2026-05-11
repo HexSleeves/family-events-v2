@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { useApp } from "@/contexts/app-context"
+import { useApp } from "@/stores/app-store"
 import { useAuth } from "@/stores/auth-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { matchesAgeFilter } from "@/hooks/use-events"

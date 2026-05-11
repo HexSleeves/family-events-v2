@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/stores/auth-store"
-import { useApp } from "@/contexts/app-context"
+import { useApp } from "@/stores/app-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import type { EventWithDetails } from "@/lib/types"
 

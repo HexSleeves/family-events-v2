@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAuth } from "@/stores/auth-store"
-import { useApp } from "@/contexts/app-context"
+import { useApp } from "@/stores/app-store"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 const NAV_ITEMS = [

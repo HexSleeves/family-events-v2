@@ -6,7 +6,6 @@ import { AppErrorBoundary } from "@/components/app-error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { PublicOnlyRoute } from "@/components/auth/public-only-route"
 import { useAuth, useAuthStore } from "@/stores/auth-store"
-import { AppProvider } from "@/contexts/app-context"
 import { Toaster } from "@/components/ui/sonner"
 import { HOME_PATH } from "@/lib/access-control"
 import { queryClient } from "@/lib/query-client"
@@ -174,11 +173,9 @@ function RootLandingRoute() {
   }
 
   return (
-    <AppProvider>
-      <AppLayout>
-        <DashboardPage />
-      </AppLayout>
-    </AppProvider>
+    <AppLayout>
+      <DashboardPage />
+    </AppLayout>
   )
 }
 
@@ -211,13 +208,7 @@ export default function App() {
                   </Route>
 
                   <Route element={<ProtectedRoute />}>
-                    <Route
-                      element={
-                        <AppProvider>
-                          <AppLayout />
-                        </AppProvider>
-                      }
-                    >
+                    <Route element={<AppLayout />}>
                       <Route path={HOME_PATH} element={<HomeRoute />} />
                       <Route path="/explore" element={<ExplorePage />} />
                       <Route path="/map" element={<MapViewPage />} />

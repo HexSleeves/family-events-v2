@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useAuth } from "@/stores/auth-store"
-import { useApp } from "@/contexts/app-context"
+import { useApp } from "@/stores/app-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import {
   DashboardCarouselSection,

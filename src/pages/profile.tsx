@@ -21,7 +21,7 @@ import {
   resolveSelectedCity,
 } from "@/components/profile/profile-sections"
 import { useAuth } from "@/stores/auth-store"
-import { useApp } from "@/contexts/app-context"
+import { useApp } from "@/stores/app-store"
 import { useTheme } from "@/components/theme-provider"
 import { useUpdateProfile } from "@/hooks/use-profile"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
