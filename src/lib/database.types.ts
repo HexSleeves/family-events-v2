@@ -208,6 +208,7 @@ export type Database = {
       }
       event_sources: {
         Row: {
+          auto_approve: boolean
           city_id: string | null
           created_at: string
           error_count: number
@@ -223,6 +224,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          auto_approve?: boolean
           city_id?: string | null
           created_at?: string
           error_count?: number
@@ -238,6 +240,7 @@ export type Database = {
           url: string
         }
         Update: {
+          auto_approve?: boolean
           city_id?: string | null
           created_at?: string
           error_count?: number

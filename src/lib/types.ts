@@ -150,6 +150,7 @@ export interface EventSource {
   source_type: "website" | "ical" | "rss" | "manual"
   city_id: string | null
   is_active: boolean
+  auto_approve: boolean
   scrape_interval_hours: number
   last_scraped_at: string | null
   last_status: "pending" | "success" | "error" | "partial" | null
