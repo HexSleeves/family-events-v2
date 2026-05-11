@@ -5,6 +5,7 @@ import {
   AdminAccessList,
 } from "@/components/admin/admin-access-sections"
 import { useAuth } from "@/stores/auth-store"
+import { useAdminStore } from "@/stores/admin-store"
 import { useAdminUserAccess, useUpdateAdminUserAccess } from "@/hooks/admin/use-admin-access"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
@@ -15,7 +16,8 @@ export function AdminAccessPage() {
   const updateAccess = useUpdateAdminUserAccess()
   const { toastError } = useAdminToast()
 
-  const [query, setQuery] = useState("")
+  const query = useAdminStore((s) => s.accessQuery)
+  const setQuery = useAdminStore((s) => s.setAccessQuery)
   const [dialogUserId, setDialogUserId] = useState<string | null>(null)
   const [disabledReason, setDisabledReason] = useState("")
 

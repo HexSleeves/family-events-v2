@@ -4,6 +4,7 @@ import { AdminCityFilterBar } from "@/components/admin/admin-city-filter-bar"
 import { useAdminCities } from "@/hooks/admin/use-admin-cities"
 import { useCityFilter } from "@/hooks/admin/use-city-filter"
 import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
+import { useAdminStore } from "@/stores/admin-store"
 import {
   useAdminSources,
   useCreateAdminSource,
@@ -26,7 +27,9 @@ export function AdminSourcesPage() {
   const { toastError } = useAdminToast()
   const bulkAutoApprove = useAdminBulkSetAutoApprove()
 
-  const [scrapingSourceIds, setScrapingSourceIds] = useState<Set<string>>(new Set())
+  const scrapingSourceIds = useAdminStore((s) => s.scrapingSourceIds)
+  const addScrapingId = useAdminStore((s) => s.addScrapingId)
+  const removeScrapingId = useAdminStore((s) => s.removeScrapingId)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newSource, setNewSource] = useState({
     name: "",
@@ -45,18 +48,14 @@ export function AdminSourcesPage() {
   }, [sources])
 
   async function handleScrape(sourceId: string) {
-    setScrapingSourceIds((prev) => new Set([...prev, sourceId]))
+    addScrapingId(sourceId)
     try {
       await triggerScrape.mutateAsync({ sourceId })
       toast.success("Scrape started!", { description: "Ingestion run queued." })
     } catch (error) {
       toastError(error, "Failed to trigger scrape.")
     } finally {
-      setScrapingSourceIds((prev) => {
-        const next = new Set(prev)
-        next.delete(sourceId)
-        return next
-      })
+      removeScrapingId(sourceId)
     }
   }
 
