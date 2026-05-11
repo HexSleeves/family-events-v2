@@ -10,7 +10,7 @@ import {
   useTriggerSourceScrape,
   useUpdateAdminSource,
 } from "@/hooks/admin/use-admin-sources"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
 type SourceType = "website" | "ical" | "rss" | "manual"
@@ -22,6 +22,7 @@ export function AdminSourcesPage() {
   const updateSource = useUpdateAdminSource()
   const triggerScrape = useTriggerSourceScrape()
   const { value: cityFilter, setValue: setCityFilter } = useCityFilter()
+  const { toastError } = useAdminToast()
 
   const [scrapingSourceIds, setScrapingSourceIds] = useState<Set<string>>(new Set())
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -47,7 +48,7 @@ export function AdminSourcesPage() {
       await triggerScrape.mutateAsync({ sourceId })
       toast.success("Scrape started!", { description: "Ingestion run queued." })
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to trigger scrape."))
+      toastError(error, "Failed to trigger scrape.")
     } finally {
       setScrapingSourceIds((prev) => {
         const next = new Set(prev)
@@ -64,7 +65,7 @@ export function AdminSourcesPage() {
         updates: { is_active: !isActive },
       })
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update source."))
+      toastError(error, "Failed to update source.")
     }
   }
 
@@ -91,7 +92,7 @@ export function AdminSourcesPage() {
       setNewSource({ name: "", url: "", source_type: "website", city_id: "" })
       toast.success("Source added!", { description: "Trigger a scrape to import events." })
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to create source."))
+      toastError(error, "Failed to create source.")
     }
   }
 

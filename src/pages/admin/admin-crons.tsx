@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import {
   useAdminCronJobs,
   useAdminCronHistory,
@@ -85,7 +85,7 @@ function ScheduleDialog({ job, open, onOpenChange }: ScheduleDialogProps) {
       toast.success("Schedule updated")
       onOpenChange(false)
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update schedule."))
+      toastError(error, "Failed to update schedule.")
     }
   }
 
@@ -155,7 +155,7 @@ function CronJobCard({ job }: CronJobCardProps) {
       await toggleJob.mutateAsync({ jobName: job.jobname, active })
       toast.success(active ? "Job resumed" : "Job paused")
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update job."))
+      toastError(error, "Failed to update job.")
     }
   }
 
@@ -264,13 +264,14 @@ export function AdminCronsPage() {
   const { data: jobs = [], isLoading: jobsLoading } = useAdminCronJobs()
   const { data: history = [] } = useAdminCronHistory()
   const runDueScrapes = useRunDueScrapes()
+  const { toastError } = useAdminToast()
 
   async function handleRunNow() {
     try {
       await runDueScrapes.mutateAsync()
       toast.success("Sweep triggered", { description: "All due sources queued for scraping." })
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to trigger sweep."))
+      toastError(error, "Failed to trigger sweep.")
     }
   }
 

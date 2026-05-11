@@ -74,6 +74,15 @@ function toError(error: unknown, details: ErrorDetails): Error {
   return new Error(details.message ?? "Unknown Supabase error")
 }
 
+export function getAdminErrorDetail(error: unknown): string | null {
+  const { message, code, status } = getErrorDetails(error)
+  const parts: string[] = []
+  if (code) parts.push(code)
+  if (status != null) parts.push(`HTTP ${status}`)
+  if (message) parts.push(message)
+  return parts.length > 0 ? parts.join(" · ") : null
+}
+
 export function humanizeSupabaseError(error: unknown, fallback: string): string {
   const { message, code, status } = getErrorDetails(error)
   const sentryError = toError(error, { message, code, status })
@@ -153,7 +162,10 @@ export function humanizeSupabaseError(error: unknown, fallback: string): string 
     return "Your session is no longer valid. Sign in again and retry."
   }
 
-  if (normalizedMessage.includes("worker failed to boot") || normalizedMessage.includes("boot_error")) {
+  if (
+    normalizedMessage.includes("worker failed to boot") ||
+    normalizedMessage.includes("boot_error")
+  ) {
     return "The scrape service failed to start. Try again in a moment."
   }
 

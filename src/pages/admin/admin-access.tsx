@@ -6,13 +6,14 @@ import {
 } from "@/components/admin/admin-access-sections"
 import { useAuth } from "@/contexts/auth-context"
 import { useAdminUserAccess, useUpdateAdminUserAccess } from "@/hooks/admin/use-admin-access"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
 export function AdminAccessPage() {
   const { user, refreshProfile } = useAuth()
   const { data: accounts = [] } = useAdminUserAccess()
   const updateAccess = useUpdateAdminUserAccess()
+  const { toastError } = useAdminToast()
 
   const [query, setQuery] = useState("")
   const [dialogUserId, setDialogUserId] = useState<string | null>(null)
@@ -49,7 +50,7 @@ export function AdminAccessPage() {
         await refreshProfile().catch(() => {})
       }
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update account access"))
+      toastError(error, "Failed to update account access")
     }
   }
 

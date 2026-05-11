@@ -2,16 +2,16 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
-const DefaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
+const PinIcon = L.divIcon({
+  className: "",
+  iconSize: [28, 36],
+  iconAnchor: [14, 36],
+  popupAnchor: [0, -38],
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 36" width="28" height="36">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.94 14 22 14 22S28 23.94 28 14C28 6.27 21.73 0 14 0z" fill="hsl(221,83%,53%)" />
+    <circle cx="14" cy="14" r="5.5" fill="white" />
+  </svg>`,
 })
-L.Marker.prototype.options.icon = DefaultIcon
 
 interface EventMapMiniProps {
   latitude: number | null
@@ -38,10 +38,12 @@ export function EventMapMini({ latitude, longitude, venueName, address }: EventM
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
         />
-        <Marker position={[latitude, longitude]}>
+        <Marker position={[latitude, longitude]} icon={PinIcon}>
           {(venueName || address) && (
             <Popup>
               {venueName && <p className="font-semibold text-sm">{venueName}</p>}

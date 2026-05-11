@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import type { Event } from "@/lib/types"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import {
   AdminEventReviewDialog,
   AdminEventsBulkBar,
@@ -44,6 +44,7 @@ export function AdminEventsPage() {
   const updateStatusMutation = useUpdateAdminEventStatus()
   const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
   const updateTagsMutation = useUpdateAdminEventTags()
+  const { toastError } = useAdminToast()
 
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
   const tagNameById = new Map(allTags.map((tag) => [tag.id, tag.name]))
@@ -131,7 +132,7 @@ export function AdminEventsPage() {
       toast.success(`${count} event${count === 1 ? "" : "s"} ${newStatus}`)
       setSelectedIds(new Set())
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Bulk update failed."))
+      toastError(error, "Bulk update failed.")
     }
   }
 
@@ -141,7 +142,7 @@ export function AdminEventsPage() {
       toast.success(`Event ${newStatus}`)
       setSelectedEventId(null)
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update event status."))
+      toastError(error, "Failed to update event status.")
     }
   }
 
@@ -151,7 +152,7 @@ export function AdminEventsPage() {
       await updateTagsMutation.mutateAsync({ eventId: selectedEvent.id, tagIds: editingTagIds })
       toast.success("Tags updated")
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to update tags."))
+      toastError(error, "Failed to update tags.")
     }
   }
 

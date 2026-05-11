@@ -5,19 +5,20 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { StarRating } from "@/components/star-rating"
 import { useAdminRatings, useDeleteAdminRating } from "@/hooks/admin/use-admin-ratings"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
 export function AdminRatingsPage() {
   const { data: ratings = [] } = useAdminRatings()
   const deleteRating = useDeleteAdminRating()
+  const { toastError } = useAdminToast()
 
   async function handleRemove(id: string) {
     try {
       await deleteRating.mutateAsync({ ratingId: id })
       toast("Rating removed")
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to remove rating."))
+      toastError(error, "Failed to remove rating.")
     }
   }
 
