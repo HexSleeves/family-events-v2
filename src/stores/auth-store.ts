@@ -25,11 +25,7 @@ interface AuthStore {
   _syncSession: (session: Session | null) => Promise<void>
   initAuth: () => () => void
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (
-    email: string,
-    password: string,
-    displayName: string
-  ) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -71,26 +67,24 @@ export const useAuthStore = create<AuthStore>()(
         const timeoutMs = getSessionExpiryTimeoutMs(sessionValue)
         if (timeoutMs !== null) {
           expiryTimer = setTimeout(() => {
-            void supabase.auth
-              .signOut()
-              .finally(() => {
-                get()._resetAuthState()
-                set({ isLoading: false })
-              })
+            void supabase.auth.signOut().finally(() => {
+              get()._resetAuthState()
+              set({ isLoading: false })
+            })
           }, timeoutMs)
         }
 
         try {
           set({ session: sessionValue, user: sessionValue.user })
 
-          await supabase.rpc("claim_pending_invite_access").catch(() => {})
+          try {
+            await supabase.rpc("claim_pending_invite_access")
+          } catch {
+            // Best-effort claim; auth state should still load if this RPC fails.
+          }
 
           const [profileResult, accessResult] = await Promise.all([
-            supabase
-              .from("user_profiles")
-              .select("*")
-              .eq("id", sessionValue.user.id)
-              .maybeSingle(),
+            supabase.from("user_profiles").select("*").eq("id", sessionValue.user.id).maybeSingle(),
             supabase
               .from("user_access")
               .select("*")
@@ -103,10 +97,7 @@ export const useAuthStore = create<AuthStore>()(
           const profile = (profileResult.data ?? null) as UserProfile | null
           const access = (accessResult.data ?? null) as UserAccess | null
 
-          const accessState = evaluateAccessState(
-            { user: { id: sessionValue.user.id } },
-            access
-          )
+          const accessState = evaluateAccessState({ user: { id: sessionValue.user.id } }, access)
           if (!accessState.isAllowed) {
             await supabase.auth.signOut()
             get()._resetAuthState()
