@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { create } from "zustand"
 import { devtools, persist } from "zustand/middleware"
 import { useShallow } from "zustand/react/shallow"
@@ -34,10 +35,14 @@ export function useApp() {
   )
   const { data: cities = [], isLoading: isCitiesLoading } = useCities()
   const selectedCity = cities.find((c) => c.id === selectedCityId) ?? cities[0] ?? null
+  const setSelectedCity = useCallback(
+    (city: City | null) => setSelectedCityId(city?.id ?? null),
+    [setSelectedCityId]
+  )
 
   return {
     selectedCity,
-    setSelectedCity: (city: City | null) => setSelectedCityId(city?.id ?? null),
+    setSelectedCity,
     cities,
     isCitiesLoading,
   }

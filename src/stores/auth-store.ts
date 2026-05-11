@@ -135,6 +135,7 @@ export const useAuthStore = create<AuthStore>()(
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === "INITIAL_SESSION") return
           if (event === "TOKEN_REFRESHED" && !session) {
             get()._resetAuthState()
             return
