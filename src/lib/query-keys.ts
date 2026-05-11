@@ -200,5 +200,10 @@ export const qk = {
     },
     ratings: ["admin", "ratings"] as const,
     inviteCodes: ["admin", "invite-codes"] as const,
+    cronJobs: ["admin", "cron-jobs"] as const,
+    cronHistory: (jobName?: string) =>
+      jobName
+        ? (["admin", "cron-history", jobName] as const)
+        : (["admin", "cron-history"] as const),
   },
 } as const

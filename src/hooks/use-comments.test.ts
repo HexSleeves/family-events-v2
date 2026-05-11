@@ -40,7 +40,8 @@ const mockInvalidateQueries = vi.fn().mockResolvedValue(undefined)
 const mockQueryClient = { invalidateQueries: mockInvalidateQueries }
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query")
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query")
   return {
     ...actual,
     useQueryClient: vi.fn(() => mockQueryClient),

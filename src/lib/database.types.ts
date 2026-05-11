@@ -952,6 +952,41 @@ export type Database = {
       }
     }
     Functions: {
+      admin_cron_run_history: {
+        Args: { p_job_name?: string | null; p_limit?: number }
+        Returns: {
+          duration_ms: number | null
+          end_time: string | null
+          jobname: string
+          return_message: string | null
+          runid: number
+          start_time: string
+          status: string
+        }[]
+      }
+      admin_list_cron_jobs: {
+        Args: never
+        Returns: {
+          active: boolean
+          command: string
+          jobid: number
+          jobname: string
+          last_run_end: string | null
+          last_run_message: string | null
+          last_run_start: string | null
+          last_run_status: string | null
+          schedule: string
+        }[]
+      }
+      admin_run_due_scrapes: { Args: never; Returns: undefined }
+      admin_set_cron_schedule: {
+        Args: { p_job_name: string; p_schedule: string }
+        Returns: undefined
+      }
+      admin_toggle_cron_job: {
+        Args: { p_active: boolean; p_job_name: string }
+        Returns: undefined
+      }
       claim_pending_invite_access: { Args: never; Returns: boolean }
       earth: { Args: never; Returns: number }
       events_enriched: {

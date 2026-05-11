@@ -11,6 +11,7 @@ import {
   Users,
   ArrowLeft,
   Zap,
+  CalendarClock,
 } from "lucide-react"
 import {
   SidebarProvider,
@@ -40,6 +41,7 @@ const ADMIN_NAV = [
   { to: "/admin/access", label: "Access", icon: Users },
   { to: "/admin/invites", label: "Invite Codes", icon: Ticket },
   { to: "/admin/logs", label: "Ingestion Logs", icon: FileText },
+  { to: "/admin/crons", label: "Scheduled Jobs", icon: CalendarClock },
 ]
 
 export function AdminLayout() {
