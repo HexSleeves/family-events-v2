@@ -200,7 +200,7 @@ interface AdminSourcesListProps {
   cityFilter: CityFilterValue
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
-  onToggleAutoApprove: (sourceId: string, current: boolean) => void
+  onToggleAutoApprove: (sourceId: string, autoApprove: boolean) => void
   onScrape: (sourceId: string) => void
   onAddSourceForCity: (cityId: string) => void
 }
@@ -294,7 +294,7 @@ interface SourceCardProps {
   cities: City[]
   scrapingSourceIds: Set<string>
   onToggleActive: (sourceId: string, isActive: boolean) => void
-  onToggleAutoApprove: (sourceId: string, current: boolean) => void
+  onToggleAutoApprove: (sourceId: string, autoApprove: boolean) => void
   onScrape: (sourceId: string) => void
 }
 
@@ -343,7 +343,7 @@ function SourceCard({
               <span className="text-xs text-muted-foreground">Auto</span>
               <Switch
                 checked={source.auto_approve}
-                onCheckedChange={() => onToggleAutoApprove(source.id, source.auto_approve)}
+                onCheckedChange={(checked) => onToggleAutoApprove(source.id, checked)}
                 aria-label={`Toggle ${source.name} auto-approve`}
               />
             </div>
