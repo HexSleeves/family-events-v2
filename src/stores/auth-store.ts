@@ -98,6 +98,8 @@ export const useAuthStore = create<AuthStore>()(
               .maybeSingle(),
           ])
 
+          if (profileResult.error) throw profileResult.error
+          if (accessResult.error) throw accessResult.error
           const profile = (profileResult.data ?? null) as UserProfile | null
           const access = (accessResult.data ?? null) as UserAccess | null
 
@@ -130,7 +132,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       initAuth() {
+        let destroyed = false
         void supabase.auth.getSession().then(({ data: { session } }) => {
+          if (destroyed) return
           get()
             ._syncSession(session)
             .catch(() => {})
@@ -152,6 +156,7 @@ export const useAuthStore = create<AuthStore>()(
         })
 
         return () => {
+          destroyed = true
           if (expiryTimer) clearTimeout(expiryTimer)
           subscription.unsubscribe()
         }
