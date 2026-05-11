@@ -45,59 +45,6 @@ export default defineConfig(({ mode }) => {
     plugins,
     build: {
       sourcemap: mode !== "development",
-      rolldownOptions: {
-        output: {
-          codeSplitting: {
-            groups: [
-              {
-                name: "react-vendor",
-                test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-                priority: 10,
-              },
-              {
-                name: "router-query-vendor",
-                test: /node_modules[\\/](@tanstack|react-router|react-router-dom)[\\/]/,
-                priority: 9,
-              },
-              {
-                name: "supabase-vendor",
-                test: /node_modules[\\/](@supabase)[\\/]/,
-                priority: 8,
-              },
-              {
-                name: "sentry-vendor",
-                test: /node_modules[\\/](@sentry|@sentry-internal)[\\/]/,
-                priority: 8,
-              },
-              {
-                name: "radix-vendor",
-                test: /node_modules[\\/](radix-ui|@radix-ui)[\\/]/,
-                priority: 7,
-              },
-              {
-                name: "chart-vendor",
-                test: /node_modules[\\/](recharts|d3-|victory-vendor|decimal\\.js-light)[\\/]/,
-                priority: 7,
-              },
-              {
-                name: "leaflet-vendor",
-                test: /node_modules[\\/](leaflet|react-leaflet|@react-leaflet)[\\/]/,
-                priority: 7,
-              },
-              {
-                name: "date-vendor",
-                test: /node_modules[\\/](date-fns|@date-fns)[\\/]/,
-                priority: 6,
-              },
-              {
-                name: "ui-vendor",
-                test: /node_modules[\\/](lucide-react|cmdk|vaul|embla-carousel|input-otp)[\\/]/,
-                priority: 6,
-              },
-            ],
-          },
-        },
-      },
     },
     resolve: {
       alias: {
