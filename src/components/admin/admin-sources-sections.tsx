@@ -90,12 +90,15 @@ interface AdminSourcesHeaderProps {
     source_type: SourceType
     city_id: string
   }
+  isBulkPending: boolean
   onDialogOpenChange: (open: boolean) => void
   onNameChange: (value: string) => void
   onUrlChange: (value: string) => void
   onTypeChange: (value: SourceType) => void
   onCityChange: (value: string) => void
   onAddSource: () => void
+  onEnableAllAutoApprove: () => void
+  onDisableAllAutoApprove: () => void
 }
 
 export function AdminSourcesHeader({
@@ -103,12 +106,15 @@ export function AdminSourcesHeader({
   cities,
   dialogOpen,
   newSource,
+  isBulkPending,
   onDialogOpenChange,
   onNameChange,
   onUrlChange,
   onTypeChange,
   onCityChange,
   onAddSource,
+  onEnableAllAutoApprove,
+  onDisableAllAutoApprove,
 }: AdminSourcesHeaderProps) {
   return (
     <div className="flex items-center justify-between">
@@ -116,7 +122,24 @@ export function AdminSourcesHeader({
         <h1 className="text-xl font-extrabold text-foreground">Event Sources</h1>
         <p className="text-muted-foreground text-sm mt-0.5">{activeSourceCount} active sources</p>
       </div>
-      <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isBulkPending}
+          onClick={onEnableAllAutoApprove}
+        >
+          Auto-Approve All
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isBulkPending}
+          onClick={onDisableAllAutoApprove}
+        >
+          Disable All Auto
+        </Button>
+        <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
         <DialogTrigger asChild>
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
@@ -190,6 +213,7 @@ export function AdminSourcesHeader({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
 }

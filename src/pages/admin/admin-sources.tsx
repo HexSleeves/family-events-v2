@@ -9,6 +9,7 @@ import {
   useCreateAdminSource,
   useTriggerSourceScrape,
   useUpdateAdminSource,
+  useAdminBulkSetAutoApprove,
 } from "@/hooks/admin/use-admin-sources"
 import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
@@ -23,6 +24,7 @@ export function AdminSourcesPage() {
   const triggerScrape = useTriggerSourceScrape()
   const { value: cityFilter, setValue: setCityFilter } = useCityFilter()
   const { toastError } = useAdminToast()
+  const bulkAutoApprove = useAdminBulkSetAutoApprove()
 
   const [scrapingSourceIds, setScrapingSourceIds] = useState<Set<string>>(new Set())
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -69,6 +71,25 @@ export function AdminSourcesPage() {
     }
   }
 
+  async function handleToggleAutoApprove(sourceId: string, autoApprove: boolean) {
+    try {
+      await updateSource.mutateAsync({ sourceId, updates: { auto_approve: autoApprove } })
+    } catch (error) {
+      toastError(error, "Failed to update source.")
+    }
+  }
+
+  async function handleBulkAutoApprove(enable: boolean) {
+    try {
+      await bulkAutoApprove.mutateAsync(enable)
+      toast.success(
+        enable ? "Auto-approve enabled for all sources" : "Auto-approve disabled for all sources",
+      )
+    } catch (error) {
+      toastError(error, "Failed to update sources.")
+    }
+  }
+
   async function handleAddSource() {
     if (!newSource.name || !newSource.url) {
       toast.error("Name and URL are required")
@@ -82,6 +103,7 @@ export function AdminSourcesPage() {
         source_type: newSource.source_type,
         city_id: newSource.city_id || null,
         is_active: true,
+        auto_approve: false,
         scrape_interval_hours: 24,
         last_scraped_at: null,
         last_status: "pending",
@@ -108,12 +130,15 @@ export function AdminSourcesPage() {
         cities={cities}
         dialogOpen={dialogOpen}
         newSource={newSource}
+        isBulkPending={bulkAutoApprove.isPending}
         onDialogOpenChange={setDialogOpen}
         onNameChange={(value) => setNewSource((prev) => ({ ...prev, name: value }))}
         onUrlChange={(value) => setNewSource((prev) => ({ ...prev, url: value }))}
         onTypeChange={(value) => setNewSource((prev) => ({ ...prev, source_type: value }))}
         onCityChange={(value) => setNewSource((prev) => ({ ...prev, city_id: value }))}
         onAddSource={handleAddSource}
+        onEnableAllAutoApprove={() => handleBulkAutoApprove(true)}
+        onDisableAllAutoApprove={() => handleBulkAutoApprove(false)}
       />
       <AdminCityFilterBar
         cities={cities}
@@ -128,6 +153,7 @@ export function AdminSourcesPage() {
         cityFilter={cityFilter}
         scrapingSourceIds={scrapingSourceIds}
         onToggleActive={handleToggleActive}
+        onToggleAutoApprove={handleToggleAutoApprove}
         onScrape={handleScrape}
         onAddSourceForCity={openAddDialogForCity}
       />
