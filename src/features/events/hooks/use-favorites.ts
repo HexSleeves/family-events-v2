@@ -158,12 +158,14 @@ export function handleToggleFavoriteOnSettled(
   userId: string | undefined,
   eventId: string
 ) {
+  // Only invalidate caches where the server is the canonical source of truth
+  // for this specific event. The optimistic setQueriesData in onMutate
+  // already kept the broader event-list caches (qk.events.all,
+  // qk.enrichedEvents.all) in sync, so invalidating those roots on every
+  // toggle would refetch every cached city/filter combination — doubling
+  // network traffic for no correctness benefit.
   void queryClient.invalidateQueries({ queryKey: qk.favorites.byUser(userId) })
-  void queryClient.invalidateQueries({ queryKey: qk.events.all })
-  void queryClient.invalidateQueries({ queryKey: qk.enrichedEvents.all })
   void queryClient.invalidateQueries({ queryKey: qk.events.detailById(eventId) })
-  void queryClient.invalidateQueries({ queryKey: qk.events.byIdsAll })
-  void queryClient.invalidateQueries({ queryKey: qk.saturdayPlan.all })
 }
 
 export function useToggleFavorite(userId: string | undefined) {

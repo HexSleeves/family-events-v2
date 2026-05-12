@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/features/auth/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,9 +9,20 @@ import { HOME_PATH } from "@/lib/access-control"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
+// Only treat string `from` values that look like in-app paths. Anything else
+// (full URL, javascript:, missing leading /) falls back to HOME_PATH — this
+// keeps a malicious referer or stale state from triggering an open redirect.
+function resolveRedirectTarget(rawFrom: unknown): string {
+  if (typeof rawFrom !== "string") return HOME_PATH
+  if (!rawFrom.startsWith("/") || rawFrom.startsWith("//")) return HOME_PATH
+  return rawFrom
+}
+
 export function SignInPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const redirectTo = resolveRedirectTarget((location.state as { from?: unknown } | null)?.from)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -27,7 +38,7 @@ export function SignInPage() {
       })
     } else {
       toast.success("Welcome back!")
-      navigate(HOME_PATH)
+      navigate(redirectTo, { replace: true })
     }
   }
 

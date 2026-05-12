@@ -1176,6 +1176,29 @@ export type Database = {
         Returns: undefined
       }
       is_enabled_user: { Args: never; Returns: boolean }
+      plan_events_first_nonempty_window: {
+        Args: {
+          p_city_id?: string
+          p_date?: string
+          p_kid_age?: number
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_max_days?: number
+          p_user_id: string
+          p_weather_fit?: string
+        }
+        Returns: {
+          age_score: number
+          day_offset: number
+          distance_km: number
+          distance_score: number
+          event_id: string
+          history_affinity: number
+          score: number
+          weather_score: number
+        }[]
+      }
       plan_events_for_user: {
         Args: {
           p_city_id?: string

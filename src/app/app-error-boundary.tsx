@@ -5,26 +5,46 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sentry } from "@/lib/sentry"
 
-type ErrorBoundaryProps = {
+type InnerProps = {
   children: ReactNode
+  resetKey: string
 }
 
 type ErrorBoundaryState = {
   hasError: boolean
   errorMessage: string | null
+  // Tracks the most recent resetKey we've reconciled so getDerivedStateFromProps
+  // can detect navigation while a captured error is still on screen.
+  lastResetKey: string
 }
 
-class AppErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class AppErrorBoundaryInner extends Component<InnerProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = {
     hasError: false,
     errorMessage: null,
+    lastResetKey: this.props.resetKey,
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       errorMessage: error.message,
     }
+  }
+
+  static getDerivedStateFromProps(
+    props: InnerProps,
+    state: ErrorBoundaryState
+  ): Partial<ErrorBoundaryState> | null {
+    // Clear a captured error when navigation moves us to a new route. Prop-
+    // driven reset (vs. key={pathname} remount) keeps the descendant tree's
+    // local state intact across normal navigation.
+    if (props.resetKey !== state.lastResetKey) {
+      return state.hasError
+        ? { hasError: false, errorMessage: null, lastResetKey: props.resetKey }
+        : { lastResetKey: props.resetKey }
+    }
+    return null
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -73,7 +93,7 @@ class AppErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryS
   }
 }
 
-export function AppErrorBoundary({ children }: ErrorBoundaryProps) {
+export function AppErrorBoundary({ children }: { children: ReactNode }) {
   const location = useLocation()
-  return <AppErrorBoundaryInner key={location.pathname}>{children}</AppErrorBoundaryInner>
+  return <AppErrorBoundaryInner resetKey={location.pathname}>{children}</AppErrorBoundaryInner>
 }

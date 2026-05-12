@@ -138,7 +138,10 @@ export function ThemeProvider({
         return
       }
 
-      if (event.metaKey || event.ctrlKey || event.altKey) {
+      // Theme toggle requires Cmd/Ctrl+Shift+D so it can't fire inside Radix
+      // comboboxes/listboxes etc. where isEditableTarget() doesn't apply.
+      const hasModifier = (event.metaKey || event.ctrlKey) && event.shiftKey
+      if (!hasModifier) {
         return
       }
 
@@ -149,6 +152,8 @@ export function ThemeProvider({
       if (event.key.toLowerCase() !== "d") {
         return
       }
+
+      event.preventDefault()
 
       setThemeState((currentTheme) => {
         const nextTheme =

@@ -87,19 +87,24 @@ describe("useToggleFavorite optimistic lifecycle", () => {
     expect(rolledBackEvents?.[0].is_favorited).toBe(false)
   })
 
-  it("invalidates dependent caches when mutation settles", () => {
+  it("invalidates only the canonical-source caches when mutation settles", () => {
     const invalidateSpy = vi
       .spyOn(queryClient, "invalidateQueries")
       .mockResolvedValue(undefined as never)
 
     handleToggleFavoriteOnSettled(queryClient, USER_ID, "event-9")
 
+    // Favorites list (small, cheap) and the specific event detail are
+    // canonical-source-of-truth refreshes. Broader list caches stay current
+    // via the optimistic setQueriesData in onMutate, so invalidating
+    // qk.events.all / qk.enrichedEvents.all is intentionally NOT called —
+    // refetching every cached city/filter combo on every toggle would double
+    // network traffic for no correctness benefit.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.favorites.byUser(USER_ID) })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.events.all })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.enrichedEvents.all })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.events.detailById("event-9") })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.events.byIdsAll })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: qk.saturdayPlan.all })
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: qk.events.all })
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: qk.enrichedEvents.all })
+    expect(invalidateSpy).toHaveBeenCalledTimes(2)
   })
 })
 

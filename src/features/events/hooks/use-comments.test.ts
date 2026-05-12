@@ -54,8 +54,14 @@ async function loadHook() {
   return useComments
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   capturedEffects.length = 0
+  // Reset the shared registry BEFORE clearAllMocks so any removeChannel calls
+  // triggered by cleanup of leaked entries from prior tests don't show up in
+  // the new test's mock call counts.
+  const { __resetCommentsChannelRegistry } =
+    await import("@/features/events/lib/comments-channel-registry")
+  __resetCommentsChannelRegistry()
   vi.clearAllMocks()
   channelObj.on.mockReturnValue(channelObj)
   channelObj.subscribe.mockImplementation((cb: (status: string) => void) => {
@@ -121,28 +127,40 @@ describe("useComments Realtime subscription", () => {
     expect(mockRemoveChannel).toHaveBeenCalledWith(channelObj)
   })
 
-  it("logs console.error when CHANNEL_ERROR status fires", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+  it("warns and schedules reconnect when CHANNEL_ERROR fires", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     const useComments = await loadHook()
     useComments("event-abc")
     capturedEffects[0]()
     mockStatusCallback.current("CHANNEL_ERROR")
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[useComments] Realtime subscription error for event",
-      "event-abc"
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('subscription status "CHANNEL_ERROR" for event event-abc')
     )
-    consoleSpy.mockRestore()
+    warnSpy.mockRestore()
   })
 
-  it("does not log console.error for non-error statuses", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+  it("does not warn on SUBSCRIBED status", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     const useComments = await loadHook()
     useComments("event-abc")
     capturedEffects[0]()
     mockStatusCallback.current("SUBSCRIBED")
-    mockStatusCallback.current("TIMED_OUT")
-    expect(consoleSpy).not.toHaveBeenCalled()
-    consoleSpy.mockRestore()
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it("shares one channel across two subscribers for the same event id", async () => {
+    const useComments = await loadHook()
+    useComments("event-abc")
+    capturedEffects[0]()
+    useComments("event-abc")
+    capturedEffects[1]()
+    // Two mounts, same event id → only ONE Supabase channel created.
+    expect(mockChannel).toHaveBeenCalledTimes(1)
+    // Postgres event fires once → both subscribers' invalidations fire.
+    const [, , onCallback] = channelObj.on.mock.calls[0]
+    onCallback({})
+    expect(mockInvalidateQueries).toHaveBeenCalledTimes(2)
   })
 
   it("StrictMode remount: removeChannel called on first cleanup before second mount", async () => {

@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
+import { subscribeToCommentChanges } from "@/features/events/lib/comments-channel-registry"
 import type { CommentWithProfile } from "@/lib/types"
 
 export function useComments(eventId: string | undefined) {
@@ -9,33 +10,13 @@ export function useComments(eventId: string | undefined) {
 
   useEffect(() => {
     if (!eventId) return
-
-    // "*" covers INSERT + UPDATE (moderation approval changes) + DELETE.
-    // REPLICA IDENTITY FULL on the comments table ensures DELETE payloads
-    // carry event_id so the filter works correctly (see migration).
-    const channel = supabase
-      .channel(`comments:${eventId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "comments",
-          filter: `event_id=eq.${eventId}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: qk.comments.byEvent(eventId) })
-        }
-      )
-      .subscribe((status) => {
-        if (status === "CHANNEL_ERROR") {
-          console.error("[useComments] Realtime subscription error for event", eventId)
-        }
-      })
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    // Multiple useComments(eventId) mounts share one Supabase channel via the
+    // registry, avoiding the prior "two-channel" cost when two components
+    // subscribe to the same event. The registry also handles CHANNEL_ERROR
+    // reconnection (was previously silently logged and never retried).
+    return subscribeToCommentChanges(eventId, () => {
+      void queryClient.invalidateQueries({ queryKey: qk.comments.byEvent(eventId) })
+    })
   }, [eventId, queryClient])
 
   return useQuery({

@@ -119,43 +119,40 @@ export function usePlanForToday(options: UsePlanForTodayOptions = {}) {
       //      + date stretch (D+0..D+7)
       //                |
       //                v
-      //         plan_events_for_user RPC
+      //      plan_events_first_nonempty_window RPC (1 roundtrip)
       //                |
       //                v
       //       events_enriched hydration -> hero + secondary cards
       //
-      let selectedDate: string | null = null
-      let selectedOffset = 0
-      let rankedRows: PlanEventsRow[] = []
-
-      for (let dayOffset = 0; dayOffset <= 7; dayOffset += 1) {
-        const date = addDays(dateKey, dayOffset)
-        const { data, error } = await supabase.rpc("plan_events_for_user", {
+      // Previously this issued up to 8 sequential plan_events_for_user calls;
+      // now the loop lives in PL/pgSQL and short-circuits server-side.
+      const { data: windowData, error: windowError } = await supabase.rpc(
+        "plan_events_first_nonempty_window",
+        {
           p_user_id: userId,
-          p_date: date,
+          p_date: dateKey,
           p_city_id: selectedCity?.id ?? undefined,
           p_lat: geolocation.latitude ?? undefined,
           p_lng: geolocation.longitude ?? undefined,
           p_kid_age: childAge ?? undefined,
           p_weather_fit: weatherFit,
           p_limit: 3,
-        })
-
-        if (error) {
-          throw error
+          p_max_days: 7,
         }
-
-        if ((data ?? []).length > 0) {
-          selectedDate = date
-          selectedOffset = dayOffset
-          rankedRows = (data ?? []) as PlanEventsRow[]
-          break
-        }
+      )
+      if (windowError) {
+        throw windowError
       }
 
-      if (!selectedDate || rankedRows.length === 0) {
+      type WindowRow = PlanEventsRow & { day_offset: number }
+      const windowRows = (windowData ?? []) as WindowRow[]
+      if (windowRows.length === 0) {
         return emptyPlan(weatherFit, weather.data ?? null)
       }
+
+      const selectedOffset = windowRows[0].day_offset
+      const selectedDate = addDays(dateKey, selectedOffset)
+      const rankedRows: PlanEventsRow[] = windowRows.map(({ day_offset: _, ...row }) => row)
 
       const eventIds = rankedRows.map((row) => row.event_id)
       const { data: eventRows, error: eventRowsError } = await supabase.rpc("events_enriched", {
