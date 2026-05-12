@@ -6,7 +6,7 @@ export type Database = {
       admin_audit_log: {
         Row: {
           action: string
-          admin_user_id: string
+          admin_user_id: string | null
           created_at: string
           id: string
           metadata: Json | null
@@ -15,7 +15,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          admin_user_id: string
+          admin_user_id?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -24,7 +24,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          admin_user_id?: string
+          admin_user_id?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -467,28 +467,31 @@ export type Database = {
       }
       invite_codes: {
         Row: {
-          code: string
+          code_hash: string
           created_at: string
           created_by: string | null
           expires_at: string | null
+          id: string
           max_uses: number
           notes: string | null
           used_count: number
         }
         Insert: {
-          code: string
+          code_hash: string
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
+          id?: string
           max_uses?: number
           notes?: string | null
           used_count?: number
         }
         Update: {
-          code?: string
+          code_hash?: string
           created_at?: string
           created_by?: string | null
           expires_at?: string | null
+          id?: string
           max_uses?: number
           notes?: string | null
           used_count?: number
@@ -502,6 +505,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      invite_redemption_attempts: {
+        Row: {
+          attempted_at: string
+          email_hash: string
+          id: number
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email_hash: string
+          id?: never
+          succeeded: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email_hash?: string
+          id?: never
+          succeeded?: boolean
+        }
+        Relationships: []
       }
       pending_invite_claims: {
         Row: {
@@ -535,13 +559,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pending_invite_claims_invite_code_fkey"
-            columns: ["invite_code"]
-            isOneToOne: false
-            referencedRelation: "invite_codes"
-            referencedColumns: ["code"]
           },
         ]
       }
@@ -956,18 +973,27 @@ export type Database = {
     }
     Functions: {
       admin_bulk_set_auto_approve: {
-        Args: {
-          enable: boolean
-        }
+        Args: { enable: boolean }
         Returns: undefined
       }
-      admin_cron_run_history: {
-        Args: { p_job_name?: string | null; p_limit?: number }
+      admin_create_invite_code: {
+        Args: { p_expires_at?: string; p_max_uses?: number; p_notes?: string }
         Returns: {
-          duration_ms: number | null
-          end_time: string | null
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          max_uses: number
+          notes: string
+        }[]
+      }
+      admin_cron_run_history: {
+        Args: { p_job_name?: string; p_limit?: number }
+        Returns: {
+          duration_ms: number
+          end_time: string
           jobname: string
-          return_message: string | null
+          return_message: string
           runid: number
           start_time: string
           status: string
@@ -980,10 +1006,10 @@ export type Database = {
           command: string
           jobid: number
           jobname: string
-          last_run_end: string | null
-          last_run_message: string | null
-          last_run_start: string | null
-          last_run_status: string | null
+          last_run_end: string
+          last_run_message: string
+          last_run_start: string
+          last_run_status: string
           schedule: string
         }[]
       }

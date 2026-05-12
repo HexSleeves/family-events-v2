@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { Check, Copy, Plus, Ticket, Trash2 } from "lucide-react"
+import { AlertCircle, Check, Copy, KeyRound, Plus, Ticket, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { InviteCode } from "@/lib/types"
+import type { CreatedInviteCode, InviteCode } from "@/lib/types"
 
 type ExpiryOption = "7d" | "30d" | "never"
 
@@ -28,14 +28,12 @@ interface AdminInvitesHeaderProps {
   codes: InviteCode[]
   dialogOpen: boolean
   newCode: {
-    code: string
     max_uses: number
     expires: ExpiryOption
     notes: string
   }
   isCreating: boolean
   onDialogOpenChange: (open: boolean) => void
-  onCodeChange: (value: string) => void
   onMaxUsesChange: (value: string) => void
   onExpiryChange: (value: ExpiryOption) => void
   onNotesChange: (value: string) => void
@@ -48,7 +46,6 @@ export function AdminInvitesHeader({
   newCode,
   isCreating,
   onDialogOpenChange,
-  onCodeChange,
   onMaxUsesChange,
   onExpiryChange,
   onNotesChange,
@@ -74,14 +71,15 @@ export function AdminInvitesHeader({
             <DialogTitle>Generate invite code</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Code (optional — leave blank to auto-generate)</Label>
-              <Input
-                value={newCode.code}
-                onChange={(event) => onCodeChange(event.target.value)}
-                placeholder="e.g. BETA2026"
-                className="font-mono tracking-widest uppercase"
-              />
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-100">
+              <div className="flex gap-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <div>
+                  Codes are generated server-side and shown <strong>once</strong>. The plaintext is
+                  hashed before storage — there is no way to recover it afterward, so copy it
+                  immediately.
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -124,12 +122,59 @@ export function AdminInvitesHeader({
               Cancel
             </Button>
             <Button onClick={onCreate} disabled={isCreating}>
-              {isCreating ? "Creating..." : "Create & Copy"}
+              {isCreating ? "Creating..." : "Generate"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+interface AdminInvitesCreatedRevealProps {
+  created: CreatedInviteCode
+  copied: boolean
+  onCopy: () => void
+  onDismiss: () => void
+}
+
+export function AdminInvitesCreatedReveal({
+  created,
+  copied,
+  onCopy,
+  onDismiss,
+}: AdminInvitesCreatedRevealProps) {
+  return (
+    <Card className="border-emerald-500/40 bg-emerald-500/5">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+          <KeyRound className="h-4 w-4" />
+          <span className="text-sm font-bold">Code generated — copy it now</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 font-mono text-base font-bold tracking-widest rounded-md border border-border/60 bg-background px-3 py-2">
+            {created.code}
+          </code>
+          <Button variant="outline" size="sm" className="h-10" onClick={onCopy}>
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green-600 mr-1.5" /> Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
+              </>
+            )}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-10" onClick={onDismiss}>
+            Dismiss
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          This plaintext is not stored. Once dismissed, only the hash remains.
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -149,12 +194,10 @@ export function AdminInvitesEmptyState() {
 
 interface AdminInvitesListProps {
   codes: InviteCode[]
-  copiedCode: string | null
-  onCopy: (code: string) => void
-  onDelete: (code: string) => void
+  onDelete: (id: string) => void
 }
 
-export function AdminInvitesList({ codes, copiedCode, onCopy, onDelete }: AdminInvitesListProps) {
+export function AdminInvitesList({ codes, onDelete }: AdminInvitesListProps) {
   return (
     <div className="space-y-2">
       {codes.map((code) => {
@@ -163,15 +206,12 @@ export function AdminInvitesList({ codes, copiedCode, onCopy, onDelete }: AdminI
         const dead = expired || exhausted
 
         return (
-          <Card
-            key={code.code}
-            className={dead ? "border-border/40 opacity-60" : "border-border/60"}
-          >
+          <Card key={code.id} className={dead ? "border-border/40 opacity-60" : "border-border/60"}>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <code className="font-mono text-sm font-bold tracking-widest text-foreground">
-                    {code.code}
+                  <code className="font-mono text-xs text-muted-foreground">
+                    {code.id.slice(0, 8)}…
                   </code>
                   <Badge variant="outline" className="text-[10px]">
                     {code.used_count}/{code.max_uses} used
@@ -199,20 +239,8 @@ export function AdminInvitesList({ codes, copiedCode, onCopy, onDelete }: AdminI
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8"
-                  onClick={() => onCopy(code.code)}
-                >
-                  {copiedCode === code.code ? (
-                    <Check className="h-3.5 w-3.5 text-green-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
                   className="h-8 text-destructive hover:text-destructive"
-                  onClick={() => onDelete(code.code)}
+                  onClick={() => onDelete(code.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
-import type { InviteCode } from "@/lib/types"
+import type { CreatedInviteCode, InviteCode } from "@/lib/types"
 
 export function resolveInviteRequirement(
   inviteRequired: boolean | undefined,
@@ -27,7 +27,7 @@ export function useInvitesRequired() {
   })
 }
 
-// Atomic consume. Returns true on success; false if invalid/expired/exhausted.
+// Atomic consume. Returns true on success; false if invalid/expired/exhausted/rate-limited.
 export async function redeemInvite(code: string, email: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("redeem_invite_for_email", {
     p_code: code,
@@ -37,14 +37,14 @@ export async function redeemInvite(code: string, email: string): Promise<boolean
   return Boolean(data)
 }
 
-// Admin: list all codes
+// Admin: list all codes (metadata only — plaintext is unrecoverable post-creation).
 export function useAdminInviteCodes() {
   return useQuery({
     queryKey: qk.admin.inviteCodes,
     queryFn: async (): Promise<InviteCode[]> => {
       const { data, error } = await supabase
         .from("invite_codes")
-        .select("code, max_uses, used_count, expires_at, notes, created_by, created_at")
+        .select("id, max_uses, used_count, expires_at, notes, created_by, created_at")
         .order("created_at", { ascending: false })
       if (error) throw error
       return (data ?? []) as InviteCode[]
@@ -52,17 +52,27 @@ export function useAdminInviteCodes() {
   })
 }
 
+// Admin-only: generate a new invite code via the SECURITY DEFINER RPC.
+// The plaintext `code` in the response is visible ONCE — only the sha256 hash
+// is persisted, so admins must surface the plaintext to the invitee immediately.
 export function useCreateInviteCode() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: {
-      code: string
       max_uses: number
       expires_at: string | null
       notes: string | null
-    }) => {
-      const { error } = await supabase.from("invite_codes").insert(payload)
+    }): Promise<CreatedInviteCode> => {
+      const { data, error } = await supabase
+        .rpc("admin_create_invite_code", {
+          p_max_uses: payload.max_uses,
+          p_expires_at: payload.expires_at,
+          p_notes: payload.notes,
+        })
+        .single<CreatedInviteCode>()
       if (error) throw error
+      if (!data) throw new Error("admin_create_invite_code returned no row")
+      return data
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.admin.inviteCodes })
@@ -73,19 +83,12 @@ export function useCreateInviteCode() {
 export function useDeleteInviteCode() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (code: string) => {
-      const { error } = await supabase.from("invite_codes").delete().eq("code", code)
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("invite_codes").delete().eq("id", id)
       if (error) throw error
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.admin.inviteCodes })
     },
   })
-}
-
-// Cryptographically random 8-char uppercase alphanumeric (no ambiguous 0/O/1/I).
-export function generateInviteCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  const bytes = crypto.getRandomValues(new Uint8Array(8))
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("")
 }

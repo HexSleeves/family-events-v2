@@ -1,19 +1,20 @@
 import { useState } from "react"
 import { addDays } from "date-fns"
 import {
+  AdminInvitesCreatedReveal,
   AdminInvitesEmptyState,
   AdminInvitesFooter,
   AdminInvitesHeader,
   AdminInvitesList,
 } from "@/features/admin/components/admin-invites-sections"
 import {
-  generateInviteCode,
   useAdminInviteCodes,
   useCreateInviteCode,
   useDeleteInviteCode,
 } from "@/features/auth/hooks/use-invites"
 import { useAdminToast } from "@/features/admin/hooks/use-admin-toast"
 import { toast } from "sonner"
+import type { CreatedInviteCode } from "@/lib/types"
 
 type ExpiryOption = "7d" | "30d" | "never"
 
@@ -24,9 +25,9 @@ export function AdminInvitesPage() {
   const { toastError } = useAdminToast()
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [justCreated, setJustCreated] = useState<CreatedInviteCode | null>(null)
+  const [revealCopied, setRevealCopied] = useState(false)
   const [newCode, setNewCode] = useState({
-    code: "",
     max_uses: 1,
     expires: "30d" as ExpiryOption,
     notes: "",
@@ -39,37 +40,45 @@ export function AdminInvitesPage() {
   }
 
   async function handleCreate() {
-    const code = newCode.code.trim().toUpperCase() || generateInviteCode()
-    if (code.length < 4) {
-      toast.error("Code must be at least 4 characters")
-      return
-    }
     try {
-      await createCode.mutateAsync({
-        code,
+      const created = await createCode.mutateAsync({
         max_uses: newCode.max_uses,
         expires_at: resolveExpiry(newCode.expires),
         notes: newCode.notes.trim() || null,
       })
       setDialogOpen(false)
-      setNewCode({ code: "", max_uses: 1, expires: "30d", notes: "" })
-      toast.success(`Code created`, { description: code })
-      await navigator.clipboard.writeText(code).catch(() => {})
+      setNewCode({ max_uses: 1, expires: "30d", notes: "" })
+      setJustCreated(created)
+      setRevealCopied(false)
+      // Auto-copy on creation so admin only has to dismiss if they don't need it.
+      await navigator.clipboard.writeText(created.code).catch(() => {})
+      setRevealCopied(true)
+      toast.success("Code generated and copied to clipboard")
     } catch (err) {
       toastError(err, "Failed to create code")
     }
   }
 
-  async function handleCopy(code: string) {
-    await navigator.clipboard.writeText(code)
-    setCopiedCode(code)
-    setTimeout(() => setCopiedCode(null), 1500)
+  async function handleCopyReveal() {
+    if (!justCreated) return
+    try {
+      await navigator.clipboard.writeText(justCreated.code)
+      setRevealCopied(true)
+      setTimeout(() => setRevealCopied(false), 1500)
+    } catch {
+      toast.error("Clipboard unavailable")
+    }
   }
 
-  async function handleDelete(code: string) {
+  function handleDismissReveal() {
+    setJustCreated(null)
+    setRevealCopied(false)
+  }
+
+  async function handleDelete(id: string) {
     try {
-      await deleteCode.mutateAsync(code)
-      toast.success(`Deleted ${code}`)
+      await deleteCode.mutateAsync(id)
+      toast.success("Code deleted")
     } catch (err) {
       toastError(err, "Failed to delete")
     }
@@ -83,7 +92,6 @@ export function AdminInvitesPage() {
         newCode={newCode}
         isCreating={createCode.isPending}
         onDialogOpenChange={setDialogOpen}
-        onCodeChange={(value) => setNewCode((prev) => ({ ...prev, code: value.toUpperCase() }))}
         onMaxUsesChange={(value) =>
           setNewCode((prev) => ({ ...prev, max_uses: Math.max(1, Number(value)) }))
         }
@@ -92,15 +100,19 @@ export function AdminInvitesPage() {
         onCreate={handleCreate}
       />
 
+      {justCreated && (
+        <AdminInvitesCreatedReveal
+          created={justCreated}
+          copied={revealCopied}
+          onCopy={handleCopyReveal}
+          onDismiss={handleDismissReveal}
+        />
+      )}
+
       {codes.length === 0 ? (
         <AdminInvitesEmptyState />
       ) : (
-        <AdminInvitesList
-          codes={codes}
-          copiedCode={copiedCode}
-          onCopy={handleCopy}
-          onDelete={handleDelete}
-        />
+        <AdminInvitesList codes={codes} onDelete={handleDelete} />
       )}
       <AdminInvitesFooter />
     </div>

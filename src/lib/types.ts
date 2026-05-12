@@ -88,12 +88,24 @@ export interface Database {
 }
 
 export interface InviteCode {
-  code: string
+  id: string
   max_uses: number
   used_count: number
   expires_at: string | null
   notes: string | null
   created_by: string | null
+  created_at: string
+}
+
+// Returned ONCE by admin_create_invite_code RPC. The plaintext `code` field is
+// the only chance to surface it to the admin — it is never stored in the DB
+// and cannot be retrieved later.
+export interface CreatedInviteCode {
+  id: string
+  code: string
+  max_uses: number
+  expires_at: string | null
+  notes: string | null
   created_at: string
 }
 
