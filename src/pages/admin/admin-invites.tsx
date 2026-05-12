@@ -12,7 +12,7 @@ import {
   useCreateInviteCode,
   useDeleteInviteCode,
 } from "@/hooks/use-invites"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
 type ExpiryOption = "7d" | "30d" | "never"
@@ -21,6 +21,7 @@ export function AdminInvitesPage() {
   const { data: codes = [] } = useAdminInviteCodes()
   const createCode = useCreateInviteCode()
   const deleteCode = useDeleteInviteCode()
+  const { toastError } = useAdminToast()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
@@ -55,7 +56,7 @@ export function AdminInvitesPage() {
       toast.success(`Code created`, { description: code })
       await navigator.clipboard.writeText(code).catch(() => {})
     } catch (err) {
-      toast.error(humanizeSupabaseError(err, "Failed to create code"))
+      toastError(err, "Failed to create code")
     }
   }
 
@@ -70,7 +71,7 @@ export function AdminInvitesPage() {
       await deleteCode.mutateAsync(code)
       toast.success(`Deleted ${code}`)
     } catch (err) {
-      toast.error(humanizeSupabaseError(err, "Failed to delete"))
+      toastError(err, "Failed to delete")
     }
   }
 

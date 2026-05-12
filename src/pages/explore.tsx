@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
-import { useApp } from "@/contexts/app-context"
-import { useAuth } from "@/contexts/auth-context"
+import { useMemo } from "react"
+import { useApp } from "@/stores/app-store"
+import { useAuth } from "@/stores/auth-store"
+import { useExploreStore } from "@/stores/explore-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { matchesAgeFilter } from "@/hooks/use-events"
 import { useTags } from "@/hooks/use-tags"
@@ -17,13 +18,19 @@ import {
 export function ExplorePage() {
   const { user } = useAuth()
   const { selectedCity } = useApp()
-  const [keyword, setKeyword] = useState("")
-  const [activeDateFilter, setActiveDateFilter] = useState<string | null>(null)
-  const [selectedAge, setSelectedAge] = useState<string | null>(null)
-  const [onlyFree, setOnlyFree] = useState(false)
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
+  const keyword = useExploreStore((s) => s.keyword)
+  const activeDateFilter = useExploreStore((s) => s.activeDateFilter)
+  const selectedAge = useExploreStore((s) => s.selectedAge)
+  const onlyFree = useExploreStore((s) => s.onlyFree)
+  const selectedTagSlugs = useExploreStore((s) => s.selectedTagSlugs)
+  const activeCategory = useExploreStore((s) => s.activeCategory)
+  const setKeyword = useExploreStore((s) => s.setKeyword)
+  const setActiveDateFilter = useExploreStore((s) => s.setActiveDateFilter)
+  const setSelectedAge = useExploreStore((s) => s.setSelectedAge)
+  const setOnlyFree = useExploreStore((s) => s.setOnlyFree)
+  const toggleTagSlug = useExploreStore((s) => s.toggleTagSlug)
+  const setActiveCategory = useExploreStore((s) => s.setActiveCategory)
+  const resetFilters = useExploreStore((s) => s.resetFilters)
 
   const ageFilter = AGE_OPTIONS.find((option) => option.label === selectedAge)
 
@@ -119,15 +126,6 @@ export function ExplorePage() {
     })
   }, [allEvents, keyword, dateRange, onlyFree, ageFilter, combinedTagSlugs])
 
-  const baseFavoritedIds = useMemo(
-    () => new Set(filteredEvents.filter((event) => event.is_favorited).map((event) => event.id)),
-    [filteredEvents]
-  )
-
-  function isFavorited(eventId: string) {
-    return favoriteOverrides[eventId] ?? baseFavoritedIds.has(eventId)
-  }
-
   const activeFilterCount = [
     activeDateFilter,
     selectedAge,
@@ -135,24 +133,6 @@ export function ExplorePage() {
     ...selectedTagSlugs,
     activeCategory,
   ].filter(Boolean).length
-
-  function clearAllFilters() {
-    setActiveDateFilter(null)
-    setSelectedAge(null)
-    setOnlyFree(false)
-    setSelectedTagSlugs([])
-    setActiveCategory(null)
-  }
-
-  function handleFavoriteToggle(eventId: string, newState: boolean) {
-    setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
-  }
-
-  function toggleTagSlug(slug: string) {
-    setSelectedTagSlugs((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
-    )
-  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -171,7 +151,7 @@ export function ExplorePage() {
         onAgeChange={setSelectedAge}
         onOnlyFreeChange={setOnlyFree}
         onToggleTagSlug={toggleTagSlug}
-        onClearAllFilters={clearAllFilters}
+        onClearAllFilters={resetFilters}
       />
       <ExploreActiveFilters
         onlyFree={onlyFree}
@@ -192,9 +172,7 @@ export function ExplorePage() {
         filteredEvents={filteredEvents}
         isEventsLoading={isEventsLoading}
         isEventsError={isEventsError}
-        isFavorited={isFavorited}
-        onFavoriteToggle={handleFavoriteToggle}
-        onClearAllFilters={clearAllFilters}
+        onClearAllFilters={resetFilters}
       />
       <ExploreNeighborhoodCta />
     </div>

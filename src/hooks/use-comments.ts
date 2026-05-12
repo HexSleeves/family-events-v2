@@ -1,9 +1,43 @@
+import { useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { CommentWithProfile } from "@/lib/types"
 
 export function useComments(eventId: string | undefined) {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!eventId) return
+
+    // "*" covers INSERT + UPDATE (moderation approval changes) + DELETE.
+    // REPLICA IDENTITY FULL on the comments table ensures DELETE payloads
+    // carry event_id so the filter works correctly (see migration).
+    const channel = supabase
+      .channel(`comments:${eventId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "comments",
+          filter: `event_id=eq.${eventId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: qk.comments.byEvent(eventId) })
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("[useComments] Realtime subscription error for event", eventId)
+        }
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [eventId, queryClient])
+
   return useQuery({
     queryKey: qk.comments.byEvent(eventId),
     queryFn: async (): Promise<CommentWithProfile[]> => {

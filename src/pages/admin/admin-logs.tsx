@@ -6,13 +6,16 @@ import {
   TriangleAlert as AlertTriangle,
   RefreshCw,
   Clock,
+  TimerOff,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useAdminSourceRuns } from "@/hooks/admin/use-admin-source-runs"
 
-type RunStatus = "success" | "error" | "partial" | "running"
+type RunStatus = "success" | "error" | "partial" | "running" | "timed_out"
+
+const STALE_THRESHOLD_MS = 15 * 60 * 1000
 
 const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string; label: string }> =
   {
@@ -20,7 +23,19 @@ const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string;
     error: { icon: XCircle, color: "text-destructive", label: "Error" },
     partial: { icon: AlertTriangle, color: "text-amber-500", label: "Partial" },
     running: { icon: RefreshCw, color: "text-blue-600", label: "Running" },
+    timed_out: { icon: TimerOff, color: "text-amber-500", label: "Timed Out" },
   }
+
+function isRunStatus(status: string): status is RunStatus {
+  return status in STATUS_CONFIG
+}
+
+function resolveStatus(status: string, startedAt: string): RunStatus {
+  const normalized: RunStatus = isRunStatus(status) ? status : "error"
+  if (normalized !== "running") return normalized
+  const elapsed = Date.now() - new Date(startedAt).getTime()
+  return elapsed > STALE_THRESHOLD_MS ? "timed_out" : "running"
+}
 
 function ElapsedTimer({ startedAt }: { startedAt: string }) {
   const [elapsed, setElapsed] = useState(0)
@@ -40,7 +55,7 @@ function ElapsedTimer({ startedAt }: { startedAt: string }) {
 
 export function AdminLogsPage() {
   const { data: logs = [] } = useAdminSourceRuns()
-  const hasRunning = logs.some((r) => r.status === "running")
+  const hasRunning = logs.some((r) => resolveStatus(r.status, r.started_at) === "running")
 
   return (
     <div className="space-y-6">
@@ -59,19 +74,27 @@ export function AdminLogsPage() {
 
       <div className="space-y-3">
         {logs.map((run) => {
-          const status = STATUS_CONFIG[run.status as RunStatus]
-          const isRunning = run.status === "running"
+          const resolvedStatus = resolveStatus(run.status, run.started_at)
+          const status = STATUS_CONFIG[resolvedStatus]
+          const isRunning = resolvedStatus === "running"
+          const isTimedOut = resolvedStatus === "timed_out"
           const duration =
             !isRunning && run.completed_at
               ? Math.round(
                   (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) / 1000
                 )
-              : null
+              : isTimedOut
+                ? Math.round((Date.now() - new Date(run.started_at).getTime()) / 1000)
+                : null
 
           return (
             <Card
               key={run.id}
-              className={cn("border-border/60", isRunning && "border-blue-500/30 bg-blue-500/5")}
+              className={cn(
+                "border-border/60",
+                isRunning && "border-blue-500/30 bg-blue-500/5",
+                isTimedOut && "border-amber-500/30 bg-amber-500/5"
+              )}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -85,15 +108,16 @@ export function AdminLogsPage() {
                       </h3>
                       <Badge
                         variant={
-                          run.status === "success"
+                          resolvedStatus === "success"
                             ? "secondary"
-                            : run.status === "error"
+                            : resolvedStatus === "error" || resolvedStatus === "timed_out"
                               ? "destructive"
                               : "outline"
                         }
                         className={cn(
                           "text-[10px]",
-                          isRunning && "border-blue-500/40 text-blue-600"
+                          isRunning && "border-blue-500/40 text-blue-600",
+                          isTimedOut && "border-amber-500/40 text-amber-600"
                         )}
                       >
                         {status.label}
@@ -107,7 +131,14 @@ export function AdminLogsPage() {
                       {isRunning ? (
                         <ElapsedTimer startedAt={run.started_at} />
                       ) : (
-                        duration !== null && <span>{duration}s duration</span>
+                        duration !== null && (
+                          <span>
+                            {duration >= 60
+                              ? `${Math.floor(duration / 60)}m ${duration % 60}s`
+                              : `${duration}s`}{" "}
+                            {isTimedOut ? "before timeout" : "duration"}
+                          </span>
+                        )
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1.5 text-xs flex-wrap">

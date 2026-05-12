@@ -12,6 +12,7 @@ export const env = createEnv({
     VITE_SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
     VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
     VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
+    VITE_OPENWEATHER_API_KEY: z.string().min(1).optional(),
   },
   runtimeEnvStrict: {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
@@ -24,6 +25,7 @@ export const env = createEnv({
       .VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
     VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: import.meta.env
       .VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
+    VITE_OPENWEATHER_API_KEY: import.meta.env.VITE_OPENWEATHER_API_KEY,
   },
   emptyStringAsUndefined: true,
 })

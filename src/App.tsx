@@ -1,15 +1,15 @@
-import { lazy, Suspense } from "react"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { lazy, Suspense, useEffect } from "react"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppErrorBoundary } from "@/components/app-error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { PublicOnlyRoute } from "@/components/auth/public-only-route"
-import { AuthProvider } from "@/contexts/auth-context"
-import { AppProvider } from "@/contexts/app-context"
+import { useAuth, useAuthStore } from "@/stores/auth-store"
 import { Toaster } from "@/components/ui/sonner"
 import { HOME_PATH } from "@/lib/access-control"
 import { queryClient } from "@/lib/query-client"
+import { AppMotionProvider, FadeSwap } from "@/components/motion"
 
 import { AppLayout } from "@/layouts/app-layout"
 import { AdminLayout } from "@/layouts/admin-layout"
@@ -17,6 +17,11 @@ import { AdminLayout } from "@/layouts/admin-layout"
 const DashboardPage = lazy(() =>
   import("@/pages/dashboard").then((module) => ({
     default: module.DashboardPage,
+  }))
+)
+const SaturdayPlanPage = lazy(() =>
+  import("@/pages/saturday-plan").then((module) => ({
+    default: module.SaturdayPlanPage,
   }))
 )
 const ExplorePage = lazy(() =>
@@ -42,6 +47,11 @@ const MapViewPage = lazy(() =>
 const MarketingPage = lazy(() =>
   import("@/pages/marketing").then((module) => ({
     default: module.MarketingPage,
+  }))
+)
+const PublicEventPreviewPage = lazy(() =>
+  import("@/pages/public-event-preview").then((module) => ({
+    default: module.PublicEventPreviewPage,
   }))
 )
 const MyEventsPage = lazy(() =>
@@ -111,6 +121,11 @@ const AdminLogsPage = lazy(() =>
     default: module.AdminLogsPage,
   }))
 )
+const AdminCronsPage = lazy(() =>
+  import("@/pages/admin/admin-crons").then((module) => ({
+    default: module.AdminCronsPage,
+  }))
+)
 
 const ReactQueryDevtools = import.meta.env.DEV
   ? lazy(() =>
@@ -122,29 +137,77 @@ const ReactQueryDevtools = import.meta.env.DEV
 
 function RouteFallback() {
   return (
-    <div className="min-h-[50vh] bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-        <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
-          <div className="h-36 animate-pulse rounded-lg border bg-card" />
+    <FadeSwap stateKey="route-fallback">
+      <div className="min-h-[50vh] bg-background px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+          <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+            <div className="h-36 animate-pulse rounded-lg border bg-card" />
+          </div>
         </div>
       </div>
-    </div>
+    </FadeSwap>
   )
+}
+
+function AuthInit() {
+  useEffect(() => {
+    const cleanup = useAuthStore.getState().initAuth()
+    return cleanup
+  }, [])
+  return null
+}
+
+function RootLandingRoute() {
+  const location = useLocation()
+  const { user, isEnabled, isLoading } = useAuth()
+  const searchParams = new URLSearchParams(location.search)
+  const showLegacyHome = searchParams.get("legacy") === "1"
+
+  if (!showLegacyHome) {
+    return <MarketingPage />
+  }
+
+  if (isLoading) {
+    return <RouteFallback />
+  }
+
+  if (!user || !isEnabled) {
+    return <Navigate to="/sign-in" replace state={{ from: `${HOME_PATH}?legacy=1` }} />
+  }
+
+  return (
+    <AppLayout>
+      <DashboardPage />
+    </AppLayout>
+  )
+}
+
+function HomeRoute() {
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+
+  if (searchParams.get("legacy") === "1") {
+    return <DashboardPage />
+  }
+
+  return <SaturdayPlanPage />
 }
 
 export default function App() {
   return (
     <ThemeProvider storageKey="family-events-theme">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <AuthInit />
+        <AppMotionProvider>
           <BrowserRouter>
             <AppErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
-                  <Route index element={<MarketingPage />} />
+                  <Route index element={<RootLandingRoute />} />
+                  <Route path="/share/:eventId" element={<PublicEventPreviewPage />} />
 
                   <Route element={<PublicOnlyRoute />}>
                     <Route path="/sign-in" element={<SignInPage />} />
@@ -152,14 +215,8 @@ export default function App() {
                   </Route>
 
                   <Route element={<ProtectedRoute />}>
-                    <Route
-                      element={
-                        <AppProvider>
-                          <AppLayout />
-                        </AppProvider>
-                      }
-                    >
-                      <Route path={HOME_PATH} element={<DashboardPage />} />
+                    <Route element={<AppLayout />}>
+                      <Route path={HOME_PATH} element={<HomeRoute />} />
                       <Route path="/explore" element={<ExplorePage />} />
                       <Route path="/map" element={<MapViewPage />} />
                       <Route path="/events/:id" element={<EventDetailPage />} />
@@ -178,6 +235,7 @@ export default function App() {
                       <Route path="access" element={<AdminAccessPage />} />
                       <Route path="invites" element={<AdminInvitesPage />} />
                       <Route path="logs" element={<AdminLogsPage />} />
+                      <Route path="crons" element={<AdminCronsPage />} />
                     </Route>
                   </Route>
 
@@ -186,8 +244,8 @@ export default function App() {
               </Suspense>
             </AppErrorBoundary>
           </BrowserRouter>
-          <Toaster richColors position="bottom-right" />
-        </AuthProvider>
+        </AppMotionProvider>
+        <Toaster richColors position="bottom-right" />
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>
             <ReactQueryDevtools initialIsOpen={false} />

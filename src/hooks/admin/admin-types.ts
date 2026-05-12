@@ -100,4 +100,26 @@ export function normalizeAiTrace(trace: EventAiTrace | null): EventAiTraceWithPa
   }
 }
 
+export interface CronJob {
+  jobid: number
+  jobname: string
+  schedule: string
+  command: string
+  active: boolean
+  last_run_start: string | null
+  last_run_end: string | null
+  last_run_status: string | null // 'succeeded' | 'failed' | 'starting' (pg_cron values)
+  last_run_message: string | null
+}
+
+export interface CronRun {
+  runid: number
+  jobname: string
+  status: string
+  return_message: string | null
+  start_time: string
+  end_time: string | null
+  duration_ms: number | null
+}
+
 export type { City }

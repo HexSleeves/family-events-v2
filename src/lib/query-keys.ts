@@ -19,6 +19,16 @@ type EventsKeyOptions = {
   offset: number
 }
 
+type SaturdayPlanKeyOptions = {
+  userId?: string
+  cityId?: string
+  childAge?: number | null
+  latitude?: number | null
+  longitude?: number | null
+  weatherFit?: string | null
+  dateKey: string
+}
+
 function nil<T>(value: T | null | undefined): T | null {
   return value ?? null
 }
@@ -28,6 +38,13 @@ function toIsoDate(value: string | Date | undefined): string | null {
     return null
   }
   return typeof value === "string" ? value : value.toISOString()
+}
+
+function roundedCoordinate(value: number | null | undefined): number | null {
+  if (value == null) {
+    return null
+  }
+  return Number(value.toFixed(4))
 }
 
 function sortedUnique(values: readonly string[] | undefined): readonly string[] {
@@ -49,10 +66,15 @@ function normalizeEventFilters(filters: EventFilters = {}) {
   } as const
 }
 
-function normalizeAdminEventsParams(keyword: string, status: Event["status"] | "all") {
+function normalizeAdminEventsParams(
+  keyword: string,
+  status: Event["status"] | "all",
+  cityFilter: "all" | "none" | string
+) {
   return {
     keyword: sanitizePostgrestLike(keyword),
     status,
+    cityFilter,
   } as const
 }
 
@@ -124,6 +146,38 @@ export const qk = {
   invites: {
     required: ["invites-required"] as const,
   },
+  weather: {
+    all: ["weather"] as const,
+    byCoordinates: (latitude: number | null | undefined, longitude: number | null | undefined) =>
+      [
+        "weather",
+        { latitude: roundedCoordinate(latitude), longitude: roundedCoordinate(longitude) },
+      ] as const,
+  },
+  saturdayPlan: {
+    all: ["saturday-plan"] as const,
+    byContext: ({
+      userId,
+      cityId,
+      childAge,
+      latitude,
+      longitude,
+      weatherFit,
+      dateKey,
+    }: SaturdayPlanKeyOptions) =>
+      [
+        "saturday-plan",
+        {
+          userId: nil(userId),
+          cityId: nil(cityId),
+          childAge: childAge ?? null,
+          latitude: roundedCoordinate(latitude),
+          longitude: roundedCoordinate(longitude),
+          weatherFit: weatherFit ?? null,
+          dateKey,
+        },
+      ] as const,
+  },
   admin: {
     root: ["admin"] as const,
     userAccess: ["admin", "user-access"] as const,
@@ -133,13 +187,25 @@ export const qk = {
       ["admin", "event-ai-trace", nil(eventId)] as const,
     sources: ["admin", "sources"] as const,
     sourceRuns: ["admin", "source-runs"] as const,
+    sourceRunErrors: (sourceIds: readonly string[]) =>
+      ["admin", "source-run-errors", sortedUnique(sourceIds)] as const,
     stats: ["admin", "stats"] as const,
     events: {
       all: ["admin", "events"] as const,
-      list: (keyword: string, status: Event["status"] | "all") =>
-        ["admin", "events", normalizeAdminEventsParams(keyword, status)] as const,
+      list: (
+        keyword: string,
+        status: Event["status"] | "all",
+        cityFilter: "all" | "none" | string = "all"
+      ) => ["admin", "events", normalizeAdminEventsParams(keyword, status, cityFilter)] as const,
+      facets: (keyword: string) =>
+        ["admin", "events", "facets", { keyword: sanitizePostgrestLike(keyword) }] as const,
     },
     ratings: ["admin", "ratings"] as const,
     inviteCodes: ["admin", "invite-codes"] as const,
+    cronJobs: ["admin", "cron-jobs"] as const,
+    cronHistory: (jobName?: string) =>
+      jobName
+        ? (["admin", "cron-history", jobName] as const)
+        : (["admin", "cron-history"] as const),
   },
 } as const

@@ -1,5 +1,21 @@
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
 import { Sentry } from "@/lib/sentry"
+import { supabase } from "@/lib/supabase"
+
+// PostgREST PGRST301 = JWTExpired; GoTrue returns "invalid or expired token".
+// Both mean the session is dead — force sign-out so the auth context clears state.
+function isExpiredTokenError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false
+  const e = error as Record<string, unknown>
+  const code = String(e.code ?? "")
+  const msg = String(e.message ?? e.error ?? "").toLowerCase()
+  return (
+    code === "PGRST301" ||
+    msg.includes("jwt expired") ||
+    msg.includes("invalid jwt") ||
+    msg.includes("invalid or expired token")
+  )
+}
 
 function normalizeError(error: unknown): Error {
   if (error instanceof Error) {
@@ -23,12 +39,14 @@ function truncateKey(key: readonly unknown[], maxLength = 200): string {
 
 const queryCache = new QueryCache({
   onError(error, query) {
+    if (isExpiredTokenError(error)) {
+      void supabase.auth.signOut()
+      return
+    }
     Sentry.withScope((scope) => {
       scope.setTag("react_query.type", "query")
       scope.setTag("react_query.key", truncateKey(query.queryKey))
-      scope.setContext("react_query", {
-        queryHash: query.queryHash,
-      })
+      scope.setContext("react_query", { queryHash: query.queryHash })
       Sentry.captureException(normalizeError(error))
     })
   },
@@ -36,6 +54,10 @@ const queryCache = new QueryCache({
 
 const mutationCache = new MutationCache({
   onError(error, _variables, _context, mutation) {
+    if (isExpiredTokenError(error)) {
+      void supabase.auth.signOut()
+      return
+    }
     Sentry.withScope((scope) => {
       scope.setTag("react_query.type", "mutation")
       scope.setTag("react_query.key", truncateKey(mutation.options.mutationKey ?? []))

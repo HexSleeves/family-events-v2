@@ -24,10 +24,13 @@ dist-ssr
 *.sw?
 
 .env
+output/playwright/
+
 config/credentials.json
 supabase/.temp/
+
 .claude/
 .augment/
 .factory/
 .pi/
-output/playwright/
+.cursor/hooks/state/

@@ -12,13 +12,14 @@ import {
   useUpdateAdminComment,
   type AdminComment,
 } from "@/hooks/admin/use-admin-comments"
-import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { useAdminToast } from "@/hooks/use-admin-toast"
 import { toast } from "sonner"
 
 export function AdminCommentsPage() {
   const { data: comments = [] } = useAdminComments()
   const updateComment = useUpdateAdminComment()
   const deleteComment = useDeleteAdminComment()
+  const { toastError } = useAdminToast()
 
   async function approve(id: string) {
     try {
@@ -28,7 +29,7 @@ export function AdminCommentsPage() {
       })
       toast.success("Comment approved")
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to approve comment."))
+      toastError(error, "Failed to approve comment.")
     }
   }
 
@@ -37,7 +38,7 @@ export function AdminCommentsPage() {
       await deleteComment.mutateAsync({ commentId: id })
       toast("Comment removed")
     } catch (error) {
-      toast.error(humanizeSupabaseError(error, "Failed to remove comment."))
+      toastError(error, "Failed to remove comment.")
     }
   }
 

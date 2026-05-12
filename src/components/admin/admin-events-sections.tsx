@@ -4,24 +4,35 @@ import {
   Bot,
   Check,
   CheckCheck,
+  ChevronDown,
   Eye,
   Search,
   Sparkles,
   Tag,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react"
-import type { Event, EventAiTraceWithParsed, EventWithDetails, Tag as EventTag } from "@/lib/types"
+import type {
+  City,
+  Event,
+  EventAiTraceWithParsed,
+  EventWithDetails,
+  Tag as EventTag,
+} from "@/lib/types"
 import { cn, formatEventPrice } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AgeRangeBadge, TagBadge } from "@/components/tag-badge"
+import { groupByCity } from "@/lib/group-by-city"
+import type { CityFilterValue } from "@/hooks/admin/use-city-filter"
 
 export type AdminEventStatusFilter = Event["status"] | "all"
 
@@ -75,16 +86,16 @@ export function AdminEventStatusFilterBar({
 interface ToolbarProps {
   keyword: string
   onKeywordChange: (value: string) => void
-  draftCount: number
-  allDraftsSelected: boolean
+  eventCount: number
+  allVisibleSelected: boolean
   onToggleSelectAll: () => void
 }
 
 export function AdminEventsToolbar({
   keyword,
   onKeywordChange,
-  draftCount,
-  allDraftsSelected,
+  eventCount,
+  allVisibleSelected,
   onToggleSelectAll,
 }: ToolbarProps) {
   return (
@@ -98,18 +109,18 @@ export function AdminEventsToolbar({
           className="pl-9"
         />
       </div>
-      {draftCount > 0 && (
+      {eventCount > 0 && (
         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onToggleSelectAll}>
           <span
             aria-hidden="true"
             className={cn(
               "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-lg border border-input shadow-xs transition-colors",
-              allDraftsSelected && "border-primary bg-primary text-primary-foreground"
+              allVisibleSelected && "border-primary bg-primary text-primary-foreground"
             )}
           >
             <Check className="h-3 w-3" />
           </span>
-          {allDraftsSelected ? "Deselect all" : `Select all drafts (${draftCount})`}
+          {allVisibleSelected ? "Deselect all" : `Select all visible (${eventCount})`}
         </Button>
       )}
     </div>
@@ -118,17 +129,23 @@ export function AdminEventsToolbar({
 
 interface BulkBarProps {
   selectedCount: number
-  isPending: boolean
+  selectedDraftCount: number
+  isStatusPending: boolean
+  isDeletePending: boolean
   onPublish: () => void
   onReject: () => void
+  onDelete: () => void
   onClear: () => void
 }
 
 export function AdminEventsBulkBar({
   selectedCount,
-  isPending,
+  selectedDraftCount,
+  isStatusPending,
+  isDeletePending,
   onPublish,
   onReject,
+  onDelete,
   onClear,
 }: BulkBarProps) {
   if (selectedCount === 0) return null
@@ -136,27 +153,37 @@ export function AdminEventsBulkBar({
   return (
     <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
       <span className="text-sm font-medium">
-        {selectedCount} draft{selectedCount === 1 ? "" : "s"} selected
+        {selectedCount} event{selectedCount === 1 ? "" : "s"} selected
       </span>
       <div className="flex gap-2 ml-auto">
         <Button
           size="sm"
           className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-          disabled={isPending}
+          disabled={isStatusPending || selectedDraftCount === 0}
           onClick={onPublish}
         >
           <CheckCheck className="h-3.5 w-3.5" />
-          Publish selected
+          Publish drafts{selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ""}
         </Button>
         <Button
           size="sm"
           variant="outline"
           className="gap-1.5 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          disabled={isPending}
+          disabled={isStatusPending || selectedDraftCount === 0}
           onClick={onReject}
         >
           <XCircle className="h-3.5 w-3.5" />
-          Reject selected
+          Reject drafts{selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ""}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          disabled={isDeletePending}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete selected
         </Button>
         <Button size="sm" variant="ghost" onClick={onClear}>
           Clear
@@ -170,6 +197,8 @@ interface EventsListProps {
   events: EventWithDetails[]
   selectedIds: Set<string>
   statusConfig: Record<Event["status"], { label: string; color: string }>
+  cities: City[]
+  cityFilter: CityFilterValue
   onToggleSelect: (id: string) => void
   onOpenReview: (event: EventWithDetails) => void
   onUpdateStatus: (id: string, status: Event["status"]) => void
@@ -179,121 +208,191 @@ export function AdminEventsList({
   events,
   selectedIds,
   statusConfig,
+  cities,
+  cityFilter,
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
 }: EventsListProps) {
-  return (
-    <div className="space-y-2">
-      {events.map((event) => {
-        const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
-        const status = statusConfig[event.status]
-        const isDraft = event.status === "draft"
-        const isSelected = selectedIds.has(event.id)
-
-        return (
-          <Card
+  if (cityFilter !== "all") {
+    return (
+      <div className="space-y-2">
+        {events.map((event) => (
+          <EventCard
             key={event.id}
-            className={cn(
-              "border-border/60 transition-colors",
-              isSelected && "border-primary/50 bg-primary/5"
-            )}
-          >
-            <CardContent className="p-4">
-              <div className="flex gap-3 items-start">
-                {isDraft && (
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => onToggleSelect(event.id)}
-                    className="mt-1 shrink-0"
-                  />
-                )}
-                <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
-                  <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-2 flex-wrap">
-                    <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
-                      {event.title}
-                    </h3>
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold px-2 py-0.5 rounded-full",
-                        status.color
-                      )}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                    <span>{format(new Date(event.start_datetime), "MMM d, h:mm a")}</span>
-                    <span>{event.venue_name}</span>
-                    {event.ai_confidence !== null && (
-                      <span className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" />
-                        AI: {Math.round((event.ai_confidence ?? 0) * 100)}%
-                      </span>
-                    )}
-                    {event.ai_tag_provider && (
-                      <span className="flex items-center gap-1">
-                        <Bot className="h-3 w-3" />
-                        {formatProviderLabel(event.ai_tag_provider)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                    <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
-                    {event.tags?.slice(0, 2).map((tag) => (
-                      <TagBadge key={tag.tag_id} tag={tag.tag} />
-                    ))}
+            event={event}
+            isSelected={selectedIds.has(event.id)}
+            statusConfig={statusConfig}
+            onToggleSelect={onToggleSelect}
+            onOpenReview={onOpenReview}
+            onUpdateStatus={onUpdateStatus}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  const groups = groupByCity(events, cities)
+  return (
+    <div className="space-y-3">
+      {groups.map((group) => {
+        if (group.items.length === 0) return null
+        return (
+          <Collapsible key={group.key} defaultOpen={false}>
+            <Card className="border-border/60">
+              <CollapsibleTrigger className="w-full group">
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-2">
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+                    <h3 className="font-semibold text-sm text-foreground">{group.label}</h3>
+                    <Badge variant="outline" className="text-[10px]">
+                      {group.items.length}
+                    </Badge>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => onOpenReview(event)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {isDraft && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                        onClick={() => onUpdateStatus(event.id, "published")}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                        onClick={() => onUpdateStatus(event.id, "rejected")}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                  {event.status === "published" && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => onUpdateStatus(event.id, "archived")}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t border-border/60 p-3 space-y-2">
+                  {group.items.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      isSelected={selectedIds.has(event.id)}
+                      statusConfig={statusConfig}
+                      onToggleSelect={onToggleSelect}
+                      onOpenReview={onOpenReview}
+                      onUpdateStatus={onUpdateStatus}
+                    />
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         )
       })}
     </div>
+  )
+}
+
+interface EventCardProps {
+  event: EventWithDetails
+  isSelected: boolean
+  statusConfig: Record<Event["status"], { label: string; color: string }>
+  onToggleSelect: (id: string) => void
+  onOpenReview: (event: EventWithDetails) => void
+  onUpdateStatus: (id: string, status: Event["status"]) => void
+}
+
+function EventCard({
+  event,
+  isSelected,
+  statusConfig,
+  onToggleSelect,
+  onOpenReview,
+  onUpdateStatus,
+}: EventCardProps) {
+  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
+  const status = statusConfig[event.status]
+
+  return (
+    <Card
+      className={cn(
+        "border-border/60 transition-colors",
+        isSelected && "border-primary/50 bg-primary/5"
+      )}
+    >
+      <CardContent className="p-4">
+        <div className="flex gap-3 items-start">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(event.id)}
+            className="mt-1 shrink-0"
+            aria-label={`Select ${event.title}`}
+          />
+          <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
+            <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 flex-wrap">
+              <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
+                {event.title}
+              </h3>
+              <span
+                className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}
+              >
+                {status.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+              <span>{format(new Date(event.start_datetime), "MMM d, h:mm a")}</span>
+              <span>{event.venue_name}</span>
+              {event.ai_confidence !== null && (
+                <span className="flex items-center gap-1">
+                  <Tag className="h-3 w-3" />
+                  AI: {Math.round((event.ai_confidence ?? 0) * 100)}%
+                </span>
+              )}
+              {event.ai_tag_provider && (
+                <span className="flex items-center gap-1">
+                  <Bot className="h-3 w-3" />
+                  {formatProviderLabel(event.ai_tag_provider)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
+              {event.tags?.slice(0, 2).map((tag) => (
+                <TagBadge key={tag.tag_id} tag={tag.tag} />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Review event"
+              className="h-8 w-8"
+              onClick={() => onOpenReview(event)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            {event.status === "draft" && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Publish event"
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                  onClick={() => onUpdateStatus(event.id, "published")}
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Reject event"
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                  onClick={() => onUpdateStatus(event.id, "rejected")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {event.status === "published" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Archive event"
+                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                onClick={() => onUpdateStatus(event.id, "archived")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

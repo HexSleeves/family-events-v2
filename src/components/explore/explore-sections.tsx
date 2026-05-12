@@ -1,14 +1,24 @@
-import { Search, SlidersHorizontal, X, Music, TreePine, BookOpen, Users, Map } from "lucide-react"
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  Music,
+  TreePine,
+  BookOpen,
+  Users,
+  Map,
+  Check,
+} from "lucide-react"
+import { AnimatePresence, m } from "motion/react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Card, CardContent } from "@/components/ui/card"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
+import { FadeSwap, StaggerItem, StaggerList, popInVariants } from "@/components/motion"
 import type { EventWithDetails, Tag } from "@/lib/types"
 
 export const CATEGORIES = [
@@ -135,97 +145,129 @@ export function ExploreSearchFilters({
             )}
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-80">
-          <SheetHeader>
-            <SheetTitle>Filter Events</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-6">
-            <div>
-              <p className="text-sm font-semibold mb-3">Date</p>
-              <div className="flex flex-wrap gap-2">
-                {DATE_QUICK_FILTERS.map((filter) => (
-                  <button
-                    key={filter.value}
-                    onClick={() =>
-                      onDateFilterChange(activeDateFilter === filter.value ? null : filter.value)
-                    }
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                      activeDateFilter === filter.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-accent"
-                    )}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <p className="text-sm font-semibold mb-3">Age Group</p>
-              <div className="flex flex-wrap gap-2">
-                {AGE_OPTIONS.map((option) => (
-                  <button
-                    key={option.label}
-                    onClick={() => onAgeChange(selectedAge === option.label ? null : option.label)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                      selectedAge === option.label
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-accent"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
+        <SheetContent side="right" className="w-80 p-0 gap-0" showCloseButton={false}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 h-14 border-b border-border/60 flex-shrink-0">
+            <SheetTitle className="text-sm font-semibold tracking-tight">Filters</SheetTitle>
             <div className="flex items-center gap-3">
-              <Checkbox
-                id="free-only"
-                checked={onlyFree}
-                onCheckedChange={(value) => onOnlyFreeChange(Boolean(value))}
-              />
-              <Label htmlFor="free-only" className="font-medium">
-                Free events only
-              </Label>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={onClearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+              <SheetClose className="rounded-sm opacity-60 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </SheetClose>
             </div>
+          </div>
 
-            <Separator />
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-5 py-5">
+            <div className="space-y-6">
+              {/* When */}
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/70 uppercase mb-3">
+                  When
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DATE_QUICK_FILTERS.map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() =>
+                        onDateFilterChange(activeDateFilter === filter.value ? null : filter.value)
+                      }
+                      className={cn(
+                        "px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-150",
+                        activeDateFilter === filter.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            <div>
-              <p className="text-sm font-semibold mb-3">Tags</p>
-              <div className="flex flex-col gap-2">
-                {tags.slice(0, 8).map((tag) => (
-                  <div key={tag.id} className="flex items-center gap-3">
-                    <Checkbox
-                      id={`tag-${tag.slug}`}
-                      checked={selectedTagSlugs.includes(tag.slug)}
-                      onCheckedChange={() => onToggleTagSlug(tag.slug)}
-                    />
-                    <Label htmlFor={`tag-${tag.slug}`} className="flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      {tag.name}
-                    </Label>
-                  </div>
-                ))}
+              {/* Kid's Age */}
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/70 uppercase mb-3">
+                  Kid&apos;s Age
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {AGE_OPTIONS.map((option) => (
+                    <button
+                      key={option.label}
+                      onClick={() =>
+                        onAgeChange(selectedAge === option.label ? null : option.label)
+                      }
+                      className={cn(
+                        "px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-150",
+                        selectedAge === option.label
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Free events toggle */}
+              <label
+                htmlFor="free-only-switch"
+                className={cn(
+                  "flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-all duration-150",
+                  onlyFree ? "bg-primary/10" : "bg-muted/50 hover:bg-muted"
+                )}
+              >
+                <span className="text-sm font-medium select-none">Free events only</span>
+                <Switch
+                  id="free-only-switch"
+                  checked={onlyFree}
+                  onCheckedChange={onOnlyFreeChange}
+                />
+              </label>
+
+              {/* Tags */}
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/70 uppercase mb-2">
+                  Tags
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {tags.slice(0, 8).map((tag) => {
+                    const isSelected = selectedTagSlugs.includes(tag.slug)
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => onToggleTagSlug(tag.slug)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left",
+                          isSelected
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        style={isSelected ? { backgroundColor: `${tag.color}20` } : {}}
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        <span className="flex-1">{tag.name}</span>
+                        {isSelected && (
+                          <Check className="h-3.5 w-3.5 text-foreground/40 flex-shrink-0" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-
-            {activeFilterCount > 0 && (
-              <Button variant="outline" className="w-full" onClick={onClearAllFilters}>
-                Clear All Filters
-              </Button>
-            )}
           </div>
         </SheetContent>
       </Sheet>
@@ -258,33 +300,62 @@ export function ExploreActiveFilters({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {onlyFree && (
-        <Badge variant="secondary" className="gap-1">
-          Free only
-          <button onClick={() => onOnlyFreeChange(false)}>
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      )}
-      {activeCategory && (
-        <Badge variant="secondary" className="gap-1 capitalize">
-          {activeCategory}
-          <button onClick={() => onActiveCategoryChange(null)}>
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      )}
-      {selectedTagSlugs.map((slug) => {
-        const tag = tags.find((item) => item.slug === slug)
-        return tag ? (
-          <Badge key={slug} variant="secondary" className="gap-1">
-            {tag.name}
-            <button onClick={() => onToggleTagSlug(slug)}>
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-        ) : null
-      })}
+      <AnimatePresence initial={false}>
+        {onlyFree && (
+          <m.div
+            key="filter-free"
+            layout
+            variants={popInVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Badge variant="secondary" className="gap-1">
+              Free only
+              <button onClick={() => onOnlyFreeChange(false)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </m.div>
+        )}
+        {activeCategory && (
+          <m.div
+            key={`filter-cat-${activeCategory}`}
+            layout
+            variants={popInVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <Badge variant="secondary" className="gap-1 capitalize">
+              {activeCategory}
+              <button onClick={() => onActiveCategoryChange(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </m.div>
+        )}
+        {selectedTagSlugs.map((slug) => {
+          const tag = tags.find((item) => item.slug === slug)
+          return tag ? (
+            <m.div
+              key={`filter-tag-${slug}`}
+              layout
+              variants={popInVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <Badge variant="secondary" className="gap-1">
+                {tag.name}
+                <button onClick={() => onToggleTagSlug(slug)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            </m.div>
+          ) : null
+        })}
+      </AnimatePresence>
     </div>
   )
 }
@@ -340,8 +411,6 @@ interface ExploreEventsSectionProps {
   filteredEvents: EventWithDetails[]
   isEventsLoading: boolean
   isEventsError: boolean
-  isFavorited: (eventId: string) => boolean
-  onFavoriteToggle: (eventId: string, newState: boolean) => void
   onClearAllFilters: () => void
 }
 
@@ -350,8 +419,6 @@ export function ExploreEventsSection({
   filteredEvents,
   isEventsLoading,
   isEventsError,
-  isFavorited,
-  onFavoriteToggle,
   onClearAllFilters,
 }: ExploreEventsSectionProps) {
   const activeCategoryLabel = CATEGORIES.find((category) => category.slug === activeCategory)?.label
@@ -373,35 +440,44 @@ export function ExploreEventsSection({
         </Card>
       )}
 
-      {isEventsLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <EventCardSkeleton key={`explore-skeleton-${index}`} variant="list" />
-          ))}
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="text-center py-16">
-          <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            Try adjusting your filters or search terms
-          </p>
-          <Button variant="outline" onClick={onClearAllFilters}>
-            Clear Filters
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredEvents.map((event) => (
-            <EventCard
-              key={event.id}
-              event={{ ...event, is_favorited: isFavorited(event.id) }}
-              variant="list"
-              onFavoriteToggle={onFavoriteToggle}
-            />
-          ))}
-        </div>
-      )}
+      <FadeSwap
+        stateKey={
+          isEventsLoading
+            ? "explore-loading"
+            : filteredEvents.length === 0
+              ? "explore-empty"
+              : "explore-content"
+        }
+      >
+        {isEventsLoading ? (
+          <StaggerList className="space-y-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <StaggerItem key={`explore-skeleton-${index}`}>
+                <EventCardSkeleton variant="list" />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        ) : filteredEvents.length === 0 ? (
+          <div className="text-center py-16">
+            <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
+            <p className="text-muted-foreground text-sm mb-4">
+              Try adjusting your filters or search terms
+            </p>
+            <Button variant="outline" onClick={onClearAllFilters}>
+              Clear Filters
+            </Button>
+          </div>
+        ) : (
+          <StaggerList className="space-y-4">
+            {filteredEvents.map((event) => (
+              <StaggerItem key={event.id}>
+                <EventCard event={event} variant="list" />
+              </StaggerItem>
+            ))}
+          </StaggerList>
+        )}
+      </FadeSwap>
     </section>
   )
 }

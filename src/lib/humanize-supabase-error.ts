@@ -56,6 +56,9 @@ function isTechnicalMessage(message: string) {
     "failed to fetch",
     "failed to create source run record",
     "json object requested",
+    "invalid or expired token",
+    "worker failed to boot",
+    "boot_error",
   ].some((snippet) => normalized.includes(snippet))
 }
 
@@ -69,6 +72,15 @@ function toError(error: unknown, details: ErrorDetails): Error {
   }
 
   return new Error(details.message ?? "Unknown Supabase error")
+}
+
+export function getAdminErrorDetail(error: unknown): string | null {
+  const { message, code, status } = getErrorDetails(error)
+  const parts: string[] = []
+  if (code) parts.push(code)
+  if (status != null) parts.push(`HTTP ${status}`)
+  if (message) parts.push(message)
+  return parts.length > 0 ? parts.join(" · ") : null
 }
 
 export function humanizeSupabaseError(error: unknown, fallback: string): string {
@@ -141,8 +153,20 @@ export function humanizeSupabaseError(error: unknown, fallback: string): string 
     return "One of the values is invalid."
   }
 
-  if (status === 401 || normalizedMessage.includes("invalid jwt")) {
+  if (
+    status === 401 ||
+    normalizedMessage.includes("invalid jwt") ||
+    normalizedMessage.includes("invalid or expired token") ||
+    normalizedMessage.includes("jwt expired")
+  ) {
     return "Your session is no longer valid. Sign in again and retry."
+  }
+
+  if (
+    normalizedMessage.includes("worker failed to boot") ||
+    normalizedMessage.includes("boot_error")
+  ) {
+    return "The scrape service failed to start. Try again in a moment."
   }
 
   if (!message) {

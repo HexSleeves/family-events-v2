@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TagBadge, AgeRangeBadge } from "@/components/tag-badge"
 import { FavoriteButton } from "@/components/favorite-button"
+import { SmartImage } from "@/components/motion"
 import { StarRating } from "@/components/star-rating"
 import type { EventWithDetails } from "@/lib/types"
 
@@ -38,7 +39,12 @@ export function EventCard({
           )}
         >
           <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
-            <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
+            <SmartImage
+              src={imageUrl}
+              alt={event.title}
+              className="h-full w-full object-cover"
+              placeholderClassName="h-full w-full"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{event.title}</p>
@@ -84,10 +90,11 @@ export function EventCard({
           )}
         >
           <div className="relative">
-            <img
+            <SmartImage
               src={imageUrl}
               alt={event.title}
               className="w-full h-52 object-cover group-hover:scale-[1.02] transition-transform duration-300"
+              placeholderClassName="w-full h-52"
             />
             <FavoriteButton
               eventId={event.id}
@@ -157,7 +164,12 @@ export function EventCard({
           )}
         >
           <div className="relative">
-            <img src={imageUrl} alt={event.title} className="w-full h-48 object-cover" />
+            <SmartImage
+              src={imageUrl}
+              alt={event.title}
+              className="w-full h-48 object-cover"
+              placeholderClassName="w-full h-48"
+            />
             <FavoriteButton
               eventId={event.id}
               isFavorited={event.is_favorited ?? false}
@@ -213,10 +225,11 @@ export function EventCard({
         className={cn("overflow-hidden border-border/60 hover:shadow-md transition-all", className)}
       >
         <div className="relative">
-          <img
+          <SmartImage
             src={imageUrl}
             alt={event.title}
             className="w-full h-44 object-cover group-hover:scale-[1.02] transition-transform duration-300"
+            placeholderClassName="w-full h-44"
           />
           <FavoriteButton
             eventId={event.id}

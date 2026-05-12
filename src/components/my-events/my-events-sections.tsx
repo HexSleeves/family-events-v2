@@ -6,31 +6,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StarRating } from "@/components/star-rating"
+import { SmartImage, StaggerItem, StaggerList } from "@/components/motion"
 import { AgeRangeBadge, TagBadge } from "@/components/tag-badge"
 import type { EventWithDetails } from "@/lib/types"
 import { formatEventPrice } from "@/lib/utils"
 
 export function LoadingRows() {
   return (
-    <>
+    <StaggerList className="space-y-3">
       {Array.from({ length: 3 }).map((_, index) => (
-        <Card key={`loading-row-${index}`} className="border-border/60">
-          <CardContent className="p-4">
-            <div className="flex gap-4">
-              <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-2/3" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-5 w-14 rounded-full" />
+        <StaggerItem key={`loading-row-${index}`}>
+          <Card className="border-border/60">
+            <CardContent className="p-4">
+              <div className="flex gap-4">
+                <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-2/3" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </StaggerItem>
       ))}
-    </>
+    </StaggerList>
   )
 }
 
@@ -52,7 +55,12 @@ export function EventRow({ event, onRemove, rating, onRate, variant }: EventRowP
         <div className="flex gap-4">
           <Link to={`/events/${event.id}`} className="shrink-0">
             <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl overflow-hidden bg-muted">
-              <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
+              <SmartImage
+                src={imageUrl}
+                alt={event.title}
+                className="h-full w-full object-cover"
+                placeholderClassName="h-full w-full"
+              />
             </div>
           </Link>
 

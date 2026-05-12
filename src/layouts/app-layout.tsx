@@ -1,8 +1,11 @@
+import type { ReactNode } from "react"
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
+import { m } from "motion/react"
 import {
   Hop as Home,
   Compass,
   Map as MapIcon,
+  CalendarDays,
   Bookmark,
   User,
   Search,
@@ -28,19 +31,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAuth } from "@/contexts/auth-context"
-import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/stores/auth-store"
+import { useApp } from "@/stores/app-store"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { PageTransition } from "@/components/motion"
 
 const NAV_ITEMS = [
   { to: HOME_PATH, label: "Home", icon: Home },
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/map", label: "Map", icon: MapIcon },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/saved", label: "Saved", icon: Bookmark },
   { to: "/profile", label: "Profile", icon: User },
 ]
 
-export function AppLayout() {
+interface AppLayoutProps {
+  children?: ReactNode
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, profile, signOut, isAdmin } = useAuth()
@@ -165,33 +174,48 @@ export function AppLayout() {
       {!isMobile && (
         <nav className="sticky top-14 z-30 bg-background/95 backdrop-blur border-b border-border/40">
           <div className="max-w-5xl mx-auto px-4 flex items-center gap-1">
-            {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors border-b-2",
-                  isActive(to)
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+              const active = isActive(to)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={cn(
+                    "relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                  {active && (
+                    <m.span
+                      layoutId="desktop-nav-active"
+                      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary"
+                    />
+                  )}
+                </Link>
+              )
+            })}
             {isAdmin && (
               <Link
                 to="/admin"
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors border-b-2 ml-auto",
+                  "relative ml-auto flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors",
                   location.pathname.startsWith("/admin")
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Shield className="h-4 w-4" />
                 Admin
+                {location.pathname.startsWith("/admin") && (
+                  <m.span
+                    layoutId="desktop-nav-active-admin"
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                    className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary"
+                  />
+                )}
               </Link>
             )}
           </div>
@@ -200,7 +224,7 @@ export function AppLayout() {
 
       {/* Page content */}
       <main className={cn("flex-1", isMobile && "pb-20")}>
-        <Outlet />
+        <PageTransition>{children ?? <Outlet />}</PageTransition>
       </main>
 
       {/* Mobile Bottom Tab Bar */}
@@ -213,23 +237,32 @@ export function AppLayout() {
                 <Link key={to} to={to} className="flex flex-col items-center gap-0.5 min-w-0 px-3">
                   <div
                     className={cn(
-                      "flex items-center justify-center rounded-xl transition-all",
-                      to === "/explore" ? "h-11 w-11" : "h-8 w-8",
-                      active && to === "/explore" ? "bg-primary shadow-md" : active ? "" : ""
+                      "relative flex items-center justify-center rounded-xl",
+                      to === "/explore" ? "h-11 w-11" : "h-8 w-8"
                     )}
                   >
+                    {active && (
+                      <m.span
+                        layoutId="mobile-nav-active"
+                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                        className={cn(
+                          "absolute inset-0 rounded-xl",
+                          to === "/explore" ? "bg-primary shadow-md" : "bg-primary/10"
+                        )}
+                      />
+                    )}
                     <Icon
                       className={cn(
-                        "transition-colors",
-                        to === "/explore" && active ? "h-5 w-5 text-primary-foreground" : "h-5 w-5",
-                        active && to !== "/explore" ? "text-primary" : "",
-                        !active ? "text-muted-foreground" : ""
+                        "relative z-10 transition-colors h-5 w-5",
+                        to === "/explore" && active && "text-primary-foreground",
+                        active && to !== "/explore" && "text-primary",
+                        !active && "text-muted-foreground"
                       )}
                     />
                   </div>
                   <span
                     className={cn(
-                      "text-[10px] font-medium",
+                      "text-[10px] font-medium transition-colors",
                       active ? "text-primary" : "text-muted-foreground"
                     )}
                   >

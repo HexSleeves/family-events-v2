@@ -1,17 +1,9 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
+import { useEffect, useRef } from "react"
+import { Map as MapGL, Marker, NavigationControl, Popup, type MapRef } from "react-map-gl/maplibre"
+import "maplibre-gl/dist/maplibre-gl.css"
+import { useMapStyle } from "@/hooks/use-map-style"
 
-const DefaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-})
-L.Marker.prototype.options.icon = DefaultIcon
+const INITIAL_ZOOM = 10
 
 interface EventMapMiniProps {
   latitude: number | null
@@ -20,7 +12,39 @@ interface EventMapMiniProps {
   address?: string | null
 }
 
+function MiniPin() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 28 36"
+      width={28}
+      height={36}
+      className="drop-shadow"
+    >
+      <path
+        d="M14 0C6.27 0 0 6.27 0 14c0 9.94 14 22 14 22S28 23.94 28 14C28 6.27 21.73 0 14 0z"
+        fill="oklch(0.54 0.215 12)"
+      />
+      <circle cx={14} cy={14} r={5.5} fill="white" />
+    </svg>
+  )
+}
+
 export function EventMapMini({ latitude, longitude, venueName, address }: EventMapMiniProps) {
+  const mapStyle = useMapStyle()
+  const mapRef = useRef<MapRef>(null)
+
+  // Re-center if the event coordinates change after first render.
+  useEffect(() => {
+    if (latitude == null || longitude == null) return
+    mapRef.current?.flyTo({
+      center: [longitude, latitude],
+      zoom: INITIAL_ZOOM,
+      speed: 1.2,
+      essential: true,
+    })
+  }, [latitude, longitude])
+
   if (latitude == null || longitude == null) {
     return (
       <div className="rounded-xl bg-muted/50 border border-border/60 h-36 flex items-center justify-center">
@@ -31,25 +55,35 @@ export function EventMapMini({ latitude, longitude, venueName, address }: EventM
 
   return (
     <div className="rounded-xl overflow-hidden border border-border/60 h-48">
-      <MapContainer
-        center={[latitude, longitude]}
-        zoom={14}
-        scrollWheelZoom={false}
-        style={{ height: "100%", width: "100%" }}
+      <MapGL
+        ref={mapRef}
+        initialViewState={{ longitude, latitude, zoom: INITIAL_ZOOM }}
+        mapStyle={mapStyle}
+        style={{ width: "100%", height: "100%" }}
+        attributionControl={{ compact: true }}
+        scrollZoom={false}
+        dragRotate={false}
+        pitchWithRotate={false}
+        touchPitch={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={[latitude, longitude]}>
-          {(venueName || address) && (
-            <Popup>
-              {venueName && <p className="font-semibold text-sm">{venueName}</p>}
-              {address && <p className="text-xs text-muted-foreground">{address}</p>}
-            </Popup>
-          )}
+        <NavigationControl position="top-right" showCompass={false} />
+        <Marker longitude={longitude} latitude={latitude} anchor="bottom">
+          <MiniPin />
         </Marker>
-      </MapContainer>
+        {(venueName || address) && (
+          <Popup
+            longitude={longitude}
+            latitude={latitude}
+            anchor="bottom"
+            offset={36}
+            closeButton={false}
+            closeOnClick={false}
+          >
+            {venueName && <p className="font-semibold text-sm text-foreground">{venueName}</p>}
+            {address && <p className="text-xs text-muted-foreground">{address}</p>}
+          </Popup>
+        )}
+      </MapGL>
     </div>
   )
 }

@@ -2,21 +2,26 @@ import { useMemo, useState } from "react"
 import {
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
   eachDayOfInterval,
   isSameDay,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
 } from "date-fns"
 import {
   CalendarErrorState,
   CalendarMonthPanel,
+  CalendarWeekPanel,
   CalendarSelectedDatePanel,
   CalendarStatsPanel,
   CalendarViewHeader,
   SavedEventsSection,
 } from "@/components/calendar/calendar-view-sections"
-import { useAuth } from "@/contexts/auth-context"
-import { useApp } from "@/contexts/app-context"
+import { useAuth } from "@/stores/auth-store"
+import { useApp } from "@/stores/app-store"
 import { useEnrichedEvents } from "@/hooks/use-enriched-events"
 import { useFavorites } from "@/hooks/use-favorites"
 import { useCalendarEvents } from "@/hooks/use-calendar-events"
@@ -34,6 +39,13 @@ export function CalendarViewPage() {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
   const firstDayOfWeek = monthStart.getDay()
 
+  const weekStart = startOfWeek(selectedDate)
+  const weekEnd = endOfWeek(selectedDate)
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
+
+  const dateFrom = view === "week" ? weekStart : monthStart
+  const dateTo = view === "week" ? weekEnd : monthEnd
+
   const {
     data: monthEvents = [],
     isLoading: isMonthEventsLoading,
@@ -41,8 +53,8 @@ export function CalendarViewPage() {
   } = useEnrichedEvents({
     cityId: selectedCity?.id,
     userId: user?.id,
-    dateFrom: monthStart,
-    dateTo: monthEnd,
+    dateFrom,
+    dateTo,
   })
 
   const { data: favorites = [] } = useFavorites(user?.id)
@@ -92,22 +104,46 @@ export function CalendarViewPage() {
     setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
+  // Week nav intentionally also moves currentMonth so switching to month view stays aligned.
+  function handlePreviousWeek() {
+    const newDate = subWeeks(selectedDate, 1)
+    setSelectedDate(newDate)
+    setCurrentMonth(newDate)
+  }
+
+  function handleNextWeek() {
+    const newDate = addWeeks(selectedDate, 1)
+    setSelectedDate(newDate)
+    setCurrentMonth(newDate)
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       <CalendarViewHeader view={view} onViewChange={setView} />
       {isMonthEventsError && <CalendarErrorState />}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        <CalendarMonthPanel
-          currentMonth={currentMonth}
-          selectedDate={selectedDate}
-          firstDayOfWeek={firstDayOfWeek}
-          days={days}
-          getEventsForDay={getEventsForDay}
-          onPreviousMonth={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          onNextMonth={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          onSelectDate={setSelectedDate}
-        />
+        {view === "week" ? (
+          <CalendarWeekPanel
+            weekDays={weekDays}
+            selectedDate={selectedDate}
+            getEventsForDay={getEventsForDay}
+            onPreviousWeek={handlePreviousWeek}
+            onNextWeek={handleNextWeek}
+            onSelectDate={setSelectedDate}
+          />
+        ) : (
+          <CalendarMonthPanel
+            currentMonth={currentMonth}
+            selectedDate={selectedDate}
+            firstDayOfWeek={firstDayOfWeek}
+            days={days}
+            getEventsForDay={getEventsForDay}
+            onPreviousMonth={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            onNextMonth={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            onSelectDate={setSelectedDate}
+          />
+        )}
         <div className="lg:col-span-2 space-y-4">
           <CalendarSelectedDatePanel
             selectedDate={selectedDate}

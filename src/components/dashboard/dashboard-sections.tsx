@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/carousel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
+import { SmartImage, StaggerItem, StaggerList } from "@/components/motion"
 import type { EventWithDetails } from "@/lib/types"
 
 interface DashboardHeaderProps {
@@ -74,11 +75,13 @@ export function DashboardLoadingState() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-foreground">Loading events</h2>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, index) => (
-          <EventCardSkeleton key={`dashboard-skeleton-${index}`} />
+          <StaggerItem key={`dashboard-skeleton-${index}`}>
+            <EventCardSkeleton />
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerList>
     </section>
   )
 }
@@ -148,10 +151,11 @@ export function DashboardTodaySection({ todayEvents }: DashboardTodaySectionProp
                   )}
                   <div className="flex gap-4">
                     <div className="h-20 w-20 rounded-xl overflow-hidden shrink-0 bg-muted">
-                      <img
+                      <SmartImage
                         src={event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`}
                         alt={event.title}
                         className="h-full w-full object-cover"
+                        placeholderClassName="h-full w-full"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -266,16 +270,17 @@ export function DashboardSoonSection({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <StaggerList className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {events.map((event) => (
-          <EventCard
-            key={event.id}
-            event={{ ...event, is_favorited: isFavorited(event.id) }}
-            variant="list"
-            onFavoriteToggle={onFavoriteToggle}
-          />
+          <StaggerItem key={event.id}>
+            <EventCard
+              event={{ ...event, is_favorited: isFavorited(event.id) }}
+              variant="list"
+              onFavoriteToggle={onFavoriteToggle}
+            />
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerList>
     </section>
   )
 }
