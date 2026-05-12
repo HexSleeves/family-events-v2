@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { format } from "date-fns"
 import { ArrowLeft, CalendarPlus, Clock, Info, MapPin, Share2 } from "lucide-react"
 import type { CommentWithProfile, EventWithDetails } from "@/lib/types"
+import { safeHref } from "@/lib/safe-url"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -295,7 +296,7 @@ export function EventDetailBooking({
       </div>
 
       <Button className="w-full h-12 text-base font-bold" asChild>
-        <a href={event.source_url || "#"} target="_blank" rel="noopener noreferrer">
+        <a href={safeHref(event.source_url)} target="_blank" rel="noopener noreferrer">
           {event.is_free
             ? "Reserve Your Spot (Free)"
             : event.price != null

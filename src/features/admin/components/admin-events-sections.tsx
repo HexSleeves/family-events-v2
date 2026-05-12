@@ -20,6 +20,7 @@ import type {
   EventWithDetails,
   Tag as EventTag,
 } from "@/lib/types"
+import { safeImageSrc } from "@/lib/safe-url"
 import { cn, formatEventPrice } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -291,7 +292,8 @@ function EventCard({
   onOpenReview,
   onUpdateStatus,
 }: EventCardProps) {
-  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
+  const imageUrl =
+    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/200/200`
   const status = statusConfig[event.status]
 
   return (
@@ -436,7 +438,9 @@ export function AdminEventReviewDialog({
           </DialogHeader>
           <div className="space-y-4">
             <img
-              src={event.images?.[0] || `https://picsum.photos/seed/${event.id}/600/300`}
+              src={
+                safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/600/300`
+              }
               alt={event.title}
               className="w-full h-40 object-cover rounded-xl"
             />

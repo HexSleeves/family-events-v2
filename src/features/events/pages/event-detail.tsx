@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { Clock, Star, Users } from "lucide-react"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { safeImageSrc } from "@/lib/safe-url"
 import { formatEventPrice } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -95,7 +96,8 @@ export function EventDetailPage() {
 
   const currentEvent = event
   const imageUrl =
-    currentEvent.images?.[0] || `https://picsum.photos/seed/${currentEvent.id}/800/500`
+    safeImageSrc(currentEvent.images?.[0]) ??
+    `https://picsum.photos/seed/${currentEvent.id}/800/500`
   const startDate = new Date(currentEvent.start_datetime)
   const infoItems = [
     {

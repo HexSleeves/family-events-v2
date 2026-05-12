@@ -9,6 +9,7 @@ import { StarRating } from "@/features/events/components/star-rating"
 import { SmartImage, StaggerItem, StaggerList } from "@/components/motion"
 import { AgeRangeBadge, TagBadge } from "@/features/events/components/tag-badge"
 import type { EventWithDetails } from "@/lib/types"
+import { safeImageSrc } from "@/lib/safe-url"
 import { formatEventPrice } from "@/lib/utils"
 
 export function LoadingRows() {
@@ -46,7 +47,8 @@ interface EventRowProps {
 }
 
 export function EventRow({ event, onRemove, rating, onRate, variant }: EventRowProps) {
-  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
+  const imageUrl =
+    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/200/200`
   const startDate = new Date(event.start_datetime)
 
   return (

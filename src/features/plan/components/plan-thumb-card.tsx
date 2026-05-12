@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FavoriteButton } from "@/features/events/components/favorite-button"
 import { SmartImage } from "@/components/motion"
+import { safeImageSrc } from "@/lib/safe-url"
 import { formatEventPrice } from "@/lib/utils"
 import type { PlannedEvent } from "@/features/plan/hooks/use-plan-for-today"
 
@@ -18,7 +19,8 @@ function formatMatch(score: number): string {
 }
 
 export function PlanThumbCard({ event }: PlanThumbCardProps) {
-  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/640/360`
+  const imageUrl =
+    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/640/360`
 
   return (
     <Link to={`/events/${event.id}`} className="block">

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { format } from "date-fns"
 import { MapPin, Clock, Lightbulb, Calendar, Sparkles, TrendingUp, ArrowRight } from "lucide-react"
+import { safeImageSrc } from "@/lib/safe-url"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -152,7 +153,10 @@ export function DashboardTodaySection({ todayEvents }: DashboardTodaySectionProp
                   <div className="flex gap-4">
                     <div className="h-20 w-20 rounded-xl overflow-hidden shrink-0 bg-muted">
                       <SmartImage
-                        src={event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`}
+                        src={
+                          safeImageSrc(event.images?.[0]) ??
+                          `https://picsum.photos/seed/${event.id}/200/200`
+                        }
                         alt={event.title}
                         className="h-full w-full object-cover"
                         placeholderClassName="h-full w-full"

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { FavoriteButton } from "@/features/events/components/favorite-button"
 import { ShareEventButton } from "@/features/plan/components/share-event-button"
 import { SmartImage } from "@/components/motion"
+import { safeImageSrc } from "@/lib/safe-url"
 import { formatEventPrice } from "@/lib/utils"
 import type { PlannedEvent } from "@/features/plan/hooks/use-plan-for-today"
 
@@ -26,7 +27,8 @@ function formatMatch(score: number): string {
 }
 
 export function PlanHeroCard({ event }: PlanHeroCardProps) {
-  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/1200/630`
+  const imageUrl =
+    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/1200/630`
   const distanceLabel = formatDistance(event.distance_km)
 
   return (

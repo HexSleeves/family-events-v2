@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { MapPin, Clock } from "lucide-react"
 import { format } from "date-fns"
+import { safeImageSrc } from "@/lib/safe-url"
 import { cn, formatEventPrice } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +26,8 @@ export function EventCard({
   onFavoriteToggle,
   className,
 }: EventCardProps) {
-  const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/600/400`
+  const imageUrl =
+    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/600/400`
   const startDate = new Date(event.start_datetime)
   const topTags = event.tags?.slice(0, 3) || []
 
