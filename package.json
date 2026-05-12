@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "dev:all": "bash scripts/dev-all.sh",
     "db:start": "bash scripts/supabase.sh start",
     "db:dev": "bash scripts/supabase.sh start && npm run setup:local && bash scripts/supabase.sh functions serve",
     "db:stop": "bash scripts/supabase.sh stop",
