@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
+import { enrichedEventRowSchema } from "@/lib/schemas"
 import { supabase } from "@/lib/supabase"
+import { Sentry } from "@/lib/sentry"
 import type { Event, EventTag, EventWithDetails, Tag } from "@/lib/types"
 
 interface UseEnrichedEventsOptions {
@@ -30,60 +32,59 @@ function toIsoDate(value: string | Date): string {
   return typeof value === "string" ? value : value.toISOString()
 }
 
-// Shape the RPC emits for each tag (jsonb_agg of tag columns).
-interface EnrichedTagJson {
-  id: string
-  name: string
-  slug: string
-  color: string
-}
-
 // Adapt the RPC's flat tag array into EventWithDetails' nested EventTag + Tag
-// shape so EventCard / TagBadge / admin list rendering stays drop-in.
-function adaptTags(eventId: string, raw: unknown): (EventTag & { tag: Tag })[] {
-  if (!Array.isArray(raw)) {
-    return []
-  }
-
-  return raw
-    .filter((t): t is EnrichedTagJson => {
-      return typeof t === "object" && t !== null && typeof (t as EnrichedTagJson).id === "string"
-    })
-    .map((t) => ({
-      event_id: eventId,
-      tag_id: t.id,
-      confidence: 1,
-      is_manual_override: false,
+// shape so EventCard / TagBadge / admin list rendering stays drop-in. Inputs
+// are already validated by enrichedEventRowSchema, so we don't re-check shape.
+function adaptTags(
+  eventId: string,
+  tags: { id: string; name: string; slug: string; color: string }[]
+): (EventTag & { tag: Tag })[] {
+  return tags.map((t) => ({
+    event_id: eventId,
+    tag_id: t.id,
+    confidence: 1,
+    is_manual_override: false,
+    created_at: "",
+    tag: {
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      color: t.color,
+      category: "",
+      is_system: false,
       created_at: "",
-      tag: {
-        id: t.id,
-        name: t.name,
-        slug: t.slug,
-        color: t.color,
-        category: "",
-        is_system: false,
-        created_at: "",
-      },
-    }))
+    },
+  }))
 }
 
-export function adaptEnrichedRow(row: Record<string, unknown>): EventWithDetails {
-  const eventId = row.id as string
-  const tags = adaptTags(eventId, row.tags)
+export function adaptEnrichedRow(row: unknown): EventWithDetails {
+  // zod boundary: parse first so bad RPC payloads surface as a typed error
+  // here instead of crashing deep in a render. safeParse + Sentry capture
+  // keeps the worst case (one bad row in a list) graceful — we throw which
+  // bubbles to TanStack Query's error path.
+  const parsed = enrichedEventRowSchema.safeParse(row)
+  if (!parsed.success) {
+    Sentry.captureException(parsed.error, {
+      tags: { area: "events_enriched.adapt" },
+      extra: { row_id: (row as { id?: unknown })?.id ?? null },
+    })
+    throw parsed.error
+  }
+  const data = parsed.data
 
-  // RPC typings mark columns as non-null, but the underlying events table
-  // allows null for description/end_datetime/venue_name/etc. Cast through the
-  // EventWithDetails contract (which already models those nullables).
-  const event = row as unknown as Event
+  // After parsing, only EventWithDetails-specific shaping remains. The cast
+  // is now a structural narrowing (the parsed object is structurally compatible
+  // with Event) rather than a "trust me" assertion.
+  const event = data as unknown as Event
 
   return {
     ...event,
-    images: Array.isArray(event.images) ? event.images : [],
-    tags,
-    avg_rating: typeof row.avg_rating === "number" ? row.avg_rating : 0,
-    rating_count: typeof row.rating_count === "number" ? row.rating_count : 0,
-    is_favorited: row.is_favorited === true,
-    is_in_calendar: row.is_in_calendar === true,
+    images: data.images,
+    tags: adaptTags(data.id, data.tags ?? []),
+    avg_rating: data.avg_rating,
+    rating_count: data.rating_count,
+    is_favorited: data.is_favorited,
+    is_in_calendar: data.is_in_calendar,
   }
 }
 
@@ -134,7 +135,7 @@ async function fetchEnrichedEvents(options: UseEnrichedEventsOptions): Promise<E
     throw error
   }
 
-  return (data ?? []).map((row) => adaptEnrichedRow(row as Record<string, unknown>))
+  return (data ?? []).map((row) => adaptEnrichedRow(row))
 }
 
 export function useEnrichedEvents(options: UseEnrichedEventsOptions = {}) {

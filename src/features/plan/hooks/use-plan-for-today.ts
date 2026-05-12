@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import type { PlanEventsRow } from "@/lib/db"
+import { z } from "zod"
 import { qk } from "@/lib/query-keys"
+import { planEventsWindowRowSchema } from "@/lib/schemas"
+import type { PlanEventsRow } from "@/lib/schemas/plan"
 import { supabase } from "@/lib/supabase"
 import type { City, EventWithDetails } from "@/lib/types"
 import { adaptEnrichedRow } from "@/features/events/hooks/use-enriched-events"
 import { useGeolocation } from "@/features/plan/hooks/use-geolocation"
 import type { WeatherSnapshot } from "@/features/plan/hooks/use-weather"
 import { useWeather } from "@/features/plan/hooks/use-weather"
+
+// Cache the parser arrays at module scope so we're not allocating new
+// z.array wrappers on every render of the hook.
+const planEventsWindowResultSchema = z.array(planEventsWindowRowSchema)
 
 export interface PlannedEvent extends EventWithDetails {
   plan_score: number
@@ -144,8 +150,9 @@ export function usePlanForToday(options: UsePlanForTodayOptions = {}) {
         throw windowError
       }
 
-      type WindowRow = PlanEventsRow & { day_offset: number }
-      const windowRows = (windowData ?? []) as WindowRow[]
+      // Parse at the boundary — RPC drift now surfaces as a typed error
+      // instead of producing undefined fields deep in card rendering.
+      const windowRows = planEventsWindowResultSchema.parse(windowData ?? [])
       if (windowRows.length === 0) {
         return emptyPlan(weatherFit, weather.data ?? null)
       }
@@ -165,7 +172,8 @@ export function usePlanForToday(options: UsePlanForTodayOptions = {}) {
 
       const eventsById = new Map(
         (eventRows ?? []).map((row) => {
-          const enrichedEvent = adaptEnrichedRow(row as Record<string, unknown>)
+          // adaptEnrichedRow now takes unknown and parses via zod.
+          const enrichedEvent = adaptEnrichedRow(row)
           return [enrichedEvent.id, enrichedEvent]
         })
       )
