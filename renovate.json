@@ -27,12 +27,23 @@
     {
       "description": "Group React + ReactDOM + types so they bump together.",
       "groupName": "react",
-      "matchPackageNames": ["react", "react-dom", "react-is", "@types/react", "@types/react-dom"]
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "react-is",
+        "@types/react",
+        "@types/react-dom"
+      ]
     },
     {
       "description": "Group Vite, Vitest, and the Vite React plugin.",
       "groupName": "vite stack",
-      "matchPackageNames": ["vite", "vitest", "@vitejs/plugin-react", "@vitest/coverage-v8"]
+      "matchPackageNames": [
+        "vite",
+        "vitest",
+        "@vitejs/plugin-react",
+        "@vitest/coverage-v8"
+      ]
     },
     {
       "description": "Group TanStack Query + table.",
