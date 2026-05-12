@@ -20,7 +20,8 @@ export function useAdminCronHistory(jobName?: string) {
     queryKey: qk.admin.cronHistory(jobName),
     queryFn: async (): Promise<CronRun[]> => {
       const { data, error } = await supabase.rpc("admin_cron_run_history", {
-        p_job_name: jobName ?? null,
+        // Generated RPC types model "default NULL" params as undefined.
+        p_job_name: jobName ?? undefined,
         p_limit: 50,
       })
       if (error) throw error

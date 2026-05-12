@@ -66,8 +66,11 @@ export function useCreateInviteCode() {
       const { data, error } = await supabase
         .rpc("admin_create_invite_code", {
           p_max_uses: payload.max_uses,
-          p_expires_at: payload.expires_at,
-          p_notes: payload.notes,
+          // The generated RPC types model "default NULL" parameters as
+          // `string | undefined` rather than `string | null`. Normalize so a
+          // null caller intent becomes omission on the wire.
+          p_expires_at: payload.expires_at ?? undefined,
+          p_notes: payload.notes ?? undefined,
         })
         .single<CreatedInviteCode>()
       if (error) throw error

@@ -18,7 +18,7 @@ const buildEnv = createEnv({
   emptyStringAsUndefined: true,
 })
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   const plugins = [react(), tailwindcss()]
 
   const release = buildEnv.SENTRY_RELEASE ?? buildEnv.RAILWAY_GIT_COMMIT_SHA
@@ -44,8 +44,36 @@ export default defineConfig(({ mode }) => {
   return {
     plugins,
     build: {
-      sourcemap: mode !== "development",
-      chunkSizeWarningLimit: 1200,
+      // Emit sourcemaps only when we have a Sentry upload pipeline to
+      // consume + delete them. Without Sentry, leaving *.map files in dist/
+      // is a code-disclosure risk via `serve -s dist`.
+      sourcemap: Boolean(
+        buildEnv.SENTRY_AUTH_TOKEN &&
+          buildEnv.SENTRY_ORG &&
+          buildEnv.SENTRY_PROJECT &&
+          release
+      ),
+      // Drops back to Rollup's default 500 KB warning so future bloat
+      // surfaces in CI rather than hiding under a raised ceiling.
+      chunkSizeWarningLimit: 500,
+      rollupOptions: {
+        output: {
+          // Heavy single-purpose vendors that only load on specific pages get
+          // their own chunk so route nav doesn't refetch them and the browser
+          // can cache each independently. Function form is required by the
+          // current Rollup typings (record form is deprecated).
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined
+            if (id.includes("maplibre-gl") || id.includes("react-map-gl")) return "maplibre"
+            if (id.includes("recharts")) return "recharts"
+            if (id.includes("@sentry")) return "sentry"
+            // Match "motion" the npm package but not paths like
+            // "node_modules/framer-motion" or "react-motion".
+            if (id.match(/node_modules\/motion(\/|$)/)) return "motion"
+            return undefined
+          },
+        },
+      },
     },
     resolve: {
       alias: {

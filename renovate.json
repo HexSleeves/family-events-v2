@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(deps)",
+    ":dependencyDashboard"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["before 6am on monday"],
+  "timezone": "America/Chicago",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "packageRules": [
+    {
+      "description": "Group Radix UI primitives — they share a release cadence and want to move together.",
+      "groupName": "radix-ui",
+      "matchPackagePatterns": ["^@radix-ui/", "^radix-ui$"]
+    },
+    {
+      "description": "Group all Sentry packages.",
+      "groupName": "sentry",
+      "matchPackagePatterns": ["^@sentry/"]
+    },
+    {
+      "description": "Group React + ReactDOM + types so they bump together.",
+      "groupName": "react",
+      "matchPackageNames": ["react", "react-dom", "react-is", "@types/react", "@types/react-dom"]
+    },
+    {
+      "description": "Group Vite, Vitest, and the Vite React plugin.",
+      "groupName": "vite stack",
+      "matchPackageNames": ["vite", "vitest", "@vitejs/plugin-react", "@vitest/coverage-v8"]
+    },
+    {
+      "description": "Group TanStack Query + table.",
+      "groupName": "tanstack",
+      "matchPackagePatterns": ["^@tanstack/"]
+    },
+    {
+      "description": "Group Tailwind + plugins.",
+      "groupName": "tailwind",
+      "matchPackagePatterns": ["^tailwind", "^@tailwindcss/", "^tw-"]
+    },
+    {
+      "description": "Group Supabase libs.",
+      "groupName": "supabase",
+      "matchPackagePatterns": ["^@supabase/"]
+    },
+    {
+      "description": "Major upgrades require human review; never auto-merge.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "prCreation": "approval"
+    },
+    {
+      "description": "Auto-merge dev-dependency minor + patch bumps after CI passes.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Auto-merge GitHub Actions minor + patch (we SHA-pinned the third-party ones in Phase 0 — these are first-party).",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": false
+  }
+}
