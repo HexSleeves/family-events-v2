@@ -8,11 +8,16 @@ import {
   getSessionExpiryTimeoutMs,
   isSessionExpired,
 } from "@/lib/access-control"
-import { clearSentryUserContext, setSentryUserContext } from "@/lib/sentry"
+import { queryClient, registerAuthErrorHandler } from "@/lib/query-client"
+import { clearSentryUserContext, Sentry, setSentryUserContext } from "@/lib/sentry"
 import type { UserAccess, UserProfile } from "@/lib/types"
 
-// Module-level ref replaces useRef — store is a module-level singleton
+const PROFILE_REFRESH_INTERVAL_MS = 5 * 60_000
+
+// Module-level refs replace useRef — store is a module-level singleton.
 let expiryTimer: ReturnType<typeof setTimeout> | null = null
+let lastSyncedAccessToken: string | null = null
+let lastProfileFetchAt = 0
 
 interface AuthStore {
   session: Session | null
@@ -22,7 +27,7 @@ interface AuthStore {
   isLoading: boolean
 
   _resetAuthState: () => void
-  _syncSession: (session: Session | null) => Promise<void>
+  _syncSession: (session: Session | null, force?: boolean) => Promise<void>
   initAuth: () => () => void
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>
@@ -44,22 +49,26 @@ export const useAuthStore = create<AuthStore>()(
           clearTimeout(expiryTimer)
           expiryTimer = null
         }
+        lastSyncedAccessToken = null
+        lastProfileFetchAt = 0
         set({ session: null, user: null, profile: null, access: null })
         clearSentryUserContext()
+        // Drop the previous user's cached data so the next user never sees it.
+        queryClient.clear()
       },
 
-      async _syncSession(sessionValue) {
+      async _syncSession(sessionValue, force = false) {
         if (!sessionValue?.user) {
           get()._resetAuthState()
           return
         }
 
         if (isSessionExpired(sessionValue)) {
-          await supabase.auth.signOut()
-          get()._resetAuthState()
+          await get().signOut()
           throw new Error("Session expired")
         }
 
+        // Refresh expiry timer on every sync (cheap).
         if (expiryTimer) {
           clearTimeout(expiryTimer)
           expiryTimer = null
@@ -67,22 +76,35 @@ export const useAuthStore = create<AuthStore>()(
         const timeoutMs = getSessionExpiryTimeoutMs(sessionValue)
         if (timeoutMs !== null) {
           expiryTimer = setTimeout(() => {
-            void supabase.auth.signOut().finally(() => {
-              get()._resetAuthState()
-              set({ isLoading: false })
-            })
+            void get().signOut()
           }, timeoutMs)
         }
 
-        try {
-          set({ session: sessionValue, user: sessionValue.user })
+        // Always reflect the freshest session/user — keeps token expiry tracking current.
+        set({ session: sessionValue, user: sessionValue.user })
 
+        const isNewToken = sessionValue.access_token !== lastSyncedAccessToken
+        const profileStale = Date.now() - lastProfileFetchAt >= PROFILE_REFRESH_INTERVAL_MS
+
+        // Cheap path: same token, fresh data, not forced.
+        // Skips profile/access RPCs on hourly TOKEN_REFRESHED events.
+        if (!force && !isNewToken && !profileStale) return
+
+        // First sync of a new token: best-effort invite claim.
+        if (isNewToken) {
           try {
             await supabase.rpc("claim_pending_invite_access")
           } catch {
-            // Best-effort claim; auth state should still load if this RPC fails.
+            // Non-fatal; auth state should still load if this RPC fails.
           }
+        }
 
+        // Fetch profile + access. On network failure, fail-soft if we have
+        // prior state; otherwise propagate (first-sync failure must surface
+        // so signIn/UI can react instead of leaving the user in limbo).
+        let profile: UserProfile | null = null
+        let access: UserAccess | null = null
+        try {
           const [profileResult, accessResult] = await Promise.all([
             supabase.from("user_profiles").select("*").eq("id", sessionValue.user.id).maybeSingle(),
             supabase
@@ -91,39 +113,46 @@ export const useAuthStore = create<AuthStore>()(
               .eq("user_id", sessionValue.user.id)
               .maybeSingle(),
           ])
-
           if (profileResult.error) throw profileResult.error
           if (accessResult.error) throw accessResult.error
-          const profile = (profileResult.data ?? null) as UserProfile | null
-          const access = (accessResult.data ?? null) as UserAccess | null
-
-          const accessState = evaluateAccessState({ user: { id: sessionValue.user.id } }, access)
-          if (!accessState.isAllowed) {
-            await supabase.auth.signOut()
-            get()._resetAuthState()
-            throw new Error(
-              accessState.reason === "disabled"
-                ? "Your account has been disabled."
-                : accessState.reason === "missing-access"
-                  ? "Your account does not have access yet."
-                  : "Sign in required."
-            )
-          }
-
-          set({ profile, access })
-          setSentryUserContext({
-            id: sessionValue.user.id,
-            role: profile?.role,
-            accessEnabled: access?.is_enabled,
-          })
+          profile = (profileResult.data ?? null) as UserProfile | null
+          access = (accessResult.data ?? null) as UserAccess | null
         } catch (error) {
-          get()._resetAuthState()
-          throw error
+          Sentry.captureException(error, { tags: { area: "auth.syncSession" } })
+          if (get().profile !== null) return
+          throw error instanceof Error ? error : new Error("Failed to load profile")
         }
+
+        // Access revocation is NOT fail-soft — sign out immediately.
+        const accessState = evaluateAccessState({ user: { id: sessionValue.user.id } }, access)
+        if (!accessState.isAllowed) {
+          await get().signOut()
+          throw new Error(
+            accessState.reason === "disabled"
+              ? "Your account has been disabled."
+              : accessState.reason === "missing-access"
+                ? "Your account does not have access yet."
+                : "Sign in required."
+          )
+        }
+
+        lastSyncedAccessToken = sessionValue.access_token
+        lastProfileFetchAt = Date.now()
+        set({ profile, access })
+        setSentryUserContext({
+          id: sessionValue.user.id,
+          role: profile?.role,
+          accessEnabled: access?.is_enabled,
+        })
       },
 
       initAuth() {
         let destroyed = false
+        const unregisterAuthErrorHandler = registerAuthErrorHandler(() => {
+          // PGRST301 / expired JWT from any query/mutation → single sign-out path.
+          void get().signOut()
+        })
+
         void supabase.auth.getSession().then(({ data: { session } }) => {
           if (destroyed) return
           get()
@@ -150,6 +179,7 @@ export const useAuthStore = create<AuthStore>()(
         return () => {
           destroyed = true
           if (expiryTimer) clearTimeout(expiryTimer)
+          unregisterAuthErrorHandler()
           subscription.unsubscribe()
         }
       },
@@ -197,7 +227,8 @@ export const useAuthStore = create<AuthStore>()(
       async refreshProfile() {
         const { session } = get()
         if (!session) return
-        await get()._syncSession(session)
+        // force=true bypasses dedup so callers can guarantee a fresh fetch.
+        await get()._syncSession(session, true)
       },
     }),
     { name: "auth" }

@@ -1,4 +1,4 @@
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import { create } from "zustand"
 import { devtools, persist } from "zustand/middleware"
 import { useShallow } from "zustand/react/shallow"
@@ -34,7 +34,18 @@ export function useApp() {
     }))
   )
   const { data: cities = [], isLoading: isCitiesLoading } = useCities()
-  const selectedCity = cities.find((c) => c.id === selectedCityId) ?? cities[0] ?? null
+
+  // Memoize on the id list so callers (geolocation/plan) don't re-key on every
+  // render or on each useCities refetch that happens to produce a new array
+  // identity with the same content.
+  const cityIdsKey = useMemo(() => cities.map((c) => c.id).join(","), [cities])
+  const selectedCity = useMemo(
+    () => cities.find((c) => c.id === selectedCityId) ?? cities[0] ?? null,
+    // cityIdsKey is the stable dep — eslint can't see it depends on cities,
+    // but the join makes identity equal across same-content arrays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedCityId, cityIdsKey]
+  )
   const setSelectedCity = useCallback(
     (city: City | null) => setSelectedCityId(city?.id ?? null),
     [setSelectedCityId]
