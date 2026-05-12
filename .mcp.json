@@ -1,7 +1,8 @@
 {
   "mcpServers": {
-    "forge_extension": {
-      "url": "http://localhost:55450/mcp"
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ufrjcnozcapskjtoakvf"
     }
   }
 }
