@@ -17,14 +17,15 @@ export function SmartImage({
   placeholderClassName,
   showPlaceholder = true,
   onLoad,
+  onError,
   src,
   ...props
 }: SmartImageProps) {
   const [loaded, setLoaded] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
 
-  // Handle cache hits where the load event fires before mount.
   useEffect(() => {
+    setLoaded(false)
     const node = imgRef.current
     if (node?.complete && node.naturalWidth > 0) {
       setLoaded(true)
@@ -32,9 +33,12 @@ export function SmartImage({
   }, [src])
 
   return (
-    <span className={cn("relative block overflow-hidden", placeholderClassName)}>
+    <span className="relative block overflow-hidden">
       {showPlaceholder && !loaded && (
-        <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-muted" />
+        <span
+          aria-hidden="true"
+          className={cn("absolute inset-0 animate-pulse bg-muted", placeholderClassName)}
+        />
       )}
       <img
         ref={imgRef}
@@ -43,6 +47,10 @@ export function SmartImage({
         onLoad={(event) => {
           setLoaded(true)
           onLoad?.(event)
+        }}
+        onError={(event) => {
+          setLoaded(false)
+          onError?.(event)
         }}
         className={cn("smart-image-fade", className)}
         {...props}

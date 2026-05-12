@@ -79,6 +79,7 @@ export function SaturdayPlanPage() {
   const { user, profile } = useAuth()
   const { selectedCity } = useApp()
   const errorToastRef = useRef(false)
+  const prevErrorRef = useRef<unknown>(null)
 
   const {
     data: plan,
@@ -96,7 +97,12 @@ export function SaturdayPlanPage() {
   useEffect(() => {
     if (!isError) {
       errorToastRef.current = false
+      prevErrorRef.current = null
       return
+    }
+    if (prevErrorRef.current !== error) {
+      errorToastRef.current = false
+      prevErrorRef.current = error
     }
     if (errorToastRef.current) {
       return

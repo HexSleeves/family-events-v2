@@ -151,8 +151,8 @@ export function MapViewPage() {
                   latitude={popupEvent.latitude}
                   anchor="bottom"
                   offset={36}
-                  closeButton={false}
-                  closeOnClick={false}
+                  closeButton
+                  closeOnClick
                   onClose={() => setPopupEvent(null)}
                   maxWidth="280px"
                 >

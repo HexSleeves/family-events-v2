@@ -211,7 +211,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 Admin
                 {location.pathname.startsWith("/admin") && (
                   <m.span
-                    layoutId="desktop-nav-active"
+                    layoutId="desktop-nav-active-admin"
                     transition={{ type: "spring", stiffness: 420, damping: 32 }}
                     className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary"
                   />

@@ -387,6 +387,7 @@ function SourceCard({
             </div>
             <div
               className={`flex items-center gap-1.5 ${!source.is_active ? "opacity-40 pointer-events-none" : ""}`}
+              title={!source.is_active ? "Enable the source to configure auto-approve" : undefined}
             >
               <span className="text-xs text-muted-foreground">Auto-approve</span>
               <Switch

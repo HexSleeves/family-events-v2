@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { format, formatDistanceToNow } from "date-fns"
 import {
   Clock,
@@ -134,6 +134,10 @@ function ScheduleDialog({ job, open, onOpenChange }: ScheduleDialogProps) {
   const [schedule, setSchedule] = useState(job.schedule)
   const setScheduleMutation = useSetCronSchedule()
   const { toastError } = useAdminToast()
+
+  useEffect(() => {
+    setSchedule(job.schedule)
+  }, [job.schedule])
 
   async function handleSave() {
     try {

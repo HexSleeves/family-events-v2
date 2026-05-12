@@ -153,7 +153,10 @@ function RouteFallback() {
 }
 
 function AuthInit() {
-  useEffect(() => useAuthStore.getState().initAuth(), [])
+  useEffect(() => {
+    const cleanup = useAuthStore.getState().initAuth()
+    return cleanup
+  }, [])
   return null
 }
 

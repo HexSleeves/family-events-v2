@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
 import { AdminCityFilterBar } from "./admin-city-filter-bar"
+import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
 import type { City } from "@/lib/types"
 
 function city(id: string, name: string): City {
@@ -44,7 +45,7 @@ describe("AdminCityFilterBar", () => {
     const withUnassigned = renderToStaticMarkup(
       createElement(AdminCityFilterBar, {
         cities,
-        counts: { ny: 2, none: 3 },
+        counts: { ny: 2, [UNASSIGNED_CITY_KEY]: 3 },
         total: 5,
         value: "all",
         onChange: vi.fn(),

@@ -128,7 +128,7 @@ export function useWeather(options: UseWeatherOptions = {}) {
       }
       return fetchWeatherSnapshot(latitude, longitude, apiKey)
     },
-    enabled: enabled && latitude != null && longitude != null,
+    enabled: enabled && Boolean(apiKey) && latitude != null && longitude != null,
     staleTime: WEATHER_STALE_MS,
     gcTime: WEATHER_STALE_MS,
     retry: false,

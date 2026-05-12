@@ -33,7 +33,7 @@ export function PublicEventPreviewPage() {
     queryKey: ["public-event-preview", eventId],
     enabled: isValidId,
     queryFn: async (): Promise<PublicEventRow | null> => {
-      if (!eventId || !UUID_PATTERN.test(eventId)) {
+      if (!eventId) {
         return null
       }
       const { data, error } = await supabase
@@ -92,6 +92,9 @@ export function PublicEventPreviewPage() {
   }
 
   if (!event || !event.id) {
+    const fallbackSignupHref = eventId
+      ? `/sign-up?redirect=${encodeURIComponent(`/events/${eventId}`)}`
+      : "/sign-up"
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-10">
         <Card className="w-full border-border/60">
@@ -104,7 +107,7 @@ export function PublicEventPreviewPage() {
             </p>
             <div className="flex justify-center gap-2">
               <Button asChild>
-                <Link to="/sign-up">Open in Family Events</Link>
+                <Link to={fallbackSignupHref}>Open in Family Events</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/">Home</Link>
@@ -117,9 +120,11 @@ export function PublicEventPreviewPage() {
   }
 
   const signupHref = `/sign-up?redirect=${encodeURIComponent(`/events/${event.id}`)}`
-  const eventDate = event.start_datetime
-    ? format(new Date(event.start_datetime), "EEEE, MMM d · h:mm a")
-    : null
+  const eventDate = (() => {
+    if (!event.start_datetime) return null
+    const parsed = new Date(event.start_datetime)
+    return Number.isNaN(parsed.getTime()) ? null : format(parsed, "EEEE, MMM d · h:mm a")
+  })()
 
   return (
     <div className="bg-background py-8">

@@ -9,6 +9,7 @@ import {
   Search,
   Sparkles,
   Tag,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react"
@@ -85,16 +86,16 @@ export function AdminEventStatusFilterBar({
 interface ToolbarProps {
   keyword: string
   onKeywordChange: (value: string) => void
-  draftCount: number
-  allDraftsSelected: boolean
+  eventCount: number
+  allVisibleSelected: boolean
   onToggleSelectAll: () => void
 }
 
 export function AdminEventsToolbar({
   keyword,
   onKeywordChange,
-  draftCount,
-  allDraftsSelected,
+  eventCount,
+  allVisibleSelected,
   onToggleSelectAll,
 }: ToolbarProps) {
   return (
@@ -108,18 +109,18 @@ export function AdminEventsToolbar({
           className="pl-9"
         />
       </div>
-      {draftCount > 0 && (
+      {eventCount > 0 && (
         <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onToggleSelectAll}>
           <span
             aria-hidden="true"
             className={cn(
               "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-lg border border-input shadow-xs transition-colors",
-              allDraftsSelected && "border-primary bg-primary text-primary-foreground"
+              allVisibleSelected && "border-primary bg-primary text-primary-foreground"
             )}
           >
             <Check className="h-3 w-3" />
           </span>
-          {allDraftsSelected ? "Deselect all" : `Select all drafts (${draftCount})`}
+          {allVisibleSelected ? "Deselect all" : `Select all visible (${eventCount})`}
         </Button>
       )}
     </div>
@@ -128,17 +129,23 @@ export function AdminEventsToolbar({
 
 interface BulkBarProps {
   selectedCount: number
-  isPending: boolean
+  selectedDraftCount: number
+  isStatusPending: boolean
+  isDeletePending: boolean
   onPublish: () => void
   onReject: () => void
+  onDelete: () => void
   onClear: () => void
 }
 
 export function AdminEventsBulkBar({
   selectedCount,
-  isPending,
+  selectedDraftCount,
+  isStatusPending,
+  isDeletePending,
   onPublish,
   onReject,
+  onDelete,
   onClear,
 }: BulkBarProps) {
   if (selectedCount === 0) return null
@@ -146,27 +153,37 @@ export function AdminEventsBulkBar({
   return (
     <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
       <span className="text-sm font-medium">
-        {selectedCount} draft{selectedCount === 1 ? "" : "s"} selected
+        {selectedCount} event{selectedCount === 1 ? "" : "s"} selected
       </span>
       <div className="flex gap-2 ml-auto">
         <Button
           size="sm"
           className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-          disabled={isPending}
+          disabled={isStatusPending || selectedDraftCount === 0}
           onClick={onPublish}
         >
           <CheckCheck className="h-3.5 w-3.5" />
-          Publish selected
+          Publish drafts{selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ""}
         </Button>
         <Button
           size="sm"
           variant="outline"
           className="gap-1.5 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          disabled={isPending}
+          disabled={isStatusPending || selectedDraftCount === 0}
           onClick={onReject}
         >
           <XCircle className="h-3.5 w-3.5" />
-          Reject selected
+          Reject drafts{selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ""}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          disabled={isDeletePending}
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete selected
         </Button>
         <Button size="sm" variant="ghost" onClick={onClear}>
           Clear
@@ -276,7 +293,6 @@ function EventCard({
 }: EventCardProps) {
   const imageUrl = event.images?.[0] || `https://picsum.photos/seed/${event.id}/200/200`
   const status = statusConfig[event.status]
-  const isDraft = event.status === "draft"
 
   return (
     <Card
@@ -287,14 +303,12 @@ function EventCard({
     >
       <CardContent className="p-4">
         <div className="flex gap-3 items-start">
-          {isDraft && (
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() => onToggleSelect(event.id)}
-              className="mt-1 shrink-0"
-              aria-label={`Select draft ${event.title}`}
-            />
-          )}
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(event.id)}
+            className="mt-1 shrink-0"
+            aria-label={`Select ${event.title}`}
+          />
           <div className="h-14 w-14 rounded-xl overflow-hidden shrink-0 bg-muted">
             <img src={imageUrl} alt={event.title} className="h-full w-full object-cover" />
           </div>
@@ -342,7 +356,7 @@ function EventCard({
             >
               <Eye className="h-4 w-4" />
             </Button>
-            {isDraft && (
+            {event.status === "draft" && (
               <>
                 <Button
                   variant="ghost"

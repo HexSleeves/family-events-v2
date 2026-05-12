@@ -1,8 +1,10 @@
-import { format, isSameDay, isToday, startOfWeek, endOfWeek } from "date-fns"
+import { format, isSameDay, isToday } from "date-fns"
 import { Bookmark, CalendarDays, ChevronLeft, ChevronRight, List } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import type { EventWithDetails } from "@/lib/types"
+
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as const
 import { cn } from "@/lib/utils"
 import { EventCard, EventCardSkeleton } from "@/components/event-card"
 import { FadeSwap, StaggerItem, StaggerList } from "@/components/motion"
@@ -69,8 +71,8 @@ export function CalendarWeekPanel({
   onSelectDate,
   getEventsForDay,
 }: CalendarWeekPanelProps) {
-  const weekStart = startOfWeek(selectedDate)
-  const weekEnd = endOfWeek(selectedDate)
+  const weekStart = weekDays[0]
+  const weekEnd = weekDays[weekDays.length - 1]
   const weekLabel =
     format(weekStart, "MMM d") +
     (format(weekStart, "MMM") === format(weekEnd, "MMM")
@@ -97,7 +99,7 @@ export function CalendarWeekPanel({
 
         <div className="px-4 pb-4 pt-3">
           <div className="grid grid-cols-7 mb-1">
-            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayLabel) => (
+            {WEEKDAY_LABELS.map((dayLabel) => (
               <div
                 key={dayLabel}
                 className="text-center text-[11px] font-semibold text-muted-foreground py-2"
@@ -220,7 +222,7 @@ export function CalendarMonthPanel({
 
         <div className="px-4 pb-4 pt-3">
           <div className="grid grid-cols-7 mb-1">
-            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((dayLabel) => (
+            {WEEKDAY_LABELS.map((dayLabel) => (
               <div
                 key={dayLabel}
                 className="text-center text-[11px] font-semibold text-muted-foreground py-2"

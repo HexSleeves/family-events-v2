@@ -104,6 +104,7 @@ export function CalendarViewPage() {
     setFavoriteOverrides((prev) => ({ ...prev, [eventId]: newState }))
   }
 
+  // Week nav intentionally also moves currentMonth so switching to month view stays aligned.
   function handlePreviousWeek() {
     const newDate = subWeeks(selectedDate, 1)
     setSelectedDate(newDate)

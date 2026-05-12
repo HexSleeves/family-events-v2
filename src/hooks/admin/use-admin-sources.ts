@@ -93,14 +93,20 @@ export function useTriggerSourceScrape() {
       void queryClient.invalidateQueries({ queryKey: qk.admin.sourceRuns })
       void queryClient.invalidateQueries({ queryKey: qk.admin.stats })
     },
-    onError: (_error, variables) => {
+    onError: async (_error, variables) => {
       // The edge function failed before it could update last_status (e.g. BOOT_ERROR).
       // Write 'error' from the client so the card shows Failed instead of staying Pending.
-      void supabase
-        .from("event_sources")
-        .update({ last_status: "error" })
-        .eq("id", variables.sourceId)
-        .then(() => queryClient.invalidateQueries({ queryKey: qk.admin.sources }))
+      try {
+        const { error } = await supabase
+          .from("event_sources")
+          .update({ last_status: "error" })
+          .eq("id", variables.sourceId)
+        if (error) {
+          console.error("Failed to mark source last_status=error after scrape failure", error)
+        }
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: qk.admin.sources })
+      }
     },
   })
 }

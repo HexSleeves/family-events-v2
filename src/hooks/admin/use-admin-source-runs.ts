@@ -3,6 +3,8 @@ import { qk } from "@/lib/query-keys"
 import { supabase } from "@/lib/supabase"
 import type { AdminSourceRun } from "./admin-types"
 
+const SOURCE_RUN_ERRORS_MAX_LIMIT = 500
+
 export function useAdminSourceRuns() {
   return useQuery({
     queryKey: qk.admin.sourceRuns,
@@ -39,7 +41,7 @@ export function useAdminSourceRunErrors(sourceIds: readonly string[]) {
         .eq("status", "error")
         .not("error_log", "is", null)
         .order("started_at", { ascending: false })
-        .limit(Math.max(sourceIds.length * 5, 100))
+        .limit(Math.min(Math.max(sourceIds.length * 5, 100), SOURCE_RUN_ERRORS_MAX_LIMIT))
 
       if (error) {
         throw error

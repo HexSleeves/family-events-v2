@@ -26,8 +26,13 @@ const STATUS_CONFIG: Record<RunStatus, { icon: React.ElementType; color: string;
     timed_out: { icon: TimerOff, color: "text-amber-500", label: "Timed Out" },
   }
 
+function isRunStatus(status: string): status is RunStatus {
+  return status in STATUS_CONFIG
+}
+
 function resolveStatus(status: string, startedAt: string): RunStatus {
-  if (status !== "running") return status as RunStatus
+  const normalized: RunStatus = isRunStatus(status) ? status : "error"
+  if (normalized !== "running") return normalized
   const elapsed = Date.now() - new Date(startedAt).getTime()
   return elapsed > STALE_THRESHOLD_MS ? "timed_out" : "running"
 }
@@ -50,9 +55,7 @@ function ElapsedTimer({ startedAt }: { startedAt: string }) {
 
 export function AdminLogsPage() {
   const { data: logs = [] } = useAdminSourceRuns()
-  const hasRunning = logs.some(
-    (r) => r.status === "running" && resolveStatus(r.status, r.started_at) === "running"
-  )
+  const hasRunning = logs.some((r) => resolveStatus(r.status, r.started_at) === "running")
 
   return (
     <div className="space-y-6">

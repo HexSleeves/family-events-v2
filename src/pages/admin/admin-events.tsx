@@ -14,6 +14,7 @@ import {
   useAdminEventFacets,
   useAdminEvents,
   useBatchUpdateAdminEventStatus,
+  useDeleteAdminEvents,
   useUpdateAdminEventStatus,
 } from "@/hooks/admin/use-admin-events"
 import {
@@ -51,6 +52,7 @@ export function AdminEventsPage() {
   const { data: allTags = [] } = useTags()
   const updateStatusMutation = useUpdateAdminEventStatus()
   const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
+  const deleteEventsMutation = useDeleteAdminEvents()
   const updateTagsMutation = useUpdateAdminEventTags()
   const { toastError } = useAdminToast()
 
@@ -61,8 +63,10 @@ export function AdminEventsPage() {
   const selectedDraftIds = [...selectedIds].filter((id) =>
     draftEvents.some((event) => event.id === id)
   )
-  const allDraftsSelected =
-    draftEvents.length > 0 && draftEvents.every((event) => selectedIds.has(event.id))
+  const selectedVisibleIds = events
+    .filter((event) => selectedIds.has(event.id))
+    .map((event) => event.id)
+  const allVisibleSelected = events.length > 0 && events.every((event) => selectedIds.has(event.id))
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -119,10 +123,10 @@ export function AdminEventsPage() {
   }
 
   function toggleSelectAll() {
-    if (allDraftsSelected) {
+    if (allVisibleSelected) {
       clearSelectedIds()
     } else {
-      setSelectedIds(new Set(draftEvents.map((event) => event.id)))
+      setSelectedIds(new Set(events.map((event) => event.id)))
     }
   }
 
@@ -137,6 +141,27 @@ export function AdminEventsPage() {
       clearSelectedIds()
     } catch (error) {
       toastError(error, "Bulk update failed.")
+    }
+  }
+
+  async function deleteSelectedEvents() {
+    if (selectedVisibleIds.length === 0) return
+    const confirmed = window.confirm(
+      `Delete ${selectedVisibleIds.length} event${
+        selectedVisibleIds.length === 1 ? "" : "s"
+      }? This cannot be undone.`
+    )
+    if (!confirmed) return
+
+    try {
+      const { count } = await deleteEventsMutation.mutateAsync(selectedVisibleIds)
+      toast.success(`${count} event${count === 1 ? "" : "s"} deleted`)
+      clearSelectedIds()
+      if (selectedEventId && selectedVisibleIds.includes(selectedEventId)) {
+        setSelectedEventId(null)
+      }
+    } catch (error) {
+      toastError(error, "Bulk delete failed.")
     }
   }
 
@@ -178,15 +203,18 @@ export function AdminEventsPage() {
       <AdminEventsToolbar
         keyword={keyword}
         onKeywordChange={setKeyword}
-        draftCount={draftEvents.length}
-        allDraftsSelected={allDraftsSelected}
+        eventCount={events.length}
+        allVisibleSelected={allVisibleSelected}
         onToggleSelectAll={toggleSelectAll}
       />
       <AdminEventsBulkBar
-        selectedCount={selectedDraftIds.length}
-        isPending={batchUpdateStatusMutation.isPending}
+        selectedCount={selectedVisibleIds.length}
+        selectedDraftCount={selectedDraftIds.length}
+        isStatusPending={batchUpdateStatusMutation.isPending}
+        isDeletePending={deleteEventsMutation.isPending}
         onPublish={() => batchUpdateStatus("published")}
         onReject={() => batchUpdateStatus("rejected")}
+        onDelete={deleteSelectedEvents}
         onClear={() => clearSelectedIds()}
       />
       <AdminEventsList

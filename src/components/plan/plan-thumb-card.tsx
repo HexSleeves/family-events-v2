@@ -13,7 +13,8 @@ interface PlanThumbCardProps {
 }
 
 function formatMatch(score: number): string {
-  return `${Math.round(score * 100)}% match`
+  const safe = Number.isFinite(score) ? Math.max(0, Math.min(1, score)) : 0
+  return `${Math.round(safe * 100)}% match`
 }
 
 export function PlanThumbCard({ event }: PlanThumbCardProps) {

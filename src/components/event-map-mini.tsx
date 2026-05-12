@@ -1,11 +1,5 @@
 import { useEffect, useRef } from "react"
-import {
-  Map as MapGL,
-  Marker,
-  NavigationControl,
-  Popup,
-  type MapRef,
-} from "react-map-gl/maplibre"
+import { Map as MapGL, Marker, NavigationControl, Popup, type MapRef } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"
 import { useMapStyle } from "@/hooks/use-map-style"
 

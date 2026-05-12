@@ -107,3 +107,22 @@ export function useBatchUpdateAdminEventStatus() {
     },
   })
 }
+
+export function useDeleteAdminEvents() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (eventIds: string[]) => {
+      const { error } = await supabase.from("events").delete().in("id", eventIds)
+      if (error) {
+        throw error
+      }
+      return { count: eventIds.length }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.admin.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.all })
+      void queryClient.invalidateQueries({ queryKey: qk.events.detailAll })
+    },
+  })
+}
