@@ -74,11 +74,11 @@ export function AdminSourcesPage() {
     }
   }
 
-  async function handleToggleActive(sourceId: string, isActive: boolean) {
+  async function handleToggleActive(sourceId: string, nextActive: boolean) {
     try {
       await updateSource.mutateAsync({
         sourceId,
-        updates: { is_active: !isActive },
+        updates: { is_active: nextActive },
       })
     } catch (error) {
       toastError(error, "Failed to update source.")
