@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
+import { adminEventFacetRowSchema, eventRowSchema, parseRowsWithSentry } from "@/lib/schemas"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichAdminEvents } from "./admin-events-shared"
@@ -42,20 +43,23 @@ export function useAdminEvents(
         throw error
       }
 
-      return enrichAdminEvents((data ?? []) as unknown as Event[])
+      // parseRowsWithSentry drops individual malformed rows (with a Sentry
+      // report) rather than blanking the whole admin events table on drift.
+      const rows = parseRowsWithSentry(eventRowSchema, data, {
+        area: "admin.events.list",
+      })
+      return enrichAdminEvents(rows as Event[])
     },
   })
 }
 
-export interface AdminEventFacetRow {
-  city_id: string | null
-  status: Event["status"]
-}
+// Re-exported from the schema module so existing call sites keep working.
+export type { AdminEventFacetRow } from "@/lib/schemas"
 
 export function useAdminEventFacets(keyword: string) {
   return useQuery({
     queryKey: qk.admin.events.facets(keyword),
-    queryFn: async (): Promise<AdminEventFacetRow[]> => {
+    queryFn: async () => {
       let query = supabase.from("events").select("city_id, status")
       const sanitized = sanitizePostgrestLike(keyword)
       if (sanitized) {
@@ -65,7 +69,9 @@ export function useAdminEventFacets(keyword: string) {
       if (error) {
         throw error
       }
-      return (data ?? []) as unknown as AdminEventFacetRow[]
+      return parseRowsWithSentry(adminEventFacetRowSchema, data, {
+        area: "admin.events.facets",
+      })
     },
   })
 }

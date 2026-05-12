@@ -12,3 +12,10 @@ export {
   type PlanEventsRow,
   type PlanEventsWindowRow,
 } from "./plan"
+export {
+  adminEventFacetRowSchema,
+  eventSourceRowSchema,
+  type AdminEventFacetRow,
+  type EventSourceRow,
+} from "./admin"
+export { parseRowsWithSentry } from "./parse-rows"

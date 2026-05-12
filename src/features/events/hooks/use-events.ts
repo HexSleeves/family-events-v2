@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
+import { eventRowSchema, parseRowsWithSentry } from "@/lib/schemas"
 import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { enrichEvents } from "@/lib/enrich-events"
@@ -82,7 +83,12 @@ async function fetchEvents(
     throw error
   }
 
-  return enrichEvents((data ?? []) as Event[], { userId })
+  return enrichEvents(
+    parseRowsWithSentry(eventRowSchema, data, { area: "events.search" }) as Event[],
+    {
+      userId,
+    }
+  )
 }
 
 async function fetchEventById(eventId: string, userId?: string): Promise<EventWithDetails | null> {
@@ -101,7 +107,13 @@ async function fetchEventById(eventId: string, userId?: string): Promise<EventWi
     return null
   }
 
-  const [event] = await enrichEvents([data as unknown as Event], { userId })
+  const parsed = eventRowSchema.safeParse(data)
+  if (!parsed.success) {
+    // Bubble parse errors to TanStack Query's error path; the boundary
+    // schema's job is to fail loud here, not silently drop.
+    throw parsed.error
+  }
+  const [event] = await enrichEvents([parsed.data as Event], { userId })
   return event ?? null
 }
 
@@ -123,7 +135,12 @@ async function fetchEventsByIds(eventIds: string[], userId?: string): Promise<Ev
     throw error
   }
 
-  return enrichEvents((data ?? []) as unknown as Event[], { userId })
+  return enrichEvents(
+    parseRowsWithSentry(eventRowSchema, data, { area: "events.byIds" }) as Event[],
+    {
+      userId,
+    }
+  )
 }
 
 export function useEvents(options: UseEventsOptions = {}) {

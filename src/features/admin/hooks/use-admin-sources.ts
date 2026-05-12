@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { qk } from "@/lib/query-keys"
+import { eventSourceRowSchema, parseRowsWithSentry } from "@/lib/schemas"
 import { supabase } from "@/lib/supabase"
 import { validateExternalUrl } from "../../../../supabase/functions/_shared/url-validation"
 import type { EventSource } from "@/lib/types"
@@ -18,7 +19,9 @@ export function useAdminSources() {
       if (error) {
         throw error
       }
-      return (data ?? []) as unknown as EventSource[]
+      return parseRowsWithSentry(eventSourceRowSchema, data, {
+        area: "admin.sources.list",
+      }) as EventSource[]
     },
   })
 }
