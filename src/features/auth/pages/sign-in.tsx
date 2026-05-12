@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { HOME_PATH } from "@/lib/access-control"
 import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { RequestInviteDialog } from "@/features/auth/components/request-invite-dialog"
 import { toast } from "sonner"
 
 // Only treat string `from` values that look like in-app paths. Anything else
@@ -93,6 +94,9 @@ export function SignInPage() {
             Use invite
           </Link>
         </p>
+        <div className="text-center mt-2">
+          <RequestInviteDialog defaultEmail={email} />
+        </div>
       </div>
     </div>
   )

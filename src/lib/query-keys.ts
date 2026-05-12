@@ -202,6 +202,8 @@ export const qk = {
     },
     ratings: ["admin", "ratings"] as const,
     inviteCodes: ["admin", "invite-codes"] as const,
+    inviteRequests: (status?: "pending" | "approved" | "rejected" | "all") =>
+      ["admin", "invite-requests", status ?? "all"] as const,
     tagQueueSummary: ["admin", "tag-queue-summary"] as const,
     cronJobs: ["admin", "cron-jobs"] as const,
     cronHistory: (jobName?: string) =>

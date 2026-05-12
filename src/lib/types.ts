@@ -109,6 +109,30 @@ export interface CreatedInviteCode {
   created_at: string
 }
 
+export type InviteRequestStatus = "pending" | "approved" | "rejected"
+
+export interface InviteRequest {
+  id: string
+  email: string
+  message: string | null
+  status: InviteRequestStatus
+  invite_code_id: string | null
+  admin_notes: string | null
+  created_at: string
+  reviewed_at: string | null
+  reviewed_by: string | null
+}
+
+// Returned by admin_approve_invite_request — plaintext code is shown to the
+// admin ONCE through the same reveal panel as admin_create_invite_code.
+export interface ApprovedInviteRequest {
+  request_id: string
+  code: string
+  invite_code_id: string
+  email: string
+  created_at: string
+}
+
 export interface UserAccess {
   user_id: string
   is_enabled: boolean

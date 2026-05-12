@@ -591,6 +591,78 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_request_attempts: {
+        Row: {
+          attempted_at: string
+          email_hash: string
+          id: number
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          email_hash: string
+          id?: never
+          succeeded: boolean
+        }
+        Update: {
+          attempted_at?: string
+          email_hash?: string
+          id?: never
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
+      invite_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string
+          id: string
+          invite_code_id: string | null
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["invite_request_status"]
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invite_code_id?: string | null
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["invite_request_status"]
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invite_code_id?: string | null
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["invite_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_requests_invite_code_id_fkey"
+            columns: ["invite_code_id"]
+            isOneToOne: false
+            referencedRelation: "invite_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invite_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_invite_claims: {
         Row: {
           claimed_at: string | null
@@ -1047,6 +1119,16 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_invite_request: {
+        Args: { p_request_id: string }
+        Returns: {
+          code: string
+          created_at: string
+          email: string
+          invite_code_id: string
+          request_id: string
+        }[]
+      }
       admin_bulk_set_auto_approve: {
         Args: { enable: boolean }
         Returns: undefined
@@ -1087,6 +1169,10 @@ export type Database = {
           last_run_status: string
           schedule: string
         }[]
+      }
+      admin_reject_invite_request: {
+        Args: { p_notes?: string; p_request_id: string }
+        Returns: boolean
       }
       admin_retry_tag_queue: { Args: { p_event_id: string }; Returns: boolean }
       admin_run_due_scrapes: { Args: never; Returns: undefined }
@@ -1226,6 +1312,10 @@ export type Database = {
         Args: { p_code: string; p_email: string }
         Returns: boolean
       }
+      request_invite: {
+        Args: { p_email: string; p_message?: string }
+        Returns: boolean
+      }
       run_due_source_scrapes: { Args: never; Returns: undefined }
       search_events: {
         Args: {
@@ -1283,6 +1373,7 @@ export type Database = {
     }
     Enums: {
       event_tag_queue_status: "pending" | "processing" | "failed" | "dead"
+      invite_request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1409,6 +1500,7 @@ export const Constants = {
   public: {
     Enums: {
       event_tag_queue_status: ["pending", "processing", "failed", "dead"],
+      invite_request_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

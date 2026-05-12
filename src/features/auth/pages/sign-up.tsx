@@ -13,6 +13,7 @@ import {
   resolveInviteRequirement,
   useInvitesRequired,
 } from "@/features/auth/hooks/use-invites"
+import { RequestInviteDialog } from "@/features/auth/components/request-invite-dialog"
 import { toast } from "sonner"
 
 export function SignUpPage() {
@@ -162,6 +163,11 @@ export function SignUpPage() {
             Sign in
           </Link>
         </p>
+        {requiresInvite && (
+          <div className="text-center mt-2">
+            <RequestInviteDialog defaultEmail={email} />
+          </div>
+        )}
       </div>
     </div>
   )
