@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { format } from "date-fns"
+import { format, formatDistanceToNow } from "date-fns"
 import {
   CircleCheck as CheckCircle,
   Circle as XCircle,
@@ -7,11 +7,16 @@ import {
   RefreshCw,
   Clock,
   TimerOff,
+  Tag as TagIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useAdminSourceRuns } from "@/features/admin/hooks/use-admin-source-runs"
+import {
+  type TagQueueStatus,
+  useAdminTagQueueSummary,
+} from "@/features/admin/hooks/use-admin-tag-queue"
 
 type RunStatus = "success" | "error" | "partial" | "running" | "timed_out"
 
@@ -35,6 +40,73 @@ function resolveStatus(status: string, startedAt: string): RunStatus {
   if (normalized !== "running") return normalized
   const elapsed = Date.now() - new Date(startedAt).getTime()
   return elapsed > STALE_THRESHOLD_MS ? "timed_out" : "running"
+}
+
+const QUEUE_STATUS_LABELS: Record<TagQueueStatus, string> = {
+  pending: "Pending",
+  processing: "Processing",
+  failed: "Done",
+  dead: "Dead-letter",
+}
+
+const QUEUE_STATUS_TONE: Record<TagQueueStatus, string> = {
+  pending: "border-blue-500/40 bg-blue-500/5 text-blue-700 dark:text-blue-300",
+  processing: "border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300",
+  failed: "border-border/60 bg-card text-muted-foreground",
+  dead: "border-destructive/40 bg-destructive/5 text-destructive",
+}
+
+function TagQueueSummaryPanel() {
+  const { data: rows = [], isLoading } = useAdminTagQueueSummary()
+  const byStatus = new Map(rows.map((row) => [row.status, row]))
+  const order: TagQueueStatus[] = ["pending", "processing", "failed", "dead"]
+  const dead = byStatus.get("dead")
+
+  if (isLoading && rows.length === 0) {
+    return null
+  }
+
+  return (
+    <Card className="border-border/60">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <TagIcon className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-bold text-foreground">Tag-event queue</h2>
+          {dead && dead.row_count > 0 && (
+            <Badge variant="destructive" className="text-[10px]">
+              {dead.row_count} dead-lettered
+            </Badge>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {order.map((status) => {
+            const row = byStatus.get(status)
+            return (
+              <div
+                key={status}
+                className={cn(
+                  "rounded-md border px-3 py-2",
+                  QUEUE_STATUS_TONE[status],
+                  !row && "opacity-60"
+                )}
+              >
+                <div className="text-[10px] uppercase tracking-wide font-semibold">
+                  {QUEUE_STATUS_LABELS[status]}
+                </div>
+                <div className="text-lg font-bold tabular-nums">{row?.row_count ?? 0}</div>
+                {row?.oldest_enqueued_at && (
+                  <div className="text-[10px] mt-0.5">
+                    oldest{" "}
+                    {formatDistanceToNow(new Date(row.oldest_enqueued_at), { addSuffix: true })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 function ElapsedTimer({ startedAt }: { startedAt: string }) {
@@ -71,6 +143,8 @@ export function AdminLogsPage() {
           </div>
         )}
       </div>
+
+      <TagQueueSummaryPanel />
 
       <div className="space-y-3">
         {logs.map((run) => {

@@ -265,6 +265,70 @@ export type Database = {
           },
         ]
       }
+      event_tag_queue: {
+        Row: {
+          attempt_count: number
+          enqueued_at: string
+          event_id: string
+          finished_at: string | null
+          id: number
+          last_error: string | null
+          next_attempt_at: string
+          source_run_id: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["event_tag_queue_status"]
+          trigger_type: string
+        }
+        Insert: {
+          attempt_count?: number
+          enqueued_at?: string
+          event_id: string
+          finished_at?: string | null
+          id?: never
+          last_error?: string | null
+          next_attempt_at?: string
+          source_run_id?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["event_tag_queue_status"]
+          trigger_type?: string
+        }
+        Update: {
+          attempt_count?: number
+          enqueued_at?: string
+          event_id?: string
+          finished_at?: string | null
+          id?: never
+          last_error?: string | null
+          next_attempt_at?: string
+          source_run_id?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["event_tag_queue_status"]
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tag_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tag_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tag_queue_source_run_id_fkey"
+            columns: ["source_run_id"]
+            isOneToOne: false
+            referencedRelation: "source_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_tags: {
         Row: {
           confidence: number
@@ -893,6 +957,17 @@ export type Database = {
           },
         ]
       }
+      event_tag_queue_summary: {
+        Row: {
+          avg_attempts: number | null
+          last_dead_letter_at: string | null
+          newest_enqueued_at: string | null
+          oldest_enqueued_at: string | null
+          row_count: number | null
+          status: Database["public"]["Enums"]["event_tag_queue_status"] | null
+        }
+        Relationships: []
+      }
       public_events: {
         Row: {
           address: string | null
@@ -1013,6 +1088,7 @@ export type Database = {
           schedule: string
         }[]
       }
+      admin_retry_tag_queue: { Args: { p_event_id: string }; Returns: boolean }
       admin_run_due_scrapes: { Args: never; Returns: undefined }
       admin_set_cron_schedule: {
         Args: { p_job_name: string; p_schedule: string }
@@ -1023,6 +1099,28 @@ export type Database = {
         Returns: undefined
       }
       claim_pending_invite_access: { Args: never; Returns: boolean }
+      claim_tag_queue_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempt_count: number
+          enqueued_at: string
+          event_id: string
+          finished_at: string | null
+          id: number
+          last_error: string | null
+          next_attempt_at: string
+          source_run_id: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["event_tag_queue_status"]
+          trigger_type: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "event_tag_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       earth: { Args: never; Returns: number }
       events_enriched: {
         Args: {
@@ -1072,6 +1170,7 @@ export type Database = {
         }[]
       }
       invites_required: { Args: never; Returns: boolean }
+      invoke_process_tag_queue: { Args: never; Returns: undefined }
       invoke_scrape_source: {
         Args: { source_uuid: string }
         Returns: undefined
@@ -1098,6 +1197,7 @@ export type Database = {
           weather_score: number
         }[]
       }
+      reap_stuck_tag_queue_rows: { Args: never; Returns: number }
       redeem_invite: { Args: { p_code: string }; Returns: boolean }
       redeem_invite_for_email: {
         Args: { p_code: string; p_email: string }
@@ -1159,7 +1259,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      event_tag_queue_status: "pending" | "processing" | "failed" | "dead"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1284,6 +1384,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      event_tag_queue_status: ["pending", "processing", "failed", "dead"],
+    },
   },
 } as const

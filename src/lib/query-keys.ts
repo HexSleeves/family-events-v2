@@ -202,6 +202,7 @@ export const qk = {
     },
     ratings: ["admin", "ratings"] as const,
     inviteCodes: ["admin", "invite-codes"] as const,
+    tagQueueSummary: ["admin", "tag-queue-summary"] as const,
     cronJobs: ["admin", "cron-jobs"] as const,
     cronHistory: (jobName?: string) =>
       jobName
