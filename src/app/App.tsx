@@ -75,6 +75,16 @@ const SignUpPage = lazy(() =>
     default: module.SignUpPage,
   }))
 )
+const ForgotPasswordPage = lazy(() =>
+  import("@/features/auth/pages/forgot-password").then((module) => ({
+    default: module.ForgotPasswordPage,
+  }))
+)
+const ResetPasswordPage = lazy(() =>
+  import("@/features/auth/pages/reset-password").then((module) => ({
+    default: module.ResetPasswordPage,
+  }))
+)
 
 const AdminDashboardPage = lazy(() =>
   import("@/features/admin/pages/admin-dashboard").then((module) => ({
@@ -212,7 +222,12 @@ export default function App() {
                   <Route element={<PublicOnlyRoute />}>
                     <Route path="/sign-in" element={<SignInPage />} />
                     <Route path="/sign-up" element={<SignUpPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   </Route>
+
+                  {/* /reset-password lives outside PublicOnlyRoute because the
+                      recovery email creates a session before the user arrives. */}
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                   <Route element={<ProtectedRoute />}>
                     <Route element={<AppLayout />}>

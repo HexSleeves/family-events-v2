@@ -33,6 +33,8 @@ interface AuthStore {
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: Error | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -230,6 +232,25 @@ export const useAuthStore = create<AuthStore>()(
         // force=true bypasses dedup so callers can guarantee a fresh fetch.
         await get()._syncSession(session, true)
       },
+
+      async resetPassword(email) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+        return { error }
+      },
+
+      async updatePassword(newPassword) {
+        const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+        if (!error && data.user) {
+          // Pick up the freshly-rotated token so subsequent requests use it.
+          const { data: sessionData } = await supabase.auth.getSession()
+          if (sessionData.session) {
+            await get()._syncSession(sessionData.session, true)
+          }
+        }
+        return { error }
+      },
     }),
     { name: "auth" }
   )
@@ -249,6 +270,8 @@ export function useAuth() {
       signUp: s.signUp,
       signOut: s.signOut,
       refreshProfile: s.refreshProfile,
+      resetPassword: s.resetPassword,
+      updatePassword: s.updatePassword,
     }))
   )
 }
