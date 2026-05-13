@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 import {
   ProfileAdminLink,
+  ProfileChangePasswordCard,
   ProfileGuestState,
   ProfileSignOutButton,
   ProfileThemeCard,
@@ -28,7 +29,7 @@ import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
 import { toast } from "sonner"
 
 export function ProfilePage() {
-  const { user, profile, signOut, isAdmin, refreshProfile } = useAuth()
+  const { user, profile, signOut, isAdmin, refreshProfile, updatePassword } = useAuth()
   const { selectedCity, setSelectedCity, cities, isCitiesLoading } = useApp()
   const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
@@ -140,6 +141,11 @@ export function ProfilePage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Security */}
+      {user.email && (
+        <ProfileChangePasswordCard email={user.email} onUpdatePassword={updatePassword} />
+      )}
 
       {/* Theme */}
       <ProfileThemeCard theme={theme} onThemeChange={setTheme} />

@@ -35,6 +35,7 @@ interface AuthStore {
   refreshProfile: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
+  sendMagicLink: (email: string, shouldCreateUser: boolean) => Promise<{ error: Error | null }>
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -251,6 +252,17 @@ export const useAuthStore = create<AuthStore>()(
         }
         return { error }
       },
+
+      async sendMagicLink(email, shouldCreateUser) {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser,
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        })
+        return { error }
+      },
     }),
     { name: "auth" }
   )
@@ -272,6 +284,7 @@ export function useAuth() {
       refreshProfile: s.refreshProfile,
       resetPassword: s.resetPassword,
       updatePassword: s.updatePassword,
+      sendMagicLink: s.sendMagicLink,
     }))
   )
 }

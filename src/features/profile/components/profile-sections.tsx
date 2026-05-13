@@ -1,8 +1,14 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
-import { LogOut, Monitor, Moon, Shield, Sun, User } from "lucide-react"
+import { KeyRound, LogOut, Monitor, Moon, Shield, Sun, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { supabase } from "@/lib/supabase"
+import { humanizeSupabaseError } from "@/lib/humanize-supabase-error"
+import { toast } from "sonner"
 import type { CityRow as City } from "@/lib/db"
 type ThemeOption = "light" | "dark" | "system"
 
@@ -92,6 +98,123 @@ export function ProfileThemeCard({ theme, onThemeChange }: ProfileThemeCardProps
             </button>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+interface ProfileChangePasswordCardProps {
+  email: string
+  onUpdatePassword: (newPassword: string) => Promise<{ error: Error | null }>
+}
+
+// Verifies the current password before allowing a change. Supabase's
+// updateUser({password}) accepts any password from an authenticated session,
+// so without this gate a stolen/forgotten-open session could rotate the
+// password unchallenged. signInWithPassword silently refreshes the token if
+// the credential matches; on success we proceed with the change.
+export function ProfileChangePasswordCard({
+  email,
+  onUpdatePassword,
+}: ProfileChangePasswordCardProps) {
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  function reset() {
+    setCurrentPassword("")
+    setNewPassword("")
+    setConfirm("")
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters")
+      return
+    }
+    if (newPassword !== confirm) {
+      toast.error("New passwords don't match")
+      return
+    }
+    if (newPassword === currentPassword) {
+      toast.error("New password must differ from the current one")
+      return
+    }
+
+    setLoading(true)
+    const verify = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+    if (verify.error) {
+      setLoading(false)
+      toast.error("Current password is incorrect", {
+        description: humanizeSupabaseError(verify.error, "Try again."),
+      })
+      return
+    }
+
+    const { error } = await onUpdatePassword(newPassword)
+    setLoading(false)
+    if (error) {
+      toast.error("Couldn't update password", {
+        description: humanizeSupabaseError(error, "Try again."),
+      })
+      return
+    }
+    reset()
+    toast.success("Password updated")
+  }
+
+  return (
+    <Card className="border-border/60">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-muted-foreground" />
+          Change Password
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="current-password">Current password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-password">New password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Min. 6 characters"
+              minLength={6}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm-password">Confirm new password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              minLength={6}
+              required
+            />
+          </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Updating..." : "Update password"}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   )
