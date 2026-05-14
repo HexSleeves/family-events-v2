@@ -86,11 +86,6 @@ tasks:
   - key: web-test
     use: [pnpm-install, captain]
     run: captain run family-events-vitest
-    filter:
-      - "apps/web/src/**/*.ts"
-      - "apps/web/src/**/*.tsx"
-      - "apps/web/vitest.config.ts"
-      - "supabase/functions/**/*.ts"
     outputs:
       test-results:
         - path: apps/web/tmp/vitest.json
@@ -115,13 +110,6 @@ tasks:
     run: |
       pnpm workspace:test
       pnpm docs:test
-    filter:
-      - "tests/guards/**"
-      - "packages/**"
-      - "apps/ios/Packages/FECore/Sources/**"
-      - "apps/ios/project.yml"
-      - "CLAUDE.md"
-      - "docs/**"
 
   # ── ios ────────────────────────────────────────────────────────────────────
 
