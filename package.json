@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "turbo run dev",
     "check": "turbo run check",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
     "test": "turbo run test",
     "build": "turbo run build",
     "docs:test": "node --test tests/guards/docs-coverage.test.mjs",
