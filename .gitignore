@@ -35,3 +35,4 @@ supabase/.temp/
 .factory/
 .pi/
 .cursor/hooks/state/
+.gstack/

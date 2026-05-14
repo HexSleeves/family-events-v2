@@ -15,6 +15,8 @@ base:
   config: rwx/base 1.1.1
 
 tasks:
+  # ── shared ────────────────────────────────────────────────────────────────
+
   - key: code
     call: git/clone 2.0.7
     with:
@@ -22,31 +24,64 @@ tasks:
       ref: ${{ init.commit-sha }}
       github-token: ${{ github.token }}
 
+  # ── web ───────────────────────────────────────────────────────────────────
+
+  - key: node
+    call: nodejs/install 1.1.14
+    with:
+      node-version: 24.11.0
+
+  - key: captain
+    call: rwx/install-captain 1.1.6
+
+  - key: pnpm-install
+    use: [code, node]
+    run: |
+      corepack enable
+      pnpm install --frozen-lockfile
+    filter:
+      - pnpm-lock.yaml
+      - package.json
+      - apps/web/package.json
+      - packages/*/package.json
+
+  - key: web-typecheck
+    use: pnpm-install
+    run: pnpm --filter @family-events/web typecheck
+
+  - key: web-lint
+    use: pnpm-install
+    run: pnpm --filter @family-events/web lint
+
+  - key: web-format
+    use: pnpm-install
+    run: pnpm --filter @family-events/web format:check
+
+  - key: web-test
+    use: [pnpm-install, captain]
+    run: captain run family-events-vitest
+
+  - key: web-build
+    use: pnpm-install
+    run: pnpm --filter @family-events/web build
+
+  - key: workspace-test
+    use: pnpm-install
+    run: pnpm workspace:test
+
+  # ── ios ───────────────────────────────────────────────────────────────────
+
   - key: swift-install
     run: |
-      apt-get update -q
-      apt-get install -y --no-install-recommends \
-        binutils \
-        git \
-        gnupg2 \
-        libc6-dev \
-        libcurl4-openssl-dev \
-        libedit2 \
-        libgcc-13-dev \
-        libncurses-dev \
-        libpython3-dev \
-        libsqlite3-0 \
-        libstdc++-13-dev \
-        libxml2-dev \
-        libz3-dev \
-        pkg-config \
-        tzdata \
-        unzip \
-        zlib1g-dev
+      sudo apt-get update -q
+      sudo apt-get install -y --no-install-recommends \
+        binutils git gnupg2 \
+        libc6-dev libcurl4-openssl-dev libedit2 \
+        libgcc-13-dev libncurses-dev libpython3-dev \
+        libsqlite3-0 libstdc++-13-dev libxml2-dev libz3-dev \
+        pkg-config tzdata unzip zlib1g-dev
       wget -q https://download.swift.org/swift-5.10.1-release/ubuntu2404/swift-5.10.1-RELEASE/swift-5.10.1-RELEASE-ubuntu24.04.tar.gz
       tar -xzf swift-5.10.1-RELEASE-ubuntu24.04.tar.gz -C /opt
-      echo 'export PATH=/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin:$PATH' >> ~/.bashrc
-      echo "/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version"
       /opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version
     agent:
       cpus: 4
@@ -57,7 +92,7 @@ tasks:
     run: |
       export PATH=/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin:$PATH
       cd apps/ios/Packages/FECore
-      swift test --parallel 2>&1
+      swift test --parallel
     agent:
       cpus: 4
       memory: 16gb
