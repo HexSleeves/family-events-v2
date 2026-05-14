@@ -36,6 +36,7 @@ supabase/.temp/
 .pi/
 .cursor/hooks/state/
 .gstack/
+.firecrawl/
 
 # Xcode / SwiftPM per-user state
 **/xcuserdata/

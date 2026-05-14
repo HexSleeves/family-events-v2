@@ -6,16 +6,26 @@ on:
     pull_request:
       init:
         commit-sha: ${{ event.git.sha }}
+      status-checks:
+        name: CI
     push:
       init:
         commit-sha: ${{ event.git.sha }}
+      status-checks:
+        name: CI
 
 base:
   image: ubuntu:24.04
   config: rwx/base 1.1.1
 
+# Tool caches require a vault named after the repo + branch in the RWX UI.
+# Uncomment once the vault `family-events-v2-main` is created:
+#
+# tool-cache:
+#   vault: family-events-v2-main
+
 tasks:
-  # ── shared ────────────────────────────────────────────────────────────────
+  # ── shared ─────────────────────────────────────────────────────────────────
 
   - key: code
     call: git/clone 2.0.7
@@ -24,7 +34,7 @@ tasks:
       ref: ${{ init.commit-sha }}
       github-token: ${{ github.token }}
 
-  # ── web ───────────────────────────────────────────────────────────────────
+  # ── web ────────────────────────────────────────────────────────────────────
 
   - key: node
     call: nodejs/install 1.1.14
@@ -44,34 +54,76 @@ tasks:
       - package.json
       - apps/web/package.json
       - packages/*/package.json
+    timeout: 10m
+    # tool-cache: ci-pnpm-install   # enable once vault is configured
 
   - key: web-typecheck
     use: pnpm-install
     run: pnpm --filter @family-events/web typecheck
+    filter:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/tsconfig*.json"
+    outputs:
+      problems:
+        - matcher: tsc
 
   - key: web-lint
     use: pnpm-install
     run: pnpm --filter @family-events/web lint
+    filter:
+      - "apps/web/src/**/*.ts"
+      - "apps/web/src/**/*.tsx"
+      - "apps/web/.oxlintrc.json"
 
   - key: web-format
     use: pnpm-install
     run: pnpm --filter @family-events/web format:check
+    filter:
+      - "apps/web/src/**"
+      - "packages/config-quality/**"
 
   - key: web-test
     use: [pnpm-install, captain]
     run: captain run family-events-vitest
+    filter:
+      - "apps/web/src/**/*.ts"
+      - "apps/web/src/**/*.tsx"
+      - "apps/web/vitest.config.ts"
+      - "supabase/functions/**/*.ts"
+    outputs:
+      test-results:
+        - path: apps/web/tmp/vitest.json
 
   - key: web-build
     use: pnpm-install
     run: pnpm --filter @family-events/web build
+    filter:
+      - "apps/web/src/**"
+      - "apps/web/index.html"
+      - "apps/web/vite.config.ts"
+      - "apps/web/tsconfig*.json"
+      - "packages/**"
+    timeout: 15m
+    outputs:
+      artifacts:
+        - key: dist
+          path: apps/web/dist
 
   - key: workspace-test
     use: pnpm-install
     run: |
       pnpm workspace:test
       pnpm docs:test
+    filter:
+      - "tests/guards/**"
+      - "packages/**"
+      - "apps/ios/Packages/FECore/Sources/**"
+      - "apps/ios/project.yml"
+      - "CLAUDE.md"
+      - "docs/**"
 
-  # ── ios ───────────────────────────────────────────────────────────────────
+  # ── ios ────────────────────────────────────────────────────────────────────
 
   - key: swift-install
     run: |
@@ -85,6 +137,9 @@ tasks:
       wget -q https://download.swift.org/swift-5.10.1-release/ubuntu2404/swift-5.10.1-RELEASE/swift-5.10.1-RELEASE-ubuntu24.04.tar.gz
       sudo tar -xzf swift-5.10.1-RELEASE-ubuntu24.04.tar.gz -C /opt
       /opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version
+    cache:
+      ttl: 7 days
+    timeout: 20m
     agent:
       cpus: 4
       memory: 16gb
@@ -95,6 +150,9 @@ tasks:
       export PATH=/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin:$PATH
       cd apps/ios/Packages/FECore
       swift test --parallel
+    filter:
+      - "apps/ios/Packages/FECore/**"
+    timeout: 20m
     agent:
       cpus: 4
       memory: 16gb
