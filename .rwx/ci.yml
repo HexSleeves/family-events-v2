@@ -67,7 +67,9 @@ tasks:
 
   - key: workspace-test
     use: pnpm-install
-    run: pnpm workspace:test
+    run: |
+      pnpm workspace:test
+      pnpm docs:test
 
   # ── ios ───────────────────────────────────────────────────────────────────
 
