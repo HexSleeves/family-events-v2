@@ -1,5 +1,7 @@
 packages:
-  - .
+  - "apps/*"
+  - "packages/*"
+  - "supabase/functions"
 
 allowBuilds:
   '@sentry/cli': true
