@@ -81,7 +81,7 @@ tasks:
         libsqlite3-0 libstdc++-13-dev libxml2-dev libz3-dev \
         pkg-config tzdata unzip zlib1g-dev
       wget -q https://download.swift.org/swift-5.10.1-release/ubuntu2404/swift-5.10.1-RELEASE/swift-5.10.1-RELEASE-ubuntu24.04.tar.gz
-      tar -xzf swift-5.10.1-RELEASE-ubuntu24.04.tar.gz -C /opt
+      sudo tar -xzf swift-5.10.1-RELEASE-ubuntu24.04.tar.gz -C /opt
       /opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version
     agent:
       cpus: 4
