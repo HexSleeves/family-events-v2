@@ -1,39 +1,85 @@
-# family-events-v2
+# family-events monorepo
 
-[![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new/~/sb1-3tce1spn)
+Turborepo monorepo for:
+- web client (`apps/web`)
+- iOS client (`apps/ios`)
+- shared TypeScript utilities (`packages/shared`)
+- runtime contracts (`packages/contracts`)
+- Supabase schema/functions (`supabase`)
 
-## Environment variables
+## Web Workspace
 
-This project validates client environment variables with [`@t3-oss/env-core`](https://github.com/t3-oss/t3-env). Missing or invalid values fail fast at startup/build time.
+Path: `apps/web`
 
-Create a `.env.local` file for local development:
+Primary commands:
+- `pnpm --filter @family-events/web dev`
+- `pnpm --filter @family-events/web check`
+- `pnpm --filter @family-events/web test`
+- `pnpm --filter @family-events/web build`
 
-```bash
-# Replace with your actual Supabase project credentials
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=public-anon-key
+## iOS Workspace
 
-# Optional app environment name (defaults to Vite mode)
-VITE_APP_ENV=development
+Path: `apps/ios`
 
-# Sentry browser SDK
-VITE_SENTRY_DSN=
-VITE_SENTRY_RELEASE=
-VITE_SENTRY_TRACES_SAMPLE_RATE=0.05
-VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0
-VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=0
-```
+Project generation/build strategy:
+- Xcode project is generated from `apps/ios/project.yml` using XcodeGen.
+- Commit the `project.yml` source of truth and generated project files together.
 
-## Sentry source map upload (build-time)
+Primary commands:
+- `pnpm run ios:generate`
+- `pnpm run ios:test`
 
-To upload source maps during `pnpm build`, set these CI/build variables:
+Scope policy:
+- iOS is consumer-only.
+- Admin features/routes are out of scope and blocked by endpoint policy tests.
 
-```bash
-SENTRY_AUTH_TOKEN=
-SENTRY_ORG=
-SENTRY_PROJECT=
-# Optional explicit release (defaults to RAILWAY_GIT_COMMIT_SHA)
-SENTRY_RELEASE=
-```
+## Shared Package
 
-If those variables are not present, the Sentry Vite plugin is skipped and the build still succeeds.
+Path: `packages/shared`
+
+Purpose:
+- cross-app utility helpers that are framework-agnostic and reusable in web + tooling.
+
+Primary commands:
+- `pnpm --filter @family-events/shared test`
+- `pnpm --filter @family-events/shared check`
+
+## Contracts Package
+
+Path: `packages/contracts`
+
+Purpose:
+- typed event/API contracts used by web and backend-facing adapters.
+
+Primary commands:
+- `pnpm --filter @family-events/contracts test`
+- `pnpm --filter @family-events/contracts check`
+
+## Supabase
+
+Path: `supabase`
+
+Primary commands:
+- `pnpm run db:start`
+- `pnpm run db:migrate`
+- `pnpm run db:types`
+- `pnpm run db:functions:serve`
+- `pnpm run db:stop`
+
+Reference docs:
+- `supabase/docs/PRODUCTION_SETUP.md`
+- `supabase/docs/EMAIL.md`
+
+## Workflows
+
+Local repeatable verification:
+- `pnpm run docs:test`
+- `pnpm run workspace:test`
+- `pnpm run check`
+- `pnpm run test`
+- `pnpm run build`
+- `pnpm run verify:workflow`
+
+CI verification:
+- Linux job validates docs/workspace guards + web/shared/contracts/supabase checks.
+- macOS job validates XcodeGen + iOS tests.
