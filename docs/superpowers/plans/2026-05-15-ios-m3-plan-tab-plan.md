@@ -7,6 +7,7 @@
 **Architecture:** All ranking and event hydration lives in two existing Supabase RPCs (`plan_events_first_nonempty_window` + `events_enriched`); iOS doesn't reimplement scoring. A `LocationService` wraps `CLLocationManager` with an async permission flow; a `WeatherService` wraps Apple's WeatherKit. `PlanRepo` orchestrates: location → weather → RPC → upsert into SwiftData. The UI binds to `@Query` on `CachedPlannedEvent` so it renders cached data instantly on cold start and stale-refreshes on tab open.
 
 **Tech Stack:**
+
 - iOS 17+, Swift 5.10
 - `supabase-swift` 2.20.0 (already pinned)
 - `CoreLocation` (system)
@@ -118,6 +119,7 @@ apps/ios/
 ### Task 1: Add `GeoCoordinate` to `FECore`
 
 **Files**
+
 - Create: `apps/ios/Packages/FECore/Sources/FECore/GeoCoordinate.swift`
 - Create: `apps/ios/Packages/FECore/Tests/FECoreTests/GeoCoordinateTests.swift`
 
@@ -178,6 +180,7 @@ git commit -m "feat(ios): add GeoCoordinate value type to FECore"
 ### Task 2: Add ISO date helpers to `FECore`
 
 **Files**
+
 - Create: `apps/ios/Packages/FECore/Sources/FECore/DateFormatting.swift`
 - Create: `apps/ios/Packages/FECore/Tests/FECoreTests/DateFormattingTests.swift`
 
@@ -245,6 +248,7 @@ Commit message: `feat(ios): add DateFormatting helpers to FECore`.
 Match the `events_enriched` RPC row shape from `apps/web/src/lib/schemas/event.ts`. Optional fields stay optional (Swift) / nullable.
 
 **File**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/DTOs/TagDTO.swift`
 - Create: `apps/ios/Packages/FEData/Sources/FEData/DTOs/EventDTO.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/EventDTOTests.swift`
@@ -507,6 +511,7 @@ git commit -m "feat(ios): add EventDTO + TagDTO matching events_enriched"
 Mirrors `plan_events_first_nonempty_window` row shape.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/DTOs/PlanEventsRowDTO.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/PlanEventsRowDTOTests.swift`
 
@@ -627,6 +632,7 @@ public struct PlanEventsRowDTO: Equatable, Sendable, Codable {
 A small value type for WeatherService output.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/DTOs/WeatherSnapshot.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/WeatherSnapshotTests.swift`
 
@@ -684,6 +690,7 @@ public struct WeatherSnapshot: Equatable, Sendable {
 ### Task 6: `CachedEvent` + `CachedPlannedEvent` `@Model`s
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Models/CachedEvent.swift`
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Models/CachedPlannedEvent.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Models/CachedEventTests.swift`
@@ -841,6 +848,7 @@ public enum AppModelContainer {
 ### Task 7: Add `EventDTO` → `CachedEvent` upsert
 
 **Files**
+
 - Modify: `apps/ios/Packages/FEData/Sources/FEData/Models/CachedEvent.swift` (add `static func upsert`)
 - Modify: `apps/ios/Packages/FEData/Tests/FEDataTests/Models/CachedEventTests.swift` (add test)
 
@@ -913,6 +921,7 @@ extension CachedEvent {
 ### Task 8: `LocationService` protocol + permission DTO
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Services/LocationService.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Services/LocationServiceTests.swift`
 
@@ -962,6 +971,7 @@ public protocol LocationService: Sendable {
 ### Task 9: `CoreLocationService` (real impl)
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Services/CoreLocationService.swift`
 
 - [ ] **Step 1: Implement (no automated test — needs the simulator's location daemon, covered by app-target integration test)**
@@ -1066,6 +1076,7 @@ git commit -m "feat(ios): add CoreLocationService implementing LocationService"
 (This task also introduces the `FEDataTesting` product — same pattern as `FEAuthTesting` from M2.)
 
 **Files**
+
 - Modify: `apps/ios/Packages/FEData/Package.swift` (add `FEDataTesting` product + target)
 - Create: `apps/ios/Packages/FEData/Sources/FEDataTesting/FakeLocationService.swift`
 
@@ -1118,6 +1129,7 @@ public final class FakeLocationService: LocationService, @unchecked Sendable {
 ### Task 11: `WeatherService` protocol + `FakeWeatherService`
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Services/WeatherService.swift`
 - Create: `apps/ios/Packages/FEData/Sources/FEDataTesting/FakeWeatherService.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Services/WeatherServiceTests.swift`
@@ -1181,6 +1193,7 @@ public final class FakeWeatherService: WeatherService, @unchecked Sendable {
 WeatherKit returns `Weather` from `WeatherService` (Apple's). Wrap and map to `WeatherSnapshot`.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Services/WeatherKitService.swift`
 
 - [ ] **Step 1: Implement (no automated unit test — WeatherKit requires entitlement + sandbox; covered by manual sim run + future integration test)**
@@ -1231,6 +1244,7 @@ git commit -m "feat(ios): add WeatherKitService implementing WeatherService"
 ### Task 13: WeatherKit entitlement + Info.plist usage strings
 
 **Files**
+
 - Create: `apps/ios/FamilyEvents/App/FamilyEvents.entitlements`
 - Modify: `apps/ios/project.yml` (point at entitlements + add `NSLocationWhenInUseUsageDescription`)
 
@@ -1285,6 +1299,7 @@ The protocol already exists at `apps/ios/Packages/FEData/Sources/FEData/Reposito
 ### Task 15: `EventRepository` — calls `events_enriched`
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Repositories/EventRepository.swift`
 - Create: `apps/ios/Packages/FEData/Sources/FEDataTesting/FakeEventRepository.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Repositories/EventRepositoryTests.swift`
@@ -1382,6 +1397,7 @@ public final class FakeEventRepository: EventRepository, @unchecked Sendable {
 ### Task 16: `PlanRepository` — calls `plan_events_first_nonempty_window`
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Repositories/PlanRepository.swift`
 - Create: `apps/ios/Packages/FEData/Sources/FEDataTesting/FakePlanRepository.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Repositories/PlanRepositoryTests.swift`
@@ -1499,6 +1515,7 @@ public final class FakePlanRepository: PlanRepository, @unchecked Sendable {
 ### Task 17: `PlanComposer` — orchestrates location + weather + plan + events
 
 **Files**
+
 - Create: `apps/ios/Packages/FEData/Sources/FEData/Repositories/PlanComposer.swift`
 - Create: `apps/ios/Packages/FEData/Tests/FEDataTests/Repositories/PlanComposerTests.swift`
 
@@ -1669,6 +1686,7 @@ public final class PlanComposer {
 For M3 we don't have a real profile fetch; stub the resolver against the user from `SessionStore` and accept the city + age via parameters.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/ViewModels/PlanContext.swift`
 - Create: `apps/ios/Packages/FEPlan/Tests/FEPlanTests/PlanContextTests.swift`
 - Modify: `apps/ios/Packages/FEPlan/Package.swift` (depend on FEData)
@@ -1729,6 +1747,7 @@ public struct PlanContext: Equatable, Sendable {
 ### Task 19: `PlanViewModel`
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/ViewModels/PlanViewModel.swift`
 - Create: `apps/ios/Packages/FEPlan/Tests/FEPlanTests/PlanViewModelTests.swift`
 
@@ -1841,6 +1860,7 @@ public final class PlanViewModel {
 A reusable card. Used by the Plan tab now and Explore later.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEDesignSystem/Sources/FEDesignSystem/EventCard.swift`
 - Create: `apps/ios/Packages/FEDesignSystem/Tests/FEDesignSystemTests/EventCardTests.swift`
 
@@ -1925,6 +1945,7 @@ public struct EventCard: View {
 ### Task 21: `PlanHeroCard` + `PlanThumbCard` views in `FEPlan`
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/Components/PlanHeroCard.swift`
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/Components/PlanThumbCard.swift`
 
@@ -2009,6 +2030,7 @@ public struct PlanThumbCard: View {
 The pill row showing City / Date / Age-fit.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/Components/PlanContextBar.swift`
 
 - [ ] **Step 1: Implement (no tests)**
@@ -2064,6 +2086,7 @@ private extension String {
 Replaces the placeholder content in `PlanTab`.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/Screens/SaturdayPlanScreen.swift`
 
 - [ ] **Step 1: Implement**
@@ -2141,6 +2164,7 @@ git commit -m "feat(ios): add SaturdayPlanScreen"
 ### Task 24: Update `PlanTab` to host `SaturdayPlanScreen`
 
 **Files**
+
 - Modify: `apps/ios/Packages/FEPlan/Sources/FEPlan/PlanTab.swift`
 
 - [ ] **Step 1: Replace `PlanTab.swift`**
@@ -2219,6 +2243,7 @@ final class PlanTabTests: XCTestCase {
 The app target needs to build a `PlanComposer` (with the real Supabase + WeatherKit + CoreLocation services) and pass it to `RootView` → `PlanTab`. Add a small factory.
 
 **Files**
+
 - Create: `apps/ios/Packages/FEPlan/Sources/FEPlan/PlanModule.swift`
 - Modify: `apps/ios/FamilyEvents/App/FamilyEventsApp.swift`
 - Modify: `apps/ios/FamilyEvents/App/RootView.swift`
