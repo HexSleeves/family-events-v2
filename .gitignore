@@ -36,3 +36,9 @@ supabase/.temp/
 .pi/
 .cursor/hooks/state/
 .gstack/
+
+# Xcode / SwiftPM per-user state
+**/xcuserdata/
+**/*.xcuserstate
+**/xcschememanagement.plist
+**/Package.resolved
