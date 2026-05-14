@@ -1,0 +1,63 @@
+on:
+  cli:
+    init:
+      commit-sha: ${{ event.git.sha }}
+  github:
+    pull_request:
+      init:
+        commit-sha: ${{ event.git.sha }}
+    push:
+      init:
+        commit-sha: ${{ event.git.sha }}
+
+base:
+  image: ubuntu:24.04
+  config: rwx/base 1.1.1
+
+tasks:
+  - key: code
+    call: git/clone 2.0.7
+    with:
+      repository: https://github.com/HexSleeves/family-events-v2.git
+      ref: ${{ init.commit-sha }}
+      github-token: ${{ github.token }}
+
+  - key: swift-install
+    run: |
+      apt-get update -q
+      apt-get install -y --no-install-recommends \
+        binutils \
+        git \
+        gnupg2 \
+        libc6-dev \
+        libcurl4-openssl-dev \
+        libedit2 \
+        libgcc-13-dev \
+        libncurses-dev \
+        libpython3-dev \
+        libsqlite3-0 \
+        libstdc++-13-dev \
+        libxml2-dev \
+        libz3-dev \
+        pkg-config \
+        tzdata \
+        unzip \
+        zlib1g-dev
+      wget -q https://download.swift.org/swift-5.10.1-release/ubuntu2404/swift-5.10.1-RELEASE/swift-5.10.1-RELEASE-ubuntu24.04.tar.gz
+      tar -xzf swift-5.10.1-RELEASE-ubuntu24.04.tar.gz -C /opt
+      echo 'export PATH=/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin:$PATH' >> ~/.bashrc
+      echo "/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version"
+      /opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin/swift --version
+    agent:
+      cpus: 4
+      memory: 16gb
+
+  - key: fecore-test
+    use: [code, swift-install]
+    run: |
+      export PATH=/opt/swift-5.10.1-RELEASE-ubuntu24.04/usr/bin:$PATH
+      cd apps/ios/Packages/FECore
+      swift test --parallel 2>&1
+    agent:
+      cpus: 4
+      memory: 16gb
