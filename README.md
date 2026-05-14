@@ -21,17 +21,21 @@ Primary commands:
 
 Path: `apps/ios`
 
+Layout (post-M1):
+- App target: `FamilyEvents/` (entry point + tab shell + deep-link routing).
+- Local Swift packages under `Packages/`: `FECore`, `FEData`, `FEDesignSystem`, `FEAuth`, `FEPlan`, `FEExplore`, `FESaved`, `FEEventDetail`, `FEAppIntents`.
+
 Project generation/build strategy:
 - Xcode project is generated from `apps/ios/project.yml` using XcodeGen.
 - Commit the `project.yml` source of truth and generated project files together.
 
 Primary commands:
-- `pnpm run ios:generate`
-- `pnpm run ios:test`
+- `pnpm run ios:generate` — regenerate `FamilyEvents.xcodeproj` from `project.yml`.
+- `pnpm run ios:test` — run every package's `swift test` plus the app's `xcodebuild test`.
 
 Scope policy:
 - iOS is consumer-only.
-- Admin features/routes are out of scope and blocked by endpoint policy tests.
+- Admin features/routes are out of scope and blocked by `EndpointPolicyTests`.
 
 ## Shared Package
 
