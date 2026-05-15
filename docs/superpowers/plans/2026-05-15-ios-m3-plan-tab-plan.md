@@ -2546,3 +2546,313 @@ git tag -a ios-m3-plan -m "iOS Milestone 3: Plan tab (location + WeatherKit + Sw
 2. **Placeholders.** None. Every code block is paste-ready.
 3. **Type consistency.** `EventDTO`, `PlanEventsRowDTO`, `PlanInput`, `PlanContext`, `PlanResult`, `PlanComposer`, `PlanViewModel`, `PlanTab` use the same `EventID` / `CityID` / `UserID` typed identifiers from FECore throughout.
 4. **Order of operations.** Phase A → B → C → D → E → F → G → H → I keeps the build graph valid at each commit.
+
+---
+
+## Engineering Review Decisions (2026-05-14)
+
+Decisions captured from `/plan-eng-review`. Each labeled with original decision number.
+All accepted; implement as listed. Outside-voice findings from Codex appear under D13/D14.
+
+### Architecture
+
+- **D1 — Bind SaturdayPlanScreen to SwiftData via @Query.** The plan's stale-while-revalidate
+  promise (spec §6) requires the UI to read from `CachedPlannedEvent` directly, not from
+  `viewModel.heroEvent`. Implementation: add `@Query(sort: \CachedPlannedEvent.rank) var
+  cachedPlan: [CachedPlannedEvent]` to `SaturdayPlanScreen`; resolve each entry's matching
+  `CachedEvent` row via a `@Query` on `CachedEvent` indexed by `id`; render hero from
+  `cachedPlan.first` and secondaries from `cachedPlan.dropFirst().prefix(2)`. Keep
+  `PlanViewModel` for `isLoading` / `errorMessage` only — refresh state, not data. Cold
+  launch with seeded SwiftData renders instantly; in-progress refresh updates `lastSyncedAt`
+  on the rows, triggering @Query observers.
+
+- **D2 — Replace CoreLocationService with `CLLocationUpdate.liveUpdates`.** Apple's iOS 17+
+  AsyncSequence-based location API supersedes the delegate + checked-continuation pattern.
+  Implementation: introduce a `CLLocationUpdatesProvider` protocol with one method
+  `func liveUpdates() -> any AsyncSequence<CLLocationUpdate, Never>` (concrete type wraps
+  `CLLocationUpdate.liveUpdates()`). `CoreLocationService.currentLocation()` becomes
+  `for try await update in provider.liveUpdates() { return GeoCoordinate(update.location.coordinate); }`
+  inside a `withTaskGroup` racing a `Task.sleep(for: .seconds(timeoutSeconds))` arm. No
+  orphan timer Tasks. Fakes drive an `AsyncStream<CLLocationUpdate>` for tests.
+
+- **D3 — Add minimal `ProfileRepo` in M3.** Adds a small profile-data fetch so the
+  city-fallback deliverable is actually functional. Insert a new Task between M3 Task 17
+  and Task 18: `ProfileRepo.currentContext(userID:) async throws -> (cityID: CityID?,
+  kidAge: Int?)` that selects `city_preference_id, child_age` from `profiles` where
+  `id = userID` (one row, one roundtrip). `PlanContext` is populated from this in
+  `RootView` instead of hardcoding nil. **Schema verification (per Codex):** the column
+  is `profiles.city_preference_id`, NOT `city_id` (`supabase/migrations/20260601000000_001_schema.sql:56`).
+
+- **D4 — Skip cache writes on empty rankings.** `PlanComposer.upsert(...)` must guard:
+  `if rankings.isEmpty { return /* preserve prior cache */ }`. The plan banner shows
+  "no new plan today — showing yesterday's" when both cached rows exist AND the latest
+  refresh was empty. Without this, an empty mid-week RPC response erases the offline cache.
+
+### Code Quality
+
+- **D5 — Drop `PlanContextResolver` from the file tree (line 100).** Resolver was never
+  implemented in any task. Only `PlanContext` (value type) ships in Task 18. Edit the file
+  structure block to remove `└─ ViewModels/PlanContextResolver.swift # NEW: (location | city) -> RPC inputs`.
+
+- **D6 — Rename local `WeatherService` protocol to `WeatherProviding`.** Resolves the
+  Apple `WeatherKit.WeatherService` collision permanently. Sweep across `WeatherService.swift`,
+  `FakeWeatherService.swift`, `WeatherKitService.swift`, `PlanComposer.swift`, tests. Delete
+  the `private enum Apple { typealias WeatherService = WeatherKit.WeatherService }` hack.
+
+- **D7 — Move `DateFormatter` instances to stored static lets in `FECore`.** `DateFormatting`
+  exposes `static let isoFormatter` initialized once. Add `static let cardSubtitleFormatter`
+  (locale-aware) for hero/thumb subtitle rendering. `PlanHeroCard.subtitle(for:)` and
+  `PlanThumbCard.subtitle(for:)` use the shared formatter — no per-call construction.
+
+### Tests
+
+- **D8 — Full lake on service-boundary tests.** Add `CLLocationUpdatesProvider` fake
+  driving an `AsyncStream<CLLocationUpdate>` so `CoreLocationService` tests cover:
+  authorized + success (single emit), authorized + multi-emit (only first taken),
+  denied → nil, restricted → nil, timeout (no emit within timeoutSeconds). Split
+  `WeatherKitService` into pure `mapAppleWeather(currentWeather: hourlyForecast:) ->
+  WeatherSnapshot` (testable with fixture) + thin `currentWeather(at:)` wire.
+  Test the mapper against 6 representative cases.
+
+- **D9 — PlanComposer error-path tests + capture `lastInput` in fakes.** Add
+  `var lastInput: PlanInput?` to `FakePlanRepository.fetchPlan(input:)` capture; update
+  the existing weak `testFallsBackToCityWhenLocationDenied` to assert `fake.lastInput?.cityID ==
+  .some(...)` AND `fake.lastInput?.coordinate == nil`. Add 4 new tests:
+  (1) WeatherService throws → composer continues with `weatherFit="neutral"` (verified via
+  `fake.lastInput?.weatherFit`); (2) PlanRepository throws → composer propagates the error,
+  cache untouched; (3) EventRepository throws → composer propagates AND does NOT wipe the
+  partial CachedPlannedEvent rows; (4) Cancellation mid-refresh → no half-written cache.
+
+- **D10 — XCUITest critical paths.** Add `apps/ios/FamilyEventsUITests/PlanTabUITests.swift`
+  with two cases: (1) sign in → Plan tab opens → simulator location pre-set → hero
+  card renders with expected title; (2) Plan tab → injected RPC error (via env-var
+  feature flag activating a fake) → Retry button visible → tap → re-fires refresh →
+  hero renders. Matches spec §10 critical-path tier (joins existing SIWA + save UI tests).
+
+- **REGRESSION (iron rule, mandatory): `AppModelContainer.makePersistent()` schema upgrade.**
+  M1's container had `allModelTypes = []`. M3 swaps in `[CachedEvent.self,
+  CachedPlannedEvent.self]`. SwiftData schema construction on a fresh container, or on
+  an existing store from prior milestones, can fail. Add test in
+  `apps/ios/FamilyEventsTests/AppModelContainerTests.swift`: assert `makePersistent()`
+  succeeds against the v3 schema. Also assert against a temp-directory store that simulates
+  an "existing store from a previous milestone" so future schema migrations have a working
+  baseline.
+
+### Performance
+
+- **D13 — Client-side `.select()` projection, NOT new RPC parameter.** This decision
+  REVERSES D11 (which originally proposed adding `p_columns` to `events_enriched`).
+  Codex traced that supabase-swift 2.20.0 already supports `.select(...)` chained after
+  `.rpc(...)` because `rpc` returns `PostgrestFilterBuilder` which inherits `select` from
+  `PostgrestTransformBuilder`. Implementation: in `SupabaseEventRepository.fetch(...)`,
+  chain `.select("id,title,description,start_datetime,end_datetime,timezone,venue_name,address,city_id,latitude,longitude,age_min,age_max,price,is_free,source_url,source_name,source_id,images,status,ai_confidence,ai_tag_provider,is_featured,view_count,created_at,updated_at,avg_rating,rating_count,tags,is_favorited")`
+  after the `rpc()` call. Drop `search_vector` and `recurrence_info` from the wire.
+  Zero Postgres / web / types-regen impact.
+
+### Codex outside-voice findings
+
+- **D14a — Preserve ranking order in `PlanComposer.refresh()`.** `events_enriched` orders
+  rows by `start_datetime ASC` (per `supabase/migrations/20260601000300_004_views_and_rpcs.sql:188`),
+  NOT by `p_event_ids` order. Mirror the web's pattern at
+  `apps/web/src/features/plan/hooks/use-plan-for-today.ts:181-197`: build an
+  `eventsByID: [EventID: EventDTO]` map, then `let orderedEvents = rankings.compactMap {
+  eventsByID[$0.eventID] }`. The current plan returns `events` directly from the
+  repository, which can put the lowest-scored event in the hero slot.
+
+- **D14b — Inject `ModelContainer` into the SwiftUI environment.** D1's cache binding
+  depends on `.modelContainer(container)` being attached to a parent View. Update
+  `FamilyEventsApp.body`: `RootView(authService: authService, planComposer: composer)
+  .environment(sessionStore) .modelContainer(container)`. The container that's hidden
+  inside `PlanComposer` for upserts MUST match the one that drives @Query — pass the
+  same instance.
+
+- **D14c — Hoist `PlanViewModel` out of `PlanTab.body`.** Move the ViewModel construction
+  from the computed `body` property (where it re-runs on every SwiftUI body
+  recomputation) into a `@State private var viewModel: PlanViewModel` initialized once
+  via the failable `init`. Pattern: `init(composer:context:...) { _viewModel =
+  State(initialValue: PlanViewModel(composer: composer, context: context)); ... }`.
+  Without this hoist, navigating into / back to Plan tab can recreate the observable
+  and re-fire `.task { await viewModel.refresh() }` in `SaturdayPlanScreen`.
+
+- **D14d — Profile column name correction (already folded into D3).** Reference is
+  `profiles.city_preference_id`, NOT `profiles.city_id`.
+
+### Built-in-M3 TODO
+
+- **TODO #1 — Strict date parsing in `EventDTO`.** Replace the silent epoch fallback at
+  plan lines 427-435 with a throwing decode: `parseDate` becomes
+  `(String) throws -> Date` that calls `iso.date(from: s) ?? isoNoFrac.date(from: s)
+  .map { $0 } ?? throw DecodingError.dataCorruptedError(...)`. Add 1 test asserting
+  that a malformed date string raises a `DecodingError`. Without this fix, a bad
+  date silently sorts to 1970-01-01 and ranks before all real events.
+
+### Deferred to TODOS.md (Phase 3)
+
+- **Snapshot testing harness for `FEDesignSystem`** — spec §10 mandate; deferred to
+  M5 EventCard reuse. See TODOS.md Phase 3.
+
+---
+
+## NOT in scope (additional deferrals from review)
+
+- **`p_columns` parameter on `events_enriched`** — reversed via D13; client-side
+  `.select()` projection ships instead. Saves Postgres + web + types-regen work.
+- **Profile editing UI** — only profile READ ships in M3 via the minimal `ProfileRepo`
+  (D3). Updating `city_preference_id` / `child_age` stays in the web app for M3; iOS
+  profile-edit form lands in M3.5 or M7.
+- **Sentry / observability for EventDTO date parse failures** — no iOS observability
+  stack ships yet. Date-parse errors will surface as `DecodingError` thrown to the
+  caller (RPC fetch fails → toast). Add structured logging when an iOS Sentry SDK
+  lands (likely M7+).
+- **Sign-out clears cache** — `CachedEvent` / `CachedPlannedEvent` persist across
+  sign-outs. Not a privacy concern (data is publicly readable per RLS), but
+  next-user sees prior-user's plan. Defer cache-wipe-on-sign-out to M7 alongside
+  Saved tab.
+- **Snapshot testing harness for FEDesignSystem** — TODOS.md Phase 3; M5 prerequisite.
+
+---
+
+## What already exists (reused, not rebuilt)
+
+- **`plan_events_first_nonempty_window` RPC** — shipped 2026-06-01. iOS calls it
+  unchanged. (`supabase/migrations/20260601001300_plan_events_first_nonempty_window.sql`)
+- **`events_enriched` RPC** — shipped 2026-06-01. iOS calls it unchanged; D13 layers a
+  client-side column projection on top. (`supabase/migrations/20260601000300_004_views_and_rpcs.sql:97`)
+- **`plan_events_for_user` server-side scorer** — design-doc decision: SQL is the only
+  source of truth for ranking. iOS never reimplements scoring math.
+  (`supabase/migrations/20260601001400_observability_and_security_invoker.sql:63-321`)
+- **`FECore.Identifiers`** (`EventID`, `CityID`, `UserID`, `PlanID`) — typed identifiers
+  already exist. M3 reuses without modification.
+- **`FECore.EnvConfig`** — already shipped in M1.
+- **`FEData.FamilyEventsSupabase`** — already wraps supabase-swift 2.20.0.
+- **`FEData.Repository` protocol** — Task 14 is a no-op verification step; the protocol
+  is unchanged from M1.
+- **`FEData.AppModelContainer`** — exists with empty schema; M3 populates
+  `allModelTypes` and adds a regression test (per iron rule).
+- **`FEAuth.SessionStore` + `FamilyEventsApp.bootstrap`** — M2 pattern. M3 extends
+  bootstrap to construct `ModelContainer` + `PlanComposer` alongside the existing
+  `SupabaseAuthService` + `SessionStore`.
+- **`FEAuthTesting` template** — Task 10's `FEDataTesting` product mirrors this exact
+  shape.
+- **supabase-swift 2.20.0 `.rpc().select()`** — already supports client-side projection
+  (Codex verified at
+  `apps/ios/Packages/FEData/.build/checkouts/supabase-swift/Sources/PostgREST/PostgrestTransformBuilder.swift:11`).
+  Eliminates D11's need for a backend change.
+- **Web reference impl** —
+  `apps/web/src/features/plan/hooks/use-plan-for-today.ts:181-197` is the rank-preservation
+  pattern iOS mirrors per D14a.
+- **`profiles.city_preference_id` + `profiles.child_age`** — columns already exist
+  (`supabase/migrations/20260601000000_001_schema.sql:56`); D3's minimal ProfileRepo
+  reads them without schema changes.
+
+---
+
+## Failure modes
+
+| Codepath | Failure | Tested | Error handling | User sees |
+|---|---|---|---|---|
+| `CoreLocationService.currentLocation()` | iOS 17 LocationUpdate provider returns no emit within timeout | D8 (timeout arm) | Returns nil; PlanComposer falls back to city | Silent fallback |
+| `CoreLocationService` | User denies permission | D8 (denied case) | Returns nil; ProfileRepo cityID fires | Silent fallback (city events) |
+| `WeatherKitService.currentWeather` | Missing entitlement on test target / sim without internet | D8 (mapper-only tests) | `try?` in PlanComposer swallows → weatherFit="neutral" | Plan still renders, weather term neutral |
+| `ProfileRepo.currentContext` | Profile row missing for new account | D9 follow-on | Returns (nil, nil); SQL receives nulls → GLOBAL events | **R4 risk** — set-your-city CTA needed (deferred) |
+| `SupabasePlanRepository.fetchPlan` | RPC throws (network / RLS) | D9 (3rd test) | Propagates; cache untouched | Error toast + Retry button |
+| `SupabaseEventRepository.fetch` | RPC throws after rankings arrive | D9 (4th test) | Propagates; CachedPlannedEvent partial | Error UI; prior cache visible |
+| `PlanComposer.upsert` | Rankings empty (mid-week gap) | D4 test | Cache writes skipped; banner copy | "No new plan — showing yesterday's" |
+| `PlanComposer.refresh` | Returns events in start_datetime order, not rank order | D14a regression test | Rebuild via `rankings.compactMap { eventsByID[$0.eventID] }` | Hero is true top-1 |
+| `AppModelContainer.makePersistent()` | Schema migration failure on first launch | Iron-rule regression test | App shows `ConfigErrorView` | "Couldn't start the app" |
+| `EventDTO` decode | Malformed ISO date string | TODO #1 (1 new test) | Throws DecodingError instead of returning epoch 1970 | RPC fetch fails → Retry |
+| `SaturdayPlanScreen` cold launch | ModelContainer not in environment | D14b smoke | `.modelContainer(container)` injection asserted in tests | @Query renders cached rows |
+| `PlanTab` body recompute | ViewModel re-initialized on body run | D14c smoke | `@State` hoist; init-once via failable init | No spurious refresh |
+
+**Critical gaps (no test AND no error handling AND silent failure):** none. Every codepath
+has at least a test or an error handler; D14a + D14b + D14c + D4 close the four worst
+silent failures from the original plan.
+
+---
+
+## Worktree parallelization strategy
+
+| Step | Modules touched | Depends on |
+|---|---|---|
+| FECore primitives (Tasks 1-2) + DTOs (Tasks 3-5) | `FECore/`, `FEData/DTOs/` | — |
+| SwiftData models + upsert (Tasks 6-7) | `FEData/Models/` | — |
+| Services (Tasks 8-13) + protocol seam (D8) | `FEData/Services/`, `FEDataTesting/` | FECore primitives + WeatherSnapshot |
+| ProfileRepo (D3) | `FEData/Repositories/`, `FEDataTesting/` | FECore primitives |
+| Plan / Event repos + PlanComposer (Tasks 14-17, +D14a) | `FEData/Repositories/` | DTOs + Services + Models |
+| ViewModel + UI primitives (Tasks 18-22, +D7) | `FEPlan/`, `FEDesignSystem/EventCard.swift` | PlanComposer + EventDTO |
+| Screen + tab + app wiring (Tasks 23-26, +D1+D14b+D14c) | `FEPlan/Screens`, `FamilyEvents/App/` | All above |
+| XCUITest critical paths (D10) | `FamilyEventsUITests/` | App wiring complete |
+
+**Lanes:**
+
+- **Lane A (independent):** FECore primitives + DTOs. Unblocks everything.
+- **Lane B (parallel with A):** SwiftData models + upsert. No FECore-primitive dep.
+- **Lane C (after A):** Services with CLLocationUpdate.liveUpdates + WeatherKit mapper
+  split. Tests use the protocol-seam fakes.
+- **Lane D (after A):** ProfileRepo. Touches `FEData/Repositories/` but doesn't conflict
+  with Lane E because Lane E's repos go in the same dir but different files.
+- **Lane E (after B + C + D):** Plan/Event repos + PlanComposer with D14a rank
+  preservation + D4 empty-skip + D9 error-path tests.
+- **Lane F (after E):** ViewModel + UI primitives (with D7 shared formatters + D14c
+  state hoist).
+- **Lane G (after F):** Screen + tab + app wiring (with D1 @Query binding + D14b
+  modelContainer injection).
+- **Lane H (after G):** XCUITest critical paths.
+
+**Execution order:** A and B in parallel from the start. After A, launch C + D in
+parallel. After all of B+C+D, launch E. Then F, G, H sequentially. Lane E is the
+bottleneck — keep it focused.
+
+**Conflict flags:** Lane D and Lane E both touch `FEData/Repositories/` — different
+files, but the same module's Package.swift. Coordinate Package.swift edits or land
+D's task before launching E.
+
+---
+
+## Completion summary
+
+- Step 0: scope challenge → SCOPE_REFINED (D5 phantom file dropped; ~28 → 27 effective
+  new files; the spec's module split justifies the rest).
+- Architecture Review: 3 issues found (D2, D3, D4) — all answered.
+- Code Quality Review: 3 issues found (D5, D6, D7) — all answered.
+- Test Review: 3 issues + 1 iron-rule regression found (D8, D9, D10 + AppModelContainer.makePersistent
+  regression) — all answered.
+- Performance Review: 1 issue found (D11) — answered, then REVERSED via D13 after Codex
+  pushback.
+- Outside Voice: 1 cross-model tension (D13, accepted Codex) + 4 new bugs caught
+  (D14a hero-rank, D14b modelContainer-injection, D14c PlanViewModel state-churn, D14d
+  profile column name).
+- NOT in scope: written above; 5 explicit deferrals.
+- What already exists: written above; 12 reuse points.
+- TODOS.md updates: 1 new entry (Phase 3: snapshot testing harness).
+- Built-in-M3 TODO: 1 (strict date parsing in EventDTO).
+- Failure modes: 12 codepaths mapped; 0 critical gaps remaining after D1/D4/D9/D14a.
+- Outside voice: ran (codex) — see D13 + D14a-d.
+- Parallelization: 8 lanes total; 4 of them (A+B initially, then C+D after A) launch
+  in parallel; E+F+G+H sequential.
+- Lake Score: 14/14 decisions chose the complete option. 100% lake.
+- Unresolved decisions: 0.
+
+---
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | not run (M3 is execution-shaped, not scope-shaped) |
+| Codex Review | `/codex review` | Independent 2nd opinion | 1 | issues_found | 5 substantive new findings (4 bugs + 1 D11 reversal) |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | issues_open | 14 decisions raised + answered, 0 unresolved, 5 outside-voice findings folded in |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | recommended next (Plan tab is UI-heavy) |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | n/a (no public-API surface in M3) |
+
+- **CODEX:** Codex caught 4 real bugs the review missed: hero-ranking preservation,
+  ModelContainer environment injection, PlanViewModel state churn, profile column
+  name. Also reversed D11 (overfetch fix): use client-side `.select()` instead of
+  adding `p_columns` to `events_enriched`. All 5 folded into D13 + D14.
+- **CROSS-MODEL:** Claude review + Codex agree on the structural shape — composer
+  pattern, fakes-driven tests, server-side scoring. Disagreement only on D11
+  (resolved via D13).
+- **UNRESOLVED:** 0
+- **VERDICT:** ENG CLEARED — 14 decisions captured, 0 unresolved. Implementation
+  must apply all decisions before tagging `ios-m3-plan`. Critical bugs (D14a rank,
+  D14b modelContainer, D14c state-churn) are blockers, not nice-to-haves.

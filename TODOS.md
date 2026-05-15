@@ -24,3 +24,14 @@
 - **Why:** Either wire `useEvents` into `explore.tsx` to enable server-side filtering (closes the original Explore-filters-client-side gap from the office-hours audit), or delete both the hook and the RPC. Current state confuses code archaeology and adds maintenance surface.
 - **Context:** Captured during /plan-eng-review on 2026-05-10 of the Saturday Plan design doc. The original gap audit listed Explore client-side filtering as P1; it's still true. `events_enriched` RPC powers Explore today; `search_events` RPC is the unused parallel path.
 - **Depends on:** Decision on whether server-side filtering for Explore is worth a follow-up PR (the Saturday Plan reframe doesn't touch Explore).
+
+## Phase 3 — iOS hardening
+
+### Snapshot testing harness for FEDesignSystem
+
+- **What:** Add `pointfreeco/swift-snapshot-testing` dependency to `apps/ios/Packages/FEDesignSystem/Package.swift` and produce light/dark/Dynamic Type snapshot tests for `EventCard` (and future `StarRating`, `FavoriteButton`). Configure baseline-image storage + CI simulator pinning for stable rendering.
+- **Why:** iOS spec §10 explicitly mandates snapshot tests on FEDesignSystem primitives. M5 Explore will introduce additional card variants and reuse `EventCard` heavily; without snapshots, accidental visual regressions land silently across both Plan and Explore surfaces. Catching this now is cheaper than after M5 multiplies the surface area.
+- **Context:** Captured during /plan-eng-review on 2026-05-14 of the iOS M3 Plan tab plan. M3 ships `EventCard` (the shared primitive) without snapshot coverage; this TODO lands as a prerequisite for M5 EventCard reuse. The harness work itself (~2-3 hours: dep setup, CI baseline images, simulator pinning) is heavier than M3 should absorb, but trivial to revisit before M5 begins.
+- **Pros:** Spec compliance; catches visual regressions before they reach TestFlight; baseline-image diff comments on PRs make design-side review concrete.
+- **Cons:** New CI artifact storage (snapshot PNGs in-tree or via Git LFS); simulator pin friction when Xcode updates change rendering subtly.
+- **Depends on:** M5 Explore implementation start; no upstream blockers.
