@@ -21,6 +21,18 @@ Key routing rules:
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
 
+## Design System
+
+Always read [`docs/DESIGN.md`](./docs/DESIGN.md) before making any visual or UI decisions.
+
+All font choices, colors, spacing, radius, motion, and aesthetic direction are defined there. Do not deviate without explicit user approval.
+
+Source of truth lives in `packages/design-system` (tokens) and is consumed by both `apps/web` and `apps/ios` via codegen. Web tokens generate CSS custom properties for Tailwind 4's `@theme`. iOS tokens generate Swift constants for `FEDesignSystem`.
+
+Mockup reference: [`docs/design/mocks/design-preview.html`](./docs/design/mocks/design-preview.html).
+
+In QA mode, flag any code that doesn't match DESIGN.md.
+
 ## Conventions
 
 ### New SECURITY DEFINER RPCs

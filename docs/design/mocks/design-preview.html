@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>family-events — design system preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=DM+Sans:opsz,wght@9..40,300..700&family=Newsreader:opsz,wght,ital@6..72,400..700,0;6..72,400..700,1&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: oklch(97.5% 0.018 88);
+    --surface: #ffffff;
+    --surface-raised: oklch(94.5% 0.025 88);
+    --text-primary: oklch(23% 0.025 78);
+    --text-muted: oklch(50% 0.035 78);
+    --border: oklch(84% 0.035 82);
+
+    --accent-primary: #256F5D;
+    --accent-primary-soft: #DDEEE7;
+    --accent-secondary: #E36B3F;
+    --accent-secondary-soft: #FAE0D2;
+    --accent-tertiary: #3B75AF;
+    --accent-tertiary-soft: #DDE9F4;
+    --accent-kid: #F2C94C;
+    --accent-kid-soft: #FBEBB8;
+
+    --success: #2E7D5B;
+    --warning: #B7791F;
+    --error: #B94A48;
+    --info: #3B75AF;
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+
+    --font-display: "Fraunces", ui-serif, Georgia, serif;
+    --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-editorial: "Newsreader", ui-serif, Georgia, serif;
+    --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  }
+
+  .dark {
+    --bg: oklch(18% 0.015 60);
+    --surface: oklch(22% 0.018 60);
+    --surface-raised: oklch(26% 0.02 60);
+    --text-primary: oklch(94% 0.012 78);
+    --text-muted: oklch(70% 0.02 78);
+    --border: oklch(34% 0.02 70);
+    --accent-primary: #4DA38D;
+    --accent-primary-soft: #1F4E43;
+    --accent-secondary: #F08A60;
+    --accent-secondary-soft: #5E3325;
+    --accent-tertiary: #6FA0D3;
+    --accent-tertiary-soft: #25425F;
+    --accent-kid: #F2C94C;
+    --accent-kid-soft: #5B4A1A;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-primary); font-family: var(--font-body); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 var(--space-4); }
+  @media (min-width: 768px) { .container { padding: 0 var(--space-6); } }
+
+  /* ============ Header ============ */
+  header.preview-header {
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-5) 0;
+    position: sticky;
+    top: 0;
+    background: color-mix(in oklch, var(--bg) 92%, transparent);
+    backdrop-filter: saturate(180%) blur(10px);
+    z-index: 10;
+  }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 28px; letter-spacing: -0.02em; display: flex; align-items: center; gap: var(--space-2); }
+  .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-primary); }
+  .header-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .header-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+  .toggle {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-primary); padding: 8px 14px; border-radius: var(--radius-md);
+    font-family: var(--font-body); font-size: 14px; cursor: pointer; min-height: 44px;
+  }
+  .toggle:hover { background: var(--surface-raised); }
+
+  /* ============ Section ============ */
+  section { padding: var(--space-7) 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: 0; }
+  h2.section-title {
+    font-family: var(--font-display); font-weight: 400; font-size: 36px;
+    letter-spacing: -0.025em; margin: 0 0 var(--space-2); color: var(--text-primary);
+    font-variation-settings: "SOFT" 60, "opsz" 72;
+  }
+  .section-lede { font-family: var(--font-editorial); font-size: 18px; color: var(--text-muted); max-width: 60ch; margin: 0 0 var(--space-6); font-style: italic; }
+
+  /* ============ Thesis ============ */
+  .thesis {
+    display: grid; gap: var(--space-5); grid-template-columns: 1fr;
+    background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: var(--space-6);
+  }
+  @media (min-width: 768px) { .thesis { grid-template-columns: 2fr 1fr; padding: var(--space-7); } }
+  .thesis h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 4vw, 48px); line-height: 1.1; letter-spacing: -0.03em; margin: 0; font-variation-settings: "SOFT" 80, "opsz" 144; }
+  .thesis p { font-family: var(--font-editorial); font-size: 18px; max-width: 50ch; color: var(--text-muted); margin: var(--space-3) 0 0; }
+  .thesis aside { background: var(--accent-primary-soft); color: var(--accent-primary); padding: var(--space-4); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
+  .thesis aside strong { display: block; color: var(--accent-primary); font-family: var(--font-display); font-style: italic; font-size: 18px; margin-bottom: var(--space-2); font-weight: 500; }
+
+  /* ============ Type specimen ============ */
+  .type-grid { display: grid; gap: var(--space-5); grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .type-grid { grid-template-columns: 1fr 1fr; } }
+  .specimen { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-5); }
+  .specimen-label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--space-3); }
+  .specimen-fraunces { font-family: var(--font-display); font-size: 40px; font-weight: 400; line-height: 1.05; letter-spacing: -0.025em; font-variation-settings: "SOFT" 80; }
+  .specimen-fraunces em { font-style: italic; font-weight: 350; }
+  .specimen-dmsans { font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+  .specimen-dmsans .stack { display: grid; gap: 4px; }
+  .specimen-dmsans .sm { font-size: 13px; color: var(--text-muted); }
+  .specimen-dmsans .lg { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
+  .specimen-newsreader { font-family: var(--font-editorial); font-size: 18px; line-height: 1.65; font-weight: 400; }
+  .specimen-mono { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; line-height: 1.6; }
+
+  /* ============ Palette ============ */
+  .palette { display: grid; gap: var(--space-4); grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 640px) { .palette { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) { .palette { grid-template-columns: repeat(4, 1fr); } }
+  .swatch { border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+  .swatch-color { height: 100px; }
+  .swatch-meta { padding: var(--space-3); font-family: var(--font-mono); font-size: 12px; }
+  .swatch-meta strong { display: block; font-family: var(--font-body); font-weight: 500; font-size: 14px; margin-bottom: 2px; color: var(--text-primary); }
+  .swatch-role { color: var(--text-muted); margin-top: 4px; font-style: italic; }
+
+  /* ============ Buttons ============ */
+  .btn-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-top: var(--space-4); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); padding: 12px 18px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 500; font-size: 14px; cursor: pointer; border: 1px solid transparent; line-height: 1; }
+  .btn-primary { background: var(--accent-primary); color: white; }
+  .btn-primary:hover { background: oklch(from var(--accent-primary) calc(l - 0.05) c h); }
+  .btn-secondary { background: var(--accent-secondary); color: white; }
+  .btn-ghost { background: transparent; color: var(--text-primary); border-color: var(--border); }
+  .btn-ghost:hover { background: var(--surface-raised); }
+
+  /* ============ Pills (kid-affordances) ============ */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-3); }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-full); font-family: var(--font-body); font-size: 12px; font-weight: 500; line-height: 1.5; min-height: 22px; }
+  .pill-kid { background: var(--accent-kid-soft); color: oklch(35% 0.07 78); }
+  .dark .pill-kid { color: var(--accent-kid); }
+  .pill-free { background: var(--accent-primary-soft); color: var(--accent-primary); }
+  .pill-loc { background: var(--accent-tertiary-soft); color: var(--accent-tertiary); }
+  .pill-warn { background: oklch(94% 0.04 70); color: var(--warning); }
+
+  /* ============ Mockup frame (mobile) ============ */
+  .mockups { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .mockups { grid-template-columns: repeat(3, 1fr); } }
+  .device {
+    width: 100%; max-width: 393px; margin: 0 auto;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 36px; overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(40, 30, 20, 0.18);
+  }
+  .device-screen { padding: var(--space-4) var(--space-4) var(--space-3); display: grid; gap: var(--space-4); }
+  .device-frame-label { text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-bottom: var(--space-3); letter-spacing: 0.04em; }
+
+  /* device top bar */
+  .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 0; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+  .top-bar .right { display: flex; gap: 4px; }
+
+  /* location confidence band */
+  .loc-band { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-3); background: var(--accent-tertiary-soft); border-radius: var(--radius-md); }
+  .loc-band-pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent-tertiary); position: relative; flex-shrink: 0; }
+  .loc-band-pin::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: white; border-radius: 50%; }
+  .loc-band-text { font-family: var(--font-body); font-size: 13px; color: var(--accent-tertiary); font-weight: 500; line-height: 1.3; flex: 1; }
+  .loc-band-text strong { display: block; font-family: var(--font-display); font-weight: 500; font-size: 15px; color: var(--accent-tertiary); }
+
+  /* date rail */
+  .date-rail { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .date-rail::-webkit-scrollbar { display: none; }
+  .date-chip { flex-shrink: 0; padding: 8px 14px; border-radius: var(--radius-full); border: 1px solid var(--border); background: var(--surface); font-family: var(--font-body); font-size: 13px; font-weight: 500; min-height: 36px; display: inline-flex; align-items: center; line-height: 1; min-width: 64px; justify-content: center; }
+  .date-chip.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+  .date-chip-day { font-family: var(--font-mono); font-size: 10px; opacity: 0.8; text-transform: uppercase; display: block; }
+  .date-chip-num { font-family: var(--font-display); font-size: 16px; font-weight: 500; display: block; }
+  .date-chip .stack { text-align: center; }
+
+  /* hero event card */
+  .hero-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  .hero-photo { height: 180px; background: linear-gradient(135deg, #BFD9C7 0%, #87B89E 50%, #4F8B72 100%); position: relative; }
+  .hero-photo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.3) 0%, transparent 50%); }
+  .hero-photo-label { position: absolute; bottom: 8px; left: 10px; right: 10px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.85); letter-spacing: 0.04em; }
+  .hero-body { padding: var(--space-4); }
+  .hero-eyebrow { font-family: var(--font-mono); font-size: 10px; color: var(--accent-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .hero-title { font-family: var(--font-display); font-weight: 500; font-size: 24px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 var(--space-2); color: var(--text-primary); }
+  .hero-byline { font-family: var(--font-editorial); font-style: italic; font-size: 14px; color: var(--text-muted); margin: 0 0 var(--space-3); line-height: 1.5; }
+  .hero-meta { display: flex; gap: var(--space-3); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-muted); margin-bottom: var(--space-3); }
+  .hero-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* secondary cards */
+  .sec-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); display: flex; gap: var(--space-3); }
+  .sec-thumb { width: 76px; height: 76px; border-radius: var(--radius-sm); background: linear-gradient(135deg, #F4D9A0, #E8B872); flex-shrink: 0; }
+  .sec-thumb.b { background: linear-gradient(135deg, #C9D8E8, #7396BD); }
+  .sec-body { flex: 1; min-width: 0; }
+  .sec-eyebrow { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .sec-title { font-family: var(--font-display); font-weight: 500; font-size: 16px; line-height: 1.2; letter-spacing: -0.01em; margin: 2px 0 4px; color: var(--text-primary); }
+  .sec-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  /* tab bar */
+  .tab-bar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); padding: var(--space-2) var(--space-2) calc(var(--space-3) + env(safe-area-inset-bottom)); background: color-mix(in oklch, var(--surface) 95%, transparent); }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; font-family: var(--font-body); font-size: 11px; color: var(--text-muted); min-height: 44px; justify-content: center; }
+  .tab.active { color: var(--accent-primary); }
+  .tab-icon { width: 22px; height: 22px; border-radius: 4px; background: currentColor; opacity: 0.9; }
+
+  /* admin mockup */
+  .admin-screen { padding: var(--space-3); display: grid; gap: var(--space-3); }
+  .admin-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-2); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border); }
+  .admin-h1 { font-family: var(--font-display); font-weight: 500; font-size: 20px; letter-spacing: -0.02em; margin: 0; }
+  .admin-sub { font-family: var(--font-body); font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+  .admin-overflow { font-family: var(--font-mono); font-size: 18px; color: var(--text-muted); padding: 8px; min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); }
+  .src-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--surface); }
+  .src-row1 { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .src-name { font-family: var(--font-display); font-weight: 500; font-size: 15px; letter-spacing: -0.01em; line-height: 1.2; }
+  .src-toggle { width: 36px; height: 22px; border-radius: 11px; background: var(--accent-primary); position: relative; flex-shrink: 0; }
+  .src-toggle::after { content: ''; position: absolute; top: 2px; left: 16px; width: 18px; height: 18px; border-radius: 50%; background: white; }
+  .src-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .src-status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--accent-primary-soft); color: var(--accent-primary); font-size: 10px; font-weight: 500; }
+  .src-actions { display: flex; gap: 6px; margin-top: var(--space-3); flex-wrap: wrap; }
+  .chip-btn { flex: 1; min-width: 0; padding: 8px 10px; min-height: 36px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  .chip-btn-primary { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+
+  /* event detail */
+  .ed-hero { height: 220px; background: linear-gradient(160deg, #E8C696 0%, #C99464 60%, #8E5934 100%); position: relative; }
+  .ed-hero-overlay { position: absolute; left: var(--space-4); right: var(--space-4); bottom: var(--space-4); color: white; }
+  .ed-hero-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+  .ed-hero-title { font-family: var(--font-display); font-weight: 500; font-size: 26px; line-height: 1.1; letter-spacing: -0.02em; margin: 4px 0 0; max-width: 100%; }
+  .ed-body { padding: var(--space-4); display: grid; gap: var(--space-4); }
+  .ed-info { display: grid; gap: var(--space-3); grid-template-columns: 1fr 1fr; }
+  .ed-info-item { font-family: var(--font-body); }
+  .ed-info-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 2px; }
+  .ed-info-value { font-family: var(--font-display); font-size: 16px; font-weight: 500; line-height: 1.2; }
+  .ed-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; }
+  .ed-prose { font-family: var(--font-editorial); font-size: 15px; line-height: 1.6; color: var(--text-primary); }
+  .ed-cta-sticky { position: sticky; bottom: 0; background: color-mix(in oklch, var(--surface) 96%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); display: flex; gap: var(--space-2); }
+  .ed-cta-sticky .btn { flex: 1; }
+
+  /* radius scale */
+  .radius-row { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-4); }
+  .radius-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .radius-box { width: 70px; height: 70px; background: var(--accent-primary-soft); border: 1px solid var(--accent-primary); }
+  .radius-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-align: center; }
+  .radius-meta strong { display: block; color: var(--text-primary); font-family: var(--font-body); }
+
+  /* spacing scale */
+  .space-row { display: flex; align-items: flex-end; gap: var(--space-2); margin-top: var(--space-4); flex-wrap: wrap; }
+  .space-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .space-bar { background: var(--accent-primary); width: 18px; }
+  .space-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+
+  footer.preview-footer { padding: var(--space-6) 0; text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+  <header class="preview-header">
+    <div class="container header-row">
+      <div class="brand"><span class="brand-dot"></span>family-events</div>
+      <div class="header-meta">design system preview &middot; 2026-05-16</div>
+      <button class="toggle" id="theme-toggle">Dark mode</button>
+    </div>
+  </header>
+
+  <section class="container">
+    <div class="thesis">
+      <div>
+        <h1>A sunlit civic bulletin board <em>for families.</em></h1>
+        <p>Tactile paper. Local map logic. Warm daylight. Just enough playful color to feel kid-aware without becoming childish. Sunday morning at the kitchen table, planning a weekend that already feels handled.</p>
+      </div>
+      <aside>
+        <strong>Memorable thing</strong>
+        This product knows my city, my neighborhood, and what my kids will like.
+      </aside>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2 class="section-title">Typography</h2>
+    <p class="section-lede">Four families, four jobs. Fraunces does the editorial heavy lifting. DM Sans handles every tappable surface. Newsreader carries long-form curator notes. Geist Mono owns dates, prices, and admin tables.</p>
+    <div class="type-grid">
+      <div class="specimen">
+        <div class="specimen-label">Display &middot; Fraunces &middot; serif &middot; variable</div>
+        <div class="specimen-fraunces">Saturday in <em>Logan Square</em></div>
+        <p style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin: 12px 0 0;">Event titles, section headers, hero copy, app name. Soft serif with literary tilt, weight 400-500.</p>
+      </div>
+      <div class="specimen">
+        <div class="specimen-label">UI &middot; DM Sans &middot; sans &middot; humanist</div>
+        <div class="specimen-dmsans">
+          <div class="stack">
+            <div class="lg">Save to my plan</div>
+            <div>Filter chips, body copy, form labels, buttons, tab bar — every surface a parent taps.</div>
+            <div class="sm">Tertiary metadata, captions, helper text.</div>
+          </div>
+        </div>
+      </div>
+      <div class="specimen">
+        <div class="specimen-label">Editorial body &middot; Newsreader &middot; serif</div>
+        <div class="specimen-newsreader">A free Saturday morning at the Lincoln Park Conservatory — quiet enough for a stroller, leafy enough that a four-year-old will want to come back. Bring a snack.</div>
+      </div>
+      <div class="specimen">
+        <div class="specimen-label">Data &middot; Geist Mono &middot; tabular-nums</div>
+        <div class="specimen-mono">
+          0.4 mi &middot; Ages 4-7 &middot; Free<br />
+          Sat May 16 &middot; 10:00a-12:00p<br />
+          Last run: 5/16 1:00a &nbsp; Stale: 6h
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2 class="section-title">Palette</h2>
+    <p class="section-lede">Warm paper bedrock. Neighborhood green is the brand anchor. Coral is the action color — Save, Plan, This Weekend. Civic blue belongs to location and credibility. School-bus yellow belongs to kids — age fit, free, stroller-friendly, indoor backup.</p>
+    <div class="palette">
+      <div class="swatch"><div class="swatch-color" style="background: var(--bg);"></div><div class="swatch-meta"><strong>Background</strong>oklch(97.5% .018 88)<div class="swatch-role">warm paper, never sterile</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--surface); border-bottom: 1px solid var(--border);"></div><div class="swatch-meta"><strong>Surface</strong>#FFFFFF<div class="swatch-role">cards, sheets, admin</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--surface-raised);"></div><div class="swatch-meta"><strong>Surface raised</strong>oklch(94.5% .025 88)<div class="swatch-role">elevated panels</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--text-primary);"></div><div class="swatch-meta"><strong style="color: white; background: var(--text-primary); display: block; padding: 0;">Text</strong>oklch(23% .025 78)<div class="swatch-role">warm charcoal, never #000</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-primary);"></div><div class="swatch-meta"><strong>Neighborhood green</strong>#256F5D<div class="swatch-role">brand anchor &middot; parks &middot; trust</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-secondary);"></div><div class="swatch-meta"><strong>Flyer coral</strong>#E36B3F<div class="swatch-role">save, plan, this weekend</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-tertiary);"></div><div class="swatch-meta"><strong>Civic blue</strong>#3B75AF<div class="swatch-role">location, admin, source credibility</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-kid);"></div><div class="swatch-meta"><strong>School-bus yellow</strong>#F2C94C<div class="swatch-role">kid-affordances &middot; age fit &middot; free</div></div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary">Plan my Saturday</button>
+      <button class="btn btn-secondary">Save event</button>
+      <button class="btn btn-ghost">Open in Maps</button>
+    </div>
+
+    <div class="pill-row">
+      <span class="pill pill-kid">Ages 4-7</span>
+      <span class="pill pill-kid">Stroller-friendly</span>
+      <span class="pill pill-kid">Indoor backup</span>
+      <span class="pill pill-free">Free</span>
+      <span class="pill pill-loc">0.4 mi</span>
+      <span class="pill pill-warn">Rain forecast</span>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2 class="section-title">Spacing &amp; radius</h2>
+    <p class="section-lede">Base 4px. Mobile-tight by default, desktop-comfortable. Radius is intentional, not bubble-everywhere: 6px admin controls, 8px consumer cards, 12px mobile sheets.</p>
+    <div class="space-row">
+      <div class="space-tile"><div class="space-bar" style="height: 4px;"></div><div class="space-meta">4</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 8px;"></div><div class="space-meta">8</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 12px;"></div><div class="space-meta">12</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 16px;"></div><div class="space-meta">16</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 24px;"></div><div class="space-meta">24</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 32px;"></div><div class="space-meta">32</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 48px;"></div><div class="space-meta">48</div></div>
+      <div class="space-tile"><div class="space-bar" style="height: 64px;"></div><div class="space-meta">64</div></div>
+    </div>
+    <div class="radius-row">
+      <div class="radius-tile"><div class="radius-box" style="border-radius: 6px;"></div><div class="radius-meta"><strong>sm 6</strong>admin controls</div></div>
+      <div class="radius-tile"><div class="radius-box" style="border-radius: 8px;"></div><div class="radius-meta"><strong>md 8</strong>consumer cards</div></div>
+      <div class="radius-tile"><div class="radius-box" style="border-radius: 12px;"></div><div class="radius-meta"><strong>lg 12</strong>mobile sheets</div></div>
+      <div class="radius-tile"><div class="radius-box" style="border-radius: 9999px;"></div><div class="radius-meta"><strong>full</strong>pills, avatars</div></div>
+    </div>
+  </section>
+
+  <section class="container">
+    <h2 class="section-title">Mockups</h2>
+    <p class="section-lede">Three real screens. Saturday Plan is the daily consumer surface. Event Detail proves the kid-context layer. Admin Sources is the screenshot you sent — fixed at 393pt.</p>
+    <div class="mockups">
+
+      <div>
+        <div class="device-frame-label">Saturday Plan &middot; 393pt</div>
+        <div class="device">
+          <div class="device-screen">
+            <div class="top-bar"><span>9:41</span><span class="right">●●● ▲▲ 100%</span></div>
+            <div class="loc-band">
+              <div class="loc-band-pin"></div>
+              <div class="loc-band-text"><strong>Logan Square</strong>12 events this weekend</div>
+            </div>
+            <div class="date-rail">
+              <div class="date-chip active"><div class="stack"><span class="date-chip-day">SAT</span><span class="date-chip-num">16</span></div></div>
+              <div class="date-chip"><div class="stack"><span class="date-chip-day">SUN</span><span class="date-chip-num">17</span></div></div>
+              <div class="date-chip"><div class="stack"><span class="date-chip-day">SAT</span><span class="date-chip-num">23</span></div></div>
+              <div class="date-chip"><div class="stack"><span class="date-chip-day">SUN</span><span class="date-chip-num">24</span></div></div>
+            </div>
+            <div class="hero-card">
+              <div class="hero-photo">
+                <div class="hero-photo-label">PALMER SQUARE PARK &middot; FREE</div>
+              </div>
+              <div class="hero-body">
+                <div class="hero-eyebrow">Featured &middot; This Saturday</div>
+                <h3 class="hero-title">Storytime + Maker Lab</h3>
+                <p class="hero-byline">Quiet enough for a stroller, hands-on enough to keep a four-year-old's attention.</p>
+                <div class="hero-meta">
+                  <span>10:00a-12:00p</span>
+                  <span>0.4 mi</span>
+                </div>
+                <div class="pill-row" style="margin: 0 0 12px;">
+                  <span class="pill pill-kid">Ages 3-7</span>
+                  <span class="pill pill-free">Free</span>
+                  <span class="pill pill-kid">Stroller</span>
+                  <span class="pill pill-kid">Indoor backup</span>
+                </div>
+                <div class="btn-row" style="margin: 0;">
+                  <button class="btn btn-primary" style="flex: 1;">Plan it</button>
+                  <button class="btn btn-secondary" style="flex: 1;">Save</button>
+                </div>
+              </div>
+            </div>
+            <div class="sec-card">
+              <div class="sec-thumb"></div>
+              <div class="sec-body">
+                <div class="sec-eyebrow">Sat &middot; 1:00p</div>
+                <div class="sec-title">Family Bike Ride &mdash; The 606</div>
+                <div class="pill-row" style="margin: 0 0 6px;">
+                  <span class="pill pill-kid">Ages 6+</span>
+                  <span class="pill pill-free">Free</span>
+                </div>
+                <div class="sec-meta">0.9 mi &middot; Bring helmet</div>
+              </div>
+            </div>
+            <div class="sec-card">
+              <div class="sec-thumb b"></div>
+              <div class="sec-body">
+                <div class="sec-eyebrow">Sun &middot; 11:00a</div>
+                <div class="sec-title">Lincoln Park Conservatory</div>
+                <div class="pill-row" style="margin: 0 0 6px;">
+                  <span class="pill pill-kid">All ages</span>
+                  <span class="pill pill-free">Free</span>
+                  <span class="pill pill-kid">Indoor</span>
+                </div>
+                <div class="sec-meta">2.1 mi &middot; Stroller-friendly paths</div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab active"><div class="tab-icon"></div>Plan</div>
+            <div class="tab"><div class="tab-icon"></div>Explore</div>
+            <div class="tab"><div class="tab-icon"></div>Saved</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="device-frame-label">Event Detail &middot; 393pt</div>
+        <div class="device">
+          <div class="ed-hero">
+            <div class="ed-hero-overlay">
+              <div class="ed-hero-eyebrow">Featured &middot; Saturday</div>
+              <h3 class="ed-hero-title">Storytime + Maker Lab at Palmer Square</h3>
+            </div>
+          </div>
+          <div class="ed-body">
+            <div class="ed-info">
+              <div class="ed-info-item">
+                <div class="ed-info-label">When</div>
+                <div class="ed-info-value">Sat May 16</div>
+                <div class="ed-mono">10:00a&ndash;12:00p</div>
+              </div>
+              <div class="ed-info-item">
+                <div class="ed-info-label">Where</div>
+                <div class="ed-info-value">Palmer Sq Park</div>
+                <div class="ed-mono">0.4 mi &middot; Logan Sq</div>
+              </div>
+              <div class="ed-info-item">
+                <div class="ed-info-label">Ages</div>
+                <div class="ed-info-value">3-7 best</div>
+                <div class="ed-mono">all welcome</div>
+              </div>
+              <div class="ed-info-item">
+                <div class="ed-info-label">Cost</div>
+                <div class="ed-info-value">Free</div>
+                <div class="ed-mono">no signup</div>
+              </div>
+            </div>
+            <div class="pill-row" style="margin: 0;">
+              <span class="pill pill-kid">Stroller-friendly</span>
+              <span class="pill pill-kid">Indoor backup</span>
+              <span class="pill pill-kid">Bathroom on site</span>
+              <span class="pill pill-warn">Rain forecast</span>
+            </div>
+            <p class="ed-prose">A weekly outdoor storytime followed by a hands-on craft table. Run by neighborhood librarians out of the Logan Square branch. If it rains, they move it inside the field-house at the south end of the park.</p>
+            <div class="ed-info-item" style="border-top: 1px solid var(--border); padding-top: var(--space-3);">
+              <div class="ed-info-label">Source</div>
+              <div class="ed-mono" style="color: var(--accent-tertiary);">chicagoparkdistrict.com</div>
+            </div>
+          </div>
+          <div class="ed-cta-sticky">
+            <button class="btn btn-ghost">Open in Maps</button>
+            <button class="btn btn-secondary">Save event</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="device-frame-label">Admin Sources &middot; 393pt (fixes the screenshot)</div>
+        <div class="device">
+          <div class="admin-screen">
+            <div class="admin-header">
+              <div>
+                <h3 class="admin-h1">Sources</h3>
+                <p class="admin-sub">8 active &middot; 2 stale</p>
+              </div>
+              <button class="admin-overflow">&middot;&middot;&middot;</button>
+            </div>
+            <div class="src-card">
+              <div class="src-row1">
+                <div>
+                  <div class="src-name">Chicago Park District</div>
+                  <span class="src-status">active</span>
+                </div>
+                <div class="src-toggle"></div>
+              </div>
+              <div class="src-meta">
+                <span>5/16 1:00a</span>
+                <span>237 events</span>
+                <span>auto</span>
+              </div>
+              <div class="src-actions">
+                <button class="chip-btn">Edit</button>
+                <button class="chip-btn">Logs</button>
+                <button class="chip-btn chip-btn-primary">Run</button>
+              </div>
+            </div>
+            <div class="src-card">
+              <div class="src-row1">
+                <div>
+                  <div class="src-name">DNAinfo Family</div>
+                  <span class="src-status" style="background: oklch(94% 0.04 70); color: var(--warning);">stale</span>
+                </div>
+                <div class="src-toggle" style="background: var(--border);"></div>
+              </div>
+              <div class="src-meta">
+                <span>5/9 1:00a</span>
+                <span>84 events</span>
+                <span>manual</span>
+              </div>
+              <div class="src-actions">
+                <button class="chip-btn">Edit</button>
+                <button class="chip-btn">Logs</button>
+                <button class="chip-btn chip-btn-primary">Run</button>
+              </div>
+            </div>
+            <div class="src-card">
+              <div class="src-row1">
+                <div>
+                  <div class="src-name">Macaroni Kid Chicago</div>
+                  <span class="src-status">active</span>
+                </div>
+                <div class="src-toggle"></div>
+              </div>
+              <div class="src-meta">
+                <span>5/16 1:00a</span>
+                <span>61 events</span>
+                <span>auto</span>
+              </div>
+              <div class="src-actions">
+                <button class="chip-btn">Edit</button>
+                <button class="chip-btn">Logs</button>
+                <button class="chip-btn chip-btn-primary">Run</button>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="tab active"><div class="tab-icon"></div>Sources</div>
+            <div class="tab"><div class="tab-icon"></div>Events</div>
+            <div class="tab"><div class="tab-icon"></div>Cities</div>
+            <div class="tab"><div class="tab-icon"></div>Logs</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="preview-footer">
+    <div class="container">family-events &middot; design-system preview &middot; built by /design-consultation &middot; <a href="../../DESIGN.md" style="color: var(--accent-primary);">DESIGN.md</a></div>
+  </footer>
+
+<script>
+  const t = document.getElementById('theme-toggle');
+  t.addEventListener('click', () => {
+    document.documentElement.classList.toggle('dark');
+    t.textContent = document.documentElement.classList.contains('dark') ? 'Light mode' : 'Dark mode';
+  });
+</script>
+</body>
+</html>
