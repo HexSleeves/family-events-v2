@@ -22,6 +22,9 @@ importers:
       '@family-events/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@family-events/design-system':
+        specifier: workspace:*
+        version: link:../../packages/design-system
       '@family-events/shared':
         specifier: workspace:*
         version: link:../../packages/shared
