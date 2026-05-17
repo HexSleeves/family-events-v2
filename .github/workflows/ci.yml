@@ -15,7 +15,6 @@ permissions:
 
 env:
   E2E_ADMIN_EMAIL: admin@familyevents.local
-  E2E_ADMIN_PASSWORD: Admin123!
 
 jobs:
   # Secret scanning + E2E (needs local Supabase — can't run on RWX)
@@ -39,7 +38,6 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@ab5d408e9d066b8ffe7503f789d50fd7e35c0c92 # v6.0.7
         with:
-          version: 11.0.9
           run_install: false
 
       - name: Setup Node
@@ -84,12 +82,13 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Seed admin auth user
+        id: seed_admin
         env:
           API_URL: ${{ steps.supabase.outputs.api_url }}
           SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service_role }}
           ADMIN_EMAIL: ${{ env.E2E_ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ env.E2E_ADMIN_PASSWORD }}
         run: |
+          ADMIN_PASSWORD="$(openssl rand -base64 24 | tr -d "=+/" | cut -c1-24)!Aa1"
           payload=$(printf '{"email":"%s","password":"%s","email_confirm":true}' \
             "$ADMIN_EMAIL" "$ADMIN_PASSWORD")
           code=$(curl -sS -o /tmp/seed_admin.json -w "%{http_code}" \
@@ -100,13 +99,35 @@ jobs:
             -d "$payload")
           case "$code" in
             200|201) echo "admin auth user created" ;;
-            422)     echo "admin auth user already exists (idempotent reuse)" ;;
+            422)
+              echo "admin auth user already exists; resetting password to current run value"
+              existing_user_id=$(jq -r '.id // empty' /tmp/seed_admin.json)
+              if [ -z "$existing_user_id" ]; then
+                echo "::error::could not extract existing admin user id from create response"
+                cat /tmp/seed_admin.json
+                exit 1
+              fi
+              reset_payload=$(printf '{"password":"%s"}' "$ADMIN_PASSWORD")
+              reset_code=$(curl -sS -o /tmp/seed_admin_reset.json -w "%{http_code}" \
+                -X PUT "$API_URL/auth/v1/admin/users/$existing_user_id" \
+                -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+                -H "apikey: $SERVICE_ROLE_KEY" \
+                -H "Content-Type: application/json" \
+                -d "$reset_payload")
+              if [ "$reset_code" != "200" ]; then
+                echo "::error::password reset failed with HTTP $reset_code"
+                cat /tmp/seed_admin_reset.json
+                exit 1
+              fi
+              echo "admin password reset completed"
+              ;;
             *)
               echo "::error::auth admin create returned HTTP $code"
               cat /tmp/seed_admin.json
               exit 1
               ;;
           esac
+          echo "admin_password=$ADMIN_PASSWORD" >> "$GITHUB_OUTPUT"
 
       - name: Promote admin via setup-local
         run: bash scripts/setup-local.sh
@@ -135,7 +156,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ steps.supabase.outputs.api_url }}
           VITE_SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.anon_key }}
           PLAYWRIGHT_ADMIN_EMAIL: ${{ env.E2E_ADMIN_EMAIL }}
-          PLAYWRIGHT_ADMIN_PASSWORD: ${{ env.E2E_ADMIN_PASSWORD }}
+          PLAYWRIGHT_ADMIN_PASSWORD: ${{ steps.seed_admin.outputs.admin_password }}
         run: pnpm run test:e2e
 
       - name: Upload Playwright report on failure
@@ -162,7 +183,6 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@ab5d408e9d066b8ffe7503f789d50fd7e35c0c92 # v6.0.7
         with:
-          version: 11.0.9
           run_install: false
 
       - name: Setup Node
@@ -194,7 +214,6 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@ab5d408e9d066b8ffe7503f789d50fd7e35c0c92 # v6.0.7
         with:
-          version: 11.0.9
           run_install: false
 
       - name: Setup Node
