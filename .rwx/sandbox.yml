@@ -12,9 +12,8 @@ tasks:
     call: git/clone 2.0.7
     with:
       preserve-git-dir: true
-      repository: https://github.com/your-org/your-repo.git
+      repository: https://github.com/HexSleeves/family-events-v2.git
       ref: ${{ init.commit-sha }}
-      github-token: ${{ github.token }}
 
   # Any other dependencies should be defined here and then `use`d by the sandbox task
   - key: sandbox

@@ -38,8 +38,15 @@ supabase/.temp/
 .gstack/
 .firecrawl/
 
+# Android
+**/*.keystore
+**/*.jks
+**/google-services.json
+
 # Xcode / SwiftPM per-user state
 **/xcuserdata/
 **/*.xcuserstate
 **/xcschememanagement.plist
 **/Package.resolved
+!apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+!apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
