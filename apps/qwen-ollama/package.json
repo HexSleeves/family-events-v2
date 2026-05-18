@@ -1,0 +1,8 @@
+{
+  "name": "@family-events/qwen-ollama",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "check": "sh -n start.sh"
+  }
+}
