@@ -1,0 +1,10 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "turbo run build --filter=@family-events/web"
+
+[deploy]
+startCommand = "pnpm --filter @family-events/web start"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

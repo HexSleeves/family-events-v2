@@ -28,6 +28,10 @@ importers:
 
   apps/ios: {}
 
+  apps/llm-proxy: {}
+
+  apps/qwen-ollama: {}
+
   apps/web:
     dependencies:
       '@family-events/contracts':
