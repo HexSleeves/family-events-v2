@@ -48,3 +48,5 @@ supabase/.temp/
 **/*.xcuserstate
 **/xcschememanagement.plist
 **/Package.resolved
+!apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+!apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

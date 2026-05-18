@@ -32,7 +32,6 @@ tasks:
     with:
       repository: https://github.com/HexSleeves/family-events-v2.git
       ref: ${{ init.commit-sha }}
-      github-token: ${{ github.token }}
 
   # ── web ────────────────────────────────────────────────────────────────────
 
