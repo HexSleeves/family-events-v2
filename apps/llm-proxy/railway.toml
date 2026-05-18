@@ -1,9 +1,6 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "node --check src/server.js"
-watchPatterns = [
-  "apps/llm-proxy/**",
-]
 
 [deploy]
 startCommand = "node src/server.js"
