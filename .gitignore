@@ -38,6 +38,11 @@ supabase/.temp/
 .gstack/
 .firecrawl/
 
+# Android
+**/*.keystore
+**/*.jks
+**/google-services.json
+
 # Xcode / SwiftPM per-user state
 **/xcuserdata/
 **/*.xcuserstate
