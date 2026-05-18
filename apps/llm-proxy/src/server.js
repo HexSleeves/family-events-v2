@@ -9,9 +9,9 @@ const OLLAMA_BASE_URL = normalizeBaseUrl(
 const OLLAMA_API_KEY =
   process.env.LLM_OLLAMA_API_KEY ?? process.env.LLM_UPSTREAM_API_KEY ?? "ollama";
 
-// OpenAI upstream
+// OpenAI upstream (must include /v1 path prefix to match Ollama upstream convention)
 const OPENAI_BASE_URL = normalizeBaseUrl(
-  process.env.LLM_OPENAI_BASE_URL ?? "https://api.openai.com",
+  process.env.LLM_OPENAI_BASE_URL ?? "https://api.openai.com/v1",
 );
 const OPENAI_API_KEY = process.env.LLM_OPENAI_API_KEY ?? "";
 
