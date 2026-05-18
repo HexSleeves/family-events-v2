@@ -1,6 +1,7 @@
 FROM ollama/ollama:latest
 
 ENV OLLAMA_HOST=0.0.0.0:11434
+# Space-separated list — override via Railway env var, e.g. "qwen3:1.7b gemma3:4b"
 ENV OLLAMA_MODELS=qwen3:1.7b
 ENV PORT=11434
 

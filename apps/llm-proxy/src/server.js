@@ -1,10 +1,26 @@
 const PORT = Number(process.env.PORT ?? 8080);
-const UPSTREAM_BASE_URL = normalizeBaseUrl(
-  process.env.LLM_UPSTREAM_BASE_URL ?? "",
-);
 const PROXY_API_KEY = process.env.LLM_PROXY_API_KEY ?? "";
-const UPSTREAM_API_KEY = process.env.LLM_UPSTREAM_API_KEY ?? "ollama";
 const REQUEST_TIMEOUT_MS = Number(process.env.LLM_PROXY_TIMEOUT_MS ?? 45_000);
+
+// Ollama upstream — LLM_UPSTREAM_BASE_URL kept as alias for backward compat
+const OLLAMA_BASE_URL = normalizeBaseUrl(
+  process.env.LLM_OLLAMA_BASE_URL ?? process.env.LLM_UPSTREAM_BASE_URL ?? "",
+);
+const OLLAMA_API_KEY =
+  process.env.LLM_OLLAMA_API_KEY ?? process.env.LLM_UPSTREAM_API_KEY ?? "ollama";
+
+// OpenAI upstream
+const OPENAI_BASE_URL = normalizeBaseUrl(
+  process.env.LLM_OPENAI_BASE_URL ?? "https://api.openai.com",
+);
+const OPENAI_API_KEY = process.env.LLM_OPENAI_API_KEY ?? "";
+
+// Comma-separated model name prefixes that route to OpenAI
+const OPENAI_MODEL_PREFIXES = (
+  process.env.LLM_OPENAI_MODEL_PREFIXES ?? "gpt-,o1,o3,o4,text-,dall-e-"
+)
+  .split(",")
+  .filter(Boolean);
 
 function normalizeBaseUrl(value) {
   return value.replace(/\/+$/, "");
@@ -23,32 +39,60 @@ function getBearerToken(req) {
   return match?.[1] ?? "";
 }
 
-function buildUpstreamUrl(req) {
-  const url = new URL(req.url);
-  if (!url.pathname.startsWith("/v1/")) return null;
-  const target = new URL(`${UPSTREAM_BASE_URL}${url.pathname.slice(3)}`);
-  target.search = url.search;
+function resolveProvider(model) {
+  const isOpenAI = OPENAI_MODEL_PREFIXES.some((p) => model.startsWith(p));
+  return isOpenAI
+    ? { baseUrl: OPENAI_BASE_URL, apiKey: OPENAI_API_KEY, name: "openai" }
+    : { baseUrl: OLLAMA_BASE_URL, apiKey: OLLAMA_API_KEY, name: "ollama" };
+}
+
+function buildUpstreamUrl(pathname, search, baseUrl) {
+  if (!pathname.startsWith("/v1/")) return null;
+  const target = new URL(`${baseUrl}${pathname.slice(3)}`);
+  target.search = search;
   return target;
 }
 
 async function proxy(req) {
   const url = new URL(req.url);
+
   if (url.pathname === "/healthz") {
     return json(200, {
       ok: true,
-      upstream_configured: Boolean(UPSTREAM_BASE_URL),
+      ollama_configured: Boolean(OLLAMA_BASE_URL),
+      openai_configured: Boolean(OPENAI_API_KEY),
+      openai_model_prefixes: OPENAI_MODEL_PREFIXES,
     });
-  }
-
-  if (!UPSTREAM_BASE_URL) {
-    return json(500, { error: "LLM_UPSTREAM_BASE_URL is not configured" });
   }
 
   if (!PROXY_API_KEY || getBearerToken(req) !== PROXY_API_KEY) {
     return json(401, { error: "unauthorized" });
   }
 
-  const target = buildUpstreamUrl(req);
+  if (!url.pathname.startsWith("/v1/")) {
+    return json(404, { error: "only /v1/* routes are proxied" });
+  }
+
+  // Buffer body to inspect the model field for routing.
+  // Request payloads are small JSON; response body stays streamed.
+  const hasBody = req.method !== "GET" && req.method !== "HEAD";
+  const bodyText = hasBody ? await req.text() : "";
+
+  let provider = { baseUrl: OLLAMA_BASE_URL, apiKey: OLLAMA_API_KEY, name: "ollama" };
+  if (bodyText) {
+    try {
+      const { model = "" } = JSON.parse(bodyText);
+      if (model) provider = resolveProvider(model);
+    } catch {}
+  }
+
+  if (!provider.baseUrl) {
+    return json(500, {
+      error: `No upstream configured for provider "${provider.name}". Set LLM_${provider.name.toUpperCase()}_BASE_URL.`,
+    });
+  }
+
+  const target = buildUpstreamUrl(url.pathname, url.search, provider.baseUrl);
   if (!target) {
     return json(404, { error: "only /v1/* routes are proxied" });
   }
@@ -60,15 +104,13 @@ async function proxy(req) {
     const headers = new Headers();
     const contentType = req.headers.get("content-type");
     if (contentType) headers.set("Content-Type", contentType);
-    headers.set("Authorization", `Bearer ${UPSTREAM_API_KEY}`);
+    headers.set("Authorization", `Bearer ${provider.apiKey}`);
 
     const upstream = await fetch(target, {
       method: req.method,
       headers,
-      body:
-        req.method === "GET" || req.method === "HEAD" ? undefined : req.body,
+      body: hasBody ? bodyText : undefined,
       signal: controller.signal,
-      duplex: "half",
     });
 
     const responseHeaders = new Headers(upstream.headers);
