@@ -37,6 +37,7 @@ supabase/.temp/
 .cursor/hooks/state/
 .gstack/
 .firecrawl/
+playwright/
 
 # Android
 **/*.keystore
