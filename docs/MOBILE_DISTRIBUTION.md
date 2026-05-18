@@ -1,18 +1,22 @@
 # Mobile Distribution
 
-Use the `mobile-release` GitHub Actions workflow to upload release builds.
+Use Xcode Cloud for iOS TestFlight/App Store distribution. Use GitHub Actions
+for Android artifacts and Google Play upload.
 
 ## Triggers
 
-- Manual run: Actions -> `mobile-release`
+- Manual artifact build: Actions -> `android-release`
+- Manual Play upload: Actions -> `mobile-release`
 - Tags:
-  - `mobile-v*` uploads iOS and Android
-  - `ios-v*` uploads iOS
-  - `android-v*` uploads Android
+  - `android-v*` builds signed Android release artifacts
+  - `android-v*-debug` builds a debug APK artifact without release signing
+  - `mobile-v*` uploads iOS and Android through `mobile-release`
+  - `android-play-v*` uploads Android to Google Play through `mobile-release`
 
 ## iOS
 
-Uploads to App Store Connect / TestFlight.
+Uploads to App Store Connect / TestFlight are owned by Xcode Cloud. Keep the
+GitHub `mobile-release` iOS lane as a manual fallback only.
 
 Required GitHub secrets:
 
@@ -33,10 +37,26 @@ Optional:
 The workflow sets `CURRENT_PROJECT_VERSION` from `github.run_number`, so each
 upload has a unique App Store Connect build number.
 
-## Android
+## Android Artifacts
+
+The `android-release` workflow builds Android artifacts:
+
+- `android-v*`: signed release `.aab` and `.apk`
+- `android-v*-debug`: debug `.apk`
+
+Release artifact builds require:
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+- `PROD_SUPABASE_URL`
+- `PROD_SUPABASE_ANON_KEY`
+
+## Android Play
 
 Builds release `.aab` and `.apk` artifacts, then uploads the `.aab` to Google
-Play.
+Play from the `mobile-release` workflow.
 
 Required GitHub secrets:
 
