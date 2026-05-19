@@ -55,3 +55,4 @@ playwright/
 
 # Agents
 .vix/
+.playwright-mcp/
