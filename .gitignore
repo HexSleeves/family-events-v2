@@ -52,3 +52,6 @@ playwright/
 !apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 !apps/ios/FamilyEvents.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 .asc/
+
+# Agents
+.vix/
