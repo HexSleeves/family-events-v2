@@ -134,13 +134,14 @@ the Apple Services ID and the platform-specific Google client IDs.
 
 ## 4. Invite-only signup interaction
 
-The current sign-up flow gates new account creation behind invite codes
-(see `pending_invite_claims` + `redeem_invite_for_email`). OAuth providers
-bypass this gate: a new Google/Apple account creates a Supabase user
-without an invite claim.
+Server-side enforcement is now handled by the
+`private.enforce_invited_oauth_signup()` trigger on `auth.users`.
 
-**Follow-up work (out of scope for the initial PR):** add a
-`auth.users` trigger that checks `pending_invite_claims` for new OAuth
-signups and either (a) refuses creation when `invites_required = true`
-and no claim exists, or (b) creates a "pending approval" flag that the
-admin Invites Requests section can promote.
+When `app.settings.require_invite = true`, new Google/Apple-created
+`auth.users` rows require a live unclaimed `pending_invite_claims` row for the
+OAuth email. Without that claim, the database rejects the insert before
+`user_profiles` or `user_access` rows are provisioned.
+
+Email/password signup keeps the existing flow: the client redeems an invite code
+with `redeem_invite_for_email`, Supabase creates the auth user, and
+`claim_pending_invite_access` enables access after sign-in.
