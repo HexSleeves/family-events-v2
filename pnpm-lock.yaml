@@ -26,6 +26,10 @@ importers:
 
   apps/android: {}
 
+  apps/cron-scrape-sources: {}
+
+  apps/cron-tag-queue: {}
+
   apps/ios: {}
 
   apps/llm-proxy: {}
