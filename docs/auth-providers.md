@@ -39,11 +39,36 @@ doesn't clobber prod when an env var is missing locally). You only need
 to set the secret:
 
 ```bash
-SUPABASE_AUTH_EXTERNAL_APPLE_SECRET=<JWT secret you generate from .p8 + key id + team id>
+SUPABASE_AUTH_EXTERNAL_APPLE_SECRET=<JWT secret — see generation step below>
 ```
 
 If you ever rotate the Services ID, edit `[auth.external.apple].client_id`
 in `supabase/config.toml` directly.
+
+#### Generating the Apple JWT secret
+
+Apple's "secret" is a short-lived ES256 JWT signed with the `.p8` key. The
+hosted Supabase project computes it server-side from the Team ID / Key ID /
+Service ID / `.p8` fields you paste into the Dashboard, so for production
+you do not run this command. For local `supabase start` you need to mint
+the JWT yourself once:
+
+```bash
+# Using the supabase CLI's helper (preferred):
+supabase gen apple-client-secret \
+  --team-id "$APPLE_TEAM_ID" \
+  --key-id "$APPLE_KEY_ID" \
+  --service-id "com.familyevents.app" \
+  --key-file "$HOME/.apple/AuthKey_$APPLE_KEY_ID.p8"
+```
+
+If your installed CLI doesn't ship that subcommand, the canonical
+Node one-liner is in the Supabase docs at
+<https://supabase.com/docs/guides/auth/social-login/auth-apple#generate-the-client-secret>.
+
+The JWT expires every 6 months — re-mint and update
+`SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` whenever local sign-in starts
+returning `invalid_client`.
 
 ## 2. Google — Sign in with Google
 
