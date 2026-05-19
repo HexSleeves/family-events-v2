@@ -33,12 +33,17 @@ credentials; this file is the canonical inventory.
 
 ### Local development (supabase start)
 
-Set in `supabase/.env` (gitignored):
+The Apple `client_id` is hardcoded in `supabase/config.toml` (it is the
+public Services ID — safe to commit and useful so `supabase config push`
+doesn't clobber prod when an env var is missing locally). You only need
+to set the secret:
 
 ```bash
-SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID=app.familyevents.signin
 SUPABASE_AUTH_EXTERNAL_APPLE_SECRET=<JWT secret you generate from .p8 + key id + team id>
 ```
+
+If you ever rotate the Services ID, edit `[auth.external.apple].client_id`
+in `supabase/config.toml` directly.
 
 ## 2. Google — Sign in with Google
 
