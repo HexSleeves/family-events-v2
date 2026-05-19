@@ -26,6 +26,8 @@ importers:
 
   apps/android: {}
 
+  apps/cron-db-maintenance: {}
+
   apps/cron-scrape-sources: {}
 
   apps/cron-tag-queue: {}
