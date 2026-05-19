@@ -14,6 +14,7 @@ import {
   useInvitesRequired,
 } from "@/features/auth/hooks/use-invites"
 import { RequestInviteDialog } from "@/features/auth/components/request-invite-dialog"
+import { AppleIcon, GoogleIcon } from "@/features/auth/components/provider-icons"
 import { toast } from "sonner"
 
 interface SignUpState {
@@ -37,7 +38,7 @@ function signUpReducer(state: SignUpState, patch: Partial<SignUpState>) {
 }
 
 export function SignUpPage() {
-  const { signUp } = useAuth()
+  const { signUp, signInWithProvider } = useAuth()
   const navigate = useNavigate()
   const {
     data: inviteRequired,
@@ -47,6 +48,29 @@ export function SignUpPage() {
   const [state, setState] = useReducer(signUpReducer, signUpInitialState)
   const { name, email, password, inviteCode, loading } = state
   const requiresInvite = resolveInviteRequirement(inviteRequired, inviteCheckFailed)
+
+  async function handleProviderSignIn(provider: "apple" | "google") {
+    // Closed-beta gate: Supabase OAuth would create a user without ever
+    // touching our invite tables (pending_invite_claims). Refuse the
+    // signup path here until the server-side auth.users trigger covered
+    // in docs/auth-providers.md §4 lands.
+    if (requiresInvite) {
+      toast.error("Invite required", {
+        description:
+          "Closed beta — request an invite code, then sign up with email or use a provider on the sign-in page.",
+      })
+      return
+    }
+    setState({ loading: true })
+    const { error } = await signInWithProvider(provider)
+    if (error) {
+      setState({ loading: false })
+      toast.error(`Couldn't sign in with ${provider === "apple" ? "Apple" : "Google"}`, {
+        description: humanizeSupabaseError(error, "Try again or use a different method."),
+      })
+    }
+    // On success the browser navigates to the provider; we never reach here.
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -180,6 +204,42 @@ export function SignUpPage() {
                 {loading ? "Creating account..." : "Create Account"}
               </Button>
             </form>
+            {!requiresInvite && (
+              <>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border/60" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] gap-2"
+                    disabled={loading || inviteCheckLoading}
+                    onClick={() => handleProviderSignIn("apple")}
+                  >
+                    <AppleIcon className="size-4" />
+                    Apple
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] gap-2"
+                    disabled={loading || inviteCheckLoading}
+                    onClick={() => handleProviderSignIn("google")}
+                  >
+                    <GoogleIcon className="size-4" />
+                    Google
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

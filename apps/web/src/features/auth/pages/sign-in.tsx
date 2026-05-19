@@ -1,5 +1,5 @@
-import { useReducer } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useEffect, useReducer } from "react"
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { Ticket } from "lucide-react"
 import { useAuth } from "@/features/auth/stores/auth-store"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
   useInvitesRequired,
 } from "@/features/auth/hooks/use-invites"
 import { RequestInviteDialog } from "@/features/auth/components/request-invite-dialog"
+import { AppleIcon, GoogleIcon } from "@/features/auth/components/provider-icons"
 import { toast } from "sonner"
 
 // Only treat string `from` values that look like in-app paths. Anything else
@@ -48,7 +49,7 @@ function signInReducer(state: SignInState, patch: Partial<SignInState>) {
 }
 
 export function SignInPage() {
-  const { signIn, sendMagicLink } = useAuth()
+  const { signIn, sendMagicLink, signInWithProvider } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = resolveRedirectTarget((location.state as { from?: unknown } | null)?.from)
@@ -61,6 +62,20 @@ export function SignInPage() {
 
   const [state, setState] = useReducer(signInReducer, signInInitialState)
   const { mode, email, password, inviteCode, loading } = state
+
+  // Surface the OAuth callback failure flag so users who got bounced back
+  // see why instead of staring at a silent sign-in form.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get("oauth_failed") === "1") {
+      toast.error("Couldn't finish sign-in", {
+        description: "The provider redirect didn't complete. Try again, or use a different method.",
+      })
+      const next = new URLSearchParams(searchParams)
+      next.delete("oauth_failed")
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,6 +90,29 @@ export function SignInPage() {
       toast.success("Welcome back!")
       navigate(redirectTo, { replace: true })
     }
+  }
+
+  async function handleProviderSignIn(provider: "apple" | "google") {
+    // Closed-beta guard: even on sign-in, Supabase OAuth will silently
+    // create a brand-new user when the provider email is unknown — which
+    // would slip past pending_invite_claims. Refuse here until the
+    // server-side auth.users trigger covered in docs/auth-providers.md §4
+    // lands.
+    if (requiresInvite) {
+      toast.error("Invite required", {
+        description: "Closed beta — sign in with email after redeeming an invite code.",
+      })
+      return
+    }
+    setState({ loading: true })
+    const { error } = await signInWithProvider(provider, { next: redirectTo })
+    if (error) {
+      setState({ loading: false })
+      toast.error(`Couldn't sign in with ${provider === "apple" ? "Apple" : "Google"}`, {
+        description: humanizeSupabaseError(error, "Try again or use a different method."),
+      })
+    }
+    // On success the browser navigates to the provider; we never reach here.
   }
 
   async function handleMagicLinkSubmit(e: React.FormEvent) {
@@ -258,6 +296,42 @@ export function SignInPage() {
                   Email me a link instead
                 </button>
               </form>
+            )}
+            {mode !== "magic-sent" && !requiresInvite && (
+              <>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border/60" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] gap-2"
+                    disabled={loading || inviteCheckLoading}
+                    onClick={() => handleProviderSignIn("apple")}
+                  >
+                    <AppleIcon className="size-4" />
+                    Apple
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] gap-2"
+                    disabled={loading || inviteCheckLoading}
+                    onClick={() => handleProviderSignIn("google")}
+                  >
+                    <GoogleIcon className="size-4" />
+                    Google
+                  </Button>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
