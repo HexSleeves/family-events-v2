@@ -63,8 +63,8 @@ only produce proposed-run feedback.
 
 `.github/workflows/railway-cron-drift.yml` runs the same Terraform guard on PRs
 that touch cron, Spacelift, or POC files. The workflow publishes a GitHub status
-named `railway-cron-drift / drift guard`; requiring that check on `main` makes
-Railway drift block merges instead of only appearing in Spacelift.
+named `drift guard`; requiring that check on `main` makes Railway drift block
+merges instead of only appearing in Spacelift.
 
 ## Success criteria
 
