@@ -1,0 +1,12 @@
+version: "2"
+
+stack_defaults:
+  before_init:
+    - '[ -n "${SPACELIFT_POC_FIXTURE:-}" ] || sh ../../scripts/spacelift-bootstrap.sh'
+
+stacks:
+  family-events-railway-cron-poc:
+    project_root: infra/spacelift-railway-cron-poc
+    terraform_workflow_tool: TERRAFORM_FOSS
+    before_plan:
+      - sh ../../scripts/spacelift-railway-cron-poc.sh
