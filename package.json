@@ -28,7 +28,9 @@
     "db:stop": "bash scripts/supabase.sh stop",
     "db:migrate": "bash scripts/supabase.sh db push",
     "db:types": "bash scripts/supabase.sh gen types typescript --local --schema public > packages/contracts/src/database.types.ts",
-    "db:functions:serve": "bash scripts/supabase.sh functions serve"
+    "db:functions:serve": "bash scripts/supabase.sh functions serve",
+    "clean": "turbo run clean && find . -name 'node_modules' -prune -o -name '.turbo' -print | xargs rm -rf",
+    "clean:dist": "find apps packages -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'build' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'out' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name '.next' -not -path '*/node_modules/*' -exec rm -rf {} +"
   },
   "devDependencies": {
     "oxfmt": "^0.51.0",
