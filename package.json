@@ -5,6 +5,8 @@
   "packageManager": "pnpm@11.1.3",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:local": "pnpm --filter @family-events/web dev:local",
+    "dev:hosted": "pnpm --filter @family-events/web dev:hosted",
     "check": "turbo run check",
     "format": "turbo run format",
     "format:check": "turbo run format:check",
