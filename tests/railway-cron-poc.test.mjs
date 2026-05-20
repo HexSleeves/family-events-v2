@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import test from "node:test"
+import { fileURLToPath } from "node:url"
 import {
   collectRailwayServiceState,
   parseRailwayToml,
@@ -9,7 +10,7 @@ import {
   validateRailwayCronState,
 } from "../scripts/spacelift-railway-cron-poc.mjs"
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 test("parses Railway deploy settings from TOML", () => {
   const config = parseRailwayToml(`

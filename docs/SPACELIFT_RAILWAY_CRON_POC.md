@@ -41,10 +41,13 @@ Attach a context named `family-events-railway-poc` with these environment
 variables:
 
 - `TF_VAR_railway_environment_id`: Railway environment ID to inspect
-- `TF_VAR_railway_project_access_token`: write-only Railway project token
+- `TF_VAR_railway_project_access_token`: write-only Railway project access token
 
-The Terraform root calls Railway GraphQL directly. Prefer the project access
-token over user OAuth; only use `TF_VAR_railway_bearer_token` as a fallback.
+The Terraform root calls Railway GraphQL at
+`https://backboard.railway.com/graphql/v2` directly. It also supports
+`TF_VAR_railway_bearer_token` for account/workspace API tokens, but the POC uses
+the project token path so the Spacelift stack only has read access to this
+Railway project/environment.
 
 Attach `infra/spacelift-railway-cron-poc/policies/railway-cron-poc-plan.rego` as
 a plan policy. The policy denies tracked applies and deletes; the POC should
