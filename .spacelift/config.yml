@@ -1,0 +1,6 @@
+version: "2"
+
+stacks:
+  family-events-railway-cron-poc:
+    project_root: infra/spacelift-railway-cron-poc
+    terraform_workflow_tool: TERRAFORM_FOSS
