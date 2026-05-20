@@ -58,18 +58,32 @@ test("reads expected cron service config from committed railway.toml files", () 
 
 test("extracts live Railway service metadata from nested JSON without reading secrets", () => {
   const live = {
-    services: [
-      {
-        name: "cron-tag-queue",
-        variables: {
-          RAILWAY_TOKEN: "do-not-read",
-        },
-        deployment: {
-          cronSchedule: "* * * * *",
-          restartPolicyType: "ON_FAILURE",
+    data: {
+      environment: {
+        serviceInstances: {
+          edges: [
+            {
+              node: {
+                serviceName: "cron-tag-queue-seKl",
+                variables: {
+                  RAILWAY_TOKEN: "do-not-read",
+                },
+                cronSchedule: "* * * * *",
+                latestDeployment: {
+                  meta: {
+                    serviceManifest: {
+                      deploy: {
+                        restartPolicyType: "ON_FAILURE",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
         },
       },
-    ],
+    },
   }
 
   assert.deepEqual(collectRailwayServiceState("cron-tag-queue", live), {
