@@ -17,12 +17,17 @@
     {
       "description": "Group Radix UI primitives — they share a release cadence and want to move together.",
       "groupName": "radix-ui",
-      "matchPackagePatterns": ["^@radix-ui/", "^radix-ui$"]
+      "matchPackageNames": [
+        "/^@radix-ui//",
+        "/^radix-ui$/"
+      ]
     },
     {
       "description": "Group all Sentry packages.",
       "groupName": "sentry",
-      "matchPackagePatterns": ["^@sentry/"]
+      "matchPackageNames": [
+        "/^@sentry//"
+      ]
     },
     {
       "description": "Group React + ReactDOM + types so they bump together.",
@@ -48,17 +53,25 @@
     {
       "description": "Group TanStack Query + table.",
       "groupName": "tanstack",
-      "matchPackagePatterns": ["^@tanstack/"]
+      "matchPackageNames": [
+        "/^@tanstack//"
+      ]
     },
     {
       "description": "Group Tailwind + plugins.",
       "groupName": "tailwind",
-      "matchPackagePatterns": ["^tailwind", "^@tailwindcss/", "^tw-"]
+      "matchPackageNames": [
+        "/^tailwind/",
+        "/^@tailwindcss//",
+        "/^tw-/"
+      ]
     },
     {
       "description": "Group Supabase libs.",
       "groupName": "supabase",
-      "matchPackagePatterns": ["^@supabase/"]
+      "matchPackageNames": [
+        "/^@supabase//"
+      ]
     },
     {
       "description": "Major upgrades require human review; never auto-merge.",
