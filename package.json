@@ -18,6 +18,7 @@
     "spacelift:poc:test": "node --test tests/railway-cron-poc.test.mjs",
     "spacelift:poc:validate": "node scripts/spacelift-railway-cron-poc.mjs validate",
     "spacelift:poc:terraform:fixture": "terraform -chdir=infra/spacelift-railway-cron-poc init -backend=false && terraform -chdir=infra/spacelift-railway-cron-poc plan -input=false -lock=false -var railway_fixture_path=../../tests/fixtures/railway-cron-poc-live.json",
+    "spacelift:poc:terraform:drift": "terraform -chdir=infra/spacelift-railway-cron-poc init -backend=false && terraform -chdir=infra/spacelift-railway-cron-poc plan -input=false -lock=false -var railway_fixture_path=../../tests/fixtures/railway-cron-poc-drift.json",
     "spacelift:poc:terraform:live": "terraform -chdir=infra/spacelift-railway-cron-poc plan -input=false -lock=false",
     "verify:workflow": "bash scripts/check-monorepo.sh",
     "test:e2e": "pnpm --filter @family-events/web test:e2e",

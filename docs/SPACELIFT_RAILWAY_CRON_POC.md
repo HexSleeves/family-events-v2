@@ -5,11 +5,14 @@ observe-only control plane for the Railway cron services.
 
 ## Covered services
 
-| Service | Config | Schedule | Restart policy |
-| --- | --- | --- | --- |
-| `cron-tag-queue` | `apps/cron-tag-queue/railway.toml` | `* * * * *` | `ON_FAILURE` |
-| `cron-scrape-sources` | `apps/cron-scrape-sources/railway.toml` | `0 * * * *` | `ON_FAILURE` |
-| `cron-db-maintenance` | `apps/cron-db-maintenance/railway.toml` | `15 3 * * *` | `ON_FAILURE` |
+| Service | Config | Schedule | Restart policy | Root | Deployment |
+| --- | --- | --- | --- | --- | --- |
+| `cron-tag-queue` | `apps/cron-tag-queue/railway.toml` | `* * * * *` | `ON_FAILURE` | `apps/cron-tag-queue` | `SUCCESS` |
+| `cron-scrape-sources` | `apps/cron-scrape-sources/railway.toml` | `0 * * * *` | `ON_FAILURE` | `apps/cron-scrape-sources` | `SUCCESS` |
+| `cron-db-maintenance` | `apps/cron-db-maintenance/railway.toml` | `15 3 * * *` | `ON_FAILURE` | `apps/cron-db-maintenance` | `SUCCESS` |
+
+The manifest also validates source repo, build builder, Dockerfile path, latest
+deployment status, and forbidden latest-deployment instance statuses.
 
 ## Local proof
 
@@ -17,11 +20,14 @@ observe-only control plane for the Railway cron services.
 pnpm run spacelift:poc:test
 pnpm run spacelift:poc:validate
 pnpm run spacelift:poc:terraform:fixture
+pnpm run spacelift:poc:terraform:drift
 ```
 
 `spacelift:poc:test` uses a fixture. `spacelift:poc:validate` calls the live
 Railway CLI for local operator checks. `spacelift:poc:terraform:fixture` proves
-the Terraform root without Railway auth.
+the Terraform root without Railway auth. `spacelift:poc:terraform:drift` is
+expected to fail and proves mismatch diagnostics for schedule, restart policy,
+deployment status, and failed instance state.
 
 The validator intentionally avoids `railway variable list` because Railway JSON
 and KV variable output include raw secret values.
@@ -53,11 +59,19 @@ Attach `infra/spacelift-railway-cron-poc/policies/railway-cron-poc-plan.rego` as
 a plan policy. The policy denies tracked applies and deletes; the POC should
 only produce proposed-run feedback.
 
+## PR status gate
+
+`.github/workflows/railway-cron-drift.yml` runs the same Terraform guard on PRs
+that touch cron, Spacelift, or POC files. The workflow publishes a GitHub status
+named `railway-cron-drift / drift guard`; requiring that check on `main` makes
+Railway drift block merges instead of only appearing in Spacelift.
+
 ## Success criteria
 
 - A PR that does not change Railway cron config produces a passing proposed run.
-- A PR that changes a covered cron schedule or restart policy produces a clear
-  mismatch diagnostic if live Railway still has the old value.
+- A PR that changes covered cron metadata produces a clear mismatch diagnostic
+  if live Railway still has the old value.
+- A stopped, failed, or crashed latest Railway cron deployment blocks the guard.
 - No POC run calls `railway up`, `railway redeploy`, `railway restart`,
   `railway variable list`, or any mutating Railway command.
 
