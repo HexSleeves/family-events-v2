@@ -17,7 +17,7 @@ test("parses Railway deploy settings from TOML", () => {
     builder = "DOCKERFILE"
 
     [deploy]
-    cronSchedule = "15 3 * * *"
+    cronSchedule = "15 3 * * *" # local maintenance window
     restartPolicyType = "ON_FAILURE"
   `)
 
