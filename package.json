@@ -31,7 +31,7 @@
     "db:functions:serve": "bash scripts/supabase.sh functions serve"
   },
   "devDependencies": {
-    "oxfmt": "^0.50.0",
+    "oxfmt": "^0.51.0",
     "oxlint": "^1.65.0",
     "turbo": "^2.9.14",
     "typescript": "~6.0.3",
