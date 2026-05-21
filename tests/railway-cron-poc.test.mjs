@@ -62,7 +62,7 @@ test("reads expected cron service config from committed railway.toml files", () 
         rootDirectory: "apps/cron-scrape-sources",
         builder: "DOCKERFILE",
         dockerfilePath: "Dockerfile",
-        cronSchedule: "* * * * *",
+        cronSchedule: "*/5 * * * *",
         restartPolicyType: "ON_FAILURE",
         requiredLatestDeploymentStatus: "SUCCESS",
       },

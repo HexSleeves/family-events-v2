@@ -112,7 +112,7 @@ Sheets used for: Profile, Settings, Auth, Filter editor, Share sheet, Add-to-Cal
 ### Deep links
 
 - **URL scheme:** `familyevents://event/<id>`, `familyevents://city/<id>`.
-- **Universal Links:** `https://familyevents.app/share/:eventId` (already returned by the `share-og` edge function) maps to Event Detail in unauthenticated read mode.
+- **Universal Links:** `https://family-events.org/share/:eventId` (already returned by the `share-og` edge function) maps to Event Detail in unauthenticated read mode.
 - A single `DeepLinkRouter` parses URLs/`NSUserActivity`/notification payloads into an `AppRoute` plus a target `Tab`. Entry points: cold-launch URL, Spotlight tap, push notification tap, share-sheet receive.
 
 ### Tab-bar badges
