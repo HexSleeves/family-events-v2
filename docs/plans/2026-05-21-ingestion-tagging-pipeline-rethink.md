@@ -29,6 +29,7 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
     "source_scrape_queue_schedule_retry",
     "admin_retry_source_scrape_queue",
     "release_unstarted_tag_queue_rows",
+    "mark_tag_queue_row_started",
     "source_scrape_queue_source_active_uniq",
     "interval '5 minutes'",
     "interval '15 minutes'",
@@ -44,8 +45,14 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
   const claimFn = sql.match(/CREATE OR REPLACE FUNCTION public\.claim_source_scrape_queue_batch[\s\S]*?\$\$;/)?.[0] ?? ""
   assert.doesNotMatch(claimFn, /attempt_count\s*=\s*[^\n]+\+/)
 
+  const tagClaimFn = sql.match(/CREATE OR REPLACE FUNCTION public\.claim_tag_queue_batch[\s\S]*?\$\$;/)?.[0] ?? ""
+  assert.doesNotMatch(tagClaimFn, /attempt_count\s*=\s*[^\n]+\+/)
+
+  const tagStartFn = sql.match(/CREATE OR REPLACE FUNCTION public\.mark_tag_queue_row_started[\s\S]*?\$\$;/)?.[0] ?? ""
+  assert.match(tagStartFn, /attempt_count\s*=\s*attempt_count \+ 1/)
+
   const tagReleaseFn = sql.match(/CREATE OR REPLACE FUNCTION public\.release_unstarted_tag_queue_rows[\s\S]*?\$\$;/)?.[0] ?? ""
-  assert.match(tagReleaseFn, /attempt_count\s*=\s*GREATEST\(attempt_count - 1, 0\)/)
+  assert.doesNotMatch(tagReleaseFn, /attempt_count\s*=/)
 
   assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS source_scrape_queue_source_active_uniq[\s\S]*WHERE source_id IS NOT NULL[\s\S]*status IN \('pending','processing'\)/)
 })
@@ -193,14 +200,50 @@ DECLARE v_count int;
 BEGIN
   UPDATE public.event_tag_queue
   SET status='pending',
-      started_at=NULL,
-      attempt_count=GREATEST(attempt_count - 1, 0)
+      started_at=NULL
   WHERE id = ANY(p_claimed_ids)
     AND status='processing'
-    AND started_at IS NOT NULL
+    AND started_at IS NULL
     AND finished_at IS NULL;
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.claim_tag_queue_batch(p_limit int DEFAULT 20)
+RETURNS SETOF public.event_tag_queue
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE public.event_tag_queue q SET
+    status = 'processing',
+    started_at = NULL
+  WHERE q.id IN (
+    SELECT inner_q.id
+    FROM public.event_tag_queue inner_q
+    WHERE inner_q.status = 'pending'
+      AND inner_q.next_attempt_at <= now()
+    ORDER BY inner_q.next_attempt_at
+    FOR UPDATE SKIP LOCKED
+    LIMIT GREATEST(1, LEAST(p_limit, 100))
+  )
+  RETURNING *;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.mark_tag_queue_row_started(p_queue_id bigint)
+RETURNS public.event_tag_queue
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_row public.event_tag_queue;
+BEGIN
+  UPDATE public.event_tag_queue
+  SET started_at=now(),
+      attempt_count=attempt_count + 1
+  WHERE id = p_queue_id
+    AND status='processing'
+    AND started_at IS NULL
+  RETURNING * INTO v_row;
+  RETURN v_row;
 END;
 $$;
 
@@ -308,6 +351,7 @@ GRANT EXECUTE ON FUNCTION public.reap_stuck_source_scrape_queue_rows() TO servic
 GRANT EXECUTE ON FUNCTION public.mark_source_scrape_queue_skipped(bigint, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.source_scrape_queue_schedule_retry(bigint, int, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.release_unstarted_tag_queue_rows(bigint[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.mark_tag_queue_row_started(bigint) TO service_role;
 GRANT EXECUTE ON FUNCTION public.run_due_source_scrapes() TO service_role;
 GRANT EXECUTE ON FUNCTION public.admin_run_due_scrapes() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_retry_source_scrape_queue(bigint) TO authenticated;
@@ -722,7 +766,7 @@ export async function persistExtractionTrace(
   if (error) throw error
 }
 ```
-- [ ] Step 2: At the start of `processQueueRow(...)`, load the source row, create/link a run, and mark the row started with this exact sequence:
+- [ ] Step 2: At the start of `processQueueRow(...)`, load the source row, mark the row started, then create/link a run with this exact sequence:
 ```ts
 const { data: source, error: sourceError } = await supabase
   .from("event_sources")
@@ -739,8 +783,8 @@ if (!source.is_active) {
   return { outcome: "skipped", imported: 0 }
 }
 
-const runId = await createAndLinkSourceRun(supabase, queueRow.id, source.id)
 const startedRow = await markStarted(supabase, queueRow.id)
+const runId = await createAndLinkSourceRun(supabase, queueRow.id, source.id)
 ```
 - [ ] Step 3: Add this exact deterministic extraction failure/fallback block before any `processSource(...)` call:
 ```ts
@@ -840,18 +884,26 @@ return { outcome: "succeeded", imported: result.eventsImported }
 ```
 - [ ] Step 7: In `index.ts`, use this exact claim/start/release structure:
 ```ts
+const workerStartedAt = Date.now()
 const { data: claimed } = await supabase.rpc("claim_source_scrape_queue_batch", { p_limit: 5 })
 const rows = (claimed ?? []) as Array<{ id: number }>
 if (rows.length === 0) return
 
 const [first, ...rest] = rows
-await processQueueRow(first.id)
-
 if (rest.length > 0) {
   await supabase.rpc("release_unstarted_source_scrape_queue_rows", {
     p_claimed_ids: rest.map((r) => r.id),
   })
 }
+
+if (Date.now() - workerStartedAt > 105_000) {
+  await supabase.rpc("release_unstarted_source_scrape_queue_rows", {
+    p_claimed_ids: [first.id],
+  })
+  return
+}
+
+await processQueueRow(first.id)
 ```
 - [ ] Step 8: Run tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts process-source-queue/index_test.ts`
 - [ ] Step 9: Commit: `git commit -m "feat: implement source worker no-burn and invalid-llm failure handling"`
@@ -902,7 +954,20 @@ verify_jwt = false
 ```bash
 "fn: process-source-queue              |supabase_fn|process-source-queue"
 ```
-and add `process-source-queue` in `deploy_supabase_fn_all()` function list.
+and replace the `deploy_supabase_fn_all()` function array with:
+```bash
+local functions=(
+  db-maintenance
+  log-cron-run
+  notify-email
+  process-source-queue
+  process-tag-queue
+  scrape-due-sources
+  scrape-source
+  share-og
+  tag-event
+)
+```
 - [ ] Step 3: Run test: `node --test tests/guards/process-source-queue-wiring.test.mjs`
 - [ ] Step 4: Commit: `git commit -m "chore: wire process-source-queue deploy/runtime settings"`
 
@@ -1152,7 +1217,72 @@ ENTRYPOINT ["/bin/sh", "-c", "/usr/local/bin/cron-runner.sh \"$PROCESS_SOURCE_QU
   "description": "Railway cron service that hits process-source-queue every minute"
 }
 ```
-- [ ] Step 4: Create `apps/cron-process-source-queue/cron-runner.sh` by copying `apps/_shared/cron-runner.sh` verbatim.
+- [ ] Step 4: Create `apps/cron-process-source-queue/cron-runner.sh` with exact content:
+```sh
+#!/bin/sh
+# Structured-logging entrypoint for Railway cron containers.
+# Wraps `curl` to a Supabase edge function and emits one JSON line per run:
+#   {"ts":"...","label":"cron-tag-queue","level":"info","url":"...","http":200,"duration_s":12,"body":"..."}
+#
+# Usage: cron-runner.sh <URL> <LABEL>
+#   <URL>   - full edge-function URL (env-var expanded by the caller)
+#   <LABEL> - short identifier for the cron job (used in log lines)
+#
+# Always exits 0 so Railway's ON_FAILURE restart policy never triggers a
+# tight retry loop — the next cron tick is the safety net.
+
+set -u
+
+URL="${1:-}"
+LABEL="${2:-cron}"
+TS=$(date -u +%FT%TZ)
+
+emit() {
+  level="$1"
+  msg="$2"
+  http="$3"
+  dur="$4"
+  body="$5"
+  ebody=$(printf '%s' "$body" | tr -d '\n\r' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | cut -c1-2000)
+  printf '{"ts":"%s","label":"%s","level":"%s","msg":"%s","url":"%s","http":%s,"duration_s":%s,"body":"%s"}\n' \
+    "$TS" "$LABEL" "$level" "$msg" "$URL" "$http" "$dur" "$ebody"
+}
+
+if [ -z "$URL" ]; then
+  emit error "missing URL arg" 0 0 ""
+  exit 0
+fi
+
+if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+  emit error "SUPABASE_SERVICE_ROLE_KEY not set" 0 0 ""
+  exit 0
+fi
+
+printf '{"ts":"%s","label":"%s","level":"info","msg":"starting"}\n' "$TS" "$LABEL"
+
+START=$(date +%s)
+BODY_FILE=$(mktemp)
+HTTP_RAW=$(curl --silent --show-error --max-time 170 \
+  -o "$BODY_FILE" -w "%{http_code}" \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  "$URL" -d '{}' 2>/dev/null || echo "0")
+END=$(date +%s)
+DUR=$((END - START))
+BODY=$(cat "$BODY_FILE" 2>/dev/null || true)
+rm -f "$BODY_FILE"
+
+HTTP=$(printf '%d' "${HTTP_RAW:-0}" 2>/dev/null || echo 0)
+
+case "$HTTP" in
+  2*) emit info "ok" "$HTTP" "$DUR" "$BODY" ;;
+  0)  emit error "curl failed (network/timeout)" 0 "$DUR" "$BODY" ;;
+  *)  emit error "non-2xx response" "$HTTP" "$DUR" "$BODY" ;;
+esac
+
+exit 0
+```
 - [ ] Step 5: Apply these exact wiring edits:
 ```bash
 # scripts/sync-cron-runner.sh
@@ -1234,9 +1364,17 @@ if (shouldStopBeforeStartingNextTagRow(Date.now() - batchStart, 110_000)) {
   break
 }
 ```
-- [ ] Step 4: Add `import { resolveCompletedTagQueueStatus, shouldStopBeforeStartingNextTagRow } from "./queue-policy.ts"` at the top of `index.ts`.
-- [ ] Step 5: Run tests: `cd supabase/functions && deno test process-tag-queue/process-tag-queue-behavior.test.ts`
-- [ ] Step 6: Commit: `git commit -m "feat: complete tag queue rows with succeeded status"`
+- [ ] Step 4: Immediately after the deadline guard and before `fetchEventInputs`, mark the row as started with:
+```ts
+const { data: startedRow, error: startedError } = await supabase.rpc("mark_tag_queue_row_started", {
+  p_queue_id: row.id,
+})
+if (startedError) throw startedError
+row.attempt_count = Number(startedRow?.attempt_count ?? row.attempt_count + 1)
+```
+- [ ] Step 5: Add `import { resolveCompletedTagQueueStatus, shouldStopBeforeStartingNextTagRow } from "./queue-policy.ts"` at the top of `index.ts`.
+- [ ] Step 6: Run tests: `cd supabase/functions && deno test process-tag-queue/process-tag-queue-behavior.test.ts`
+- [ ] Step 7: Commit: `git commit -m "feat: complete tag queue rows with succeeded status"`
 
 ### Task 19: Add failing tests for source worker reaping and disabled/deleted source skip semantics
 
@@ -1310,6 +1448,8 @@ const { data: claimed } = await supabase.rpc("claim_source_scrape_queue_batch", 
 - [ ] Step 1: Create `apps/web/src/features/admin/lib/source-defaults.test.ts` with this exact content:
 ```ts
 import { describe, expect, it } from "vitest"
+import { eventSourceRowSchema } from "@/lib/schemas"
+import { EVENT_SOURCE_SELECT } from "@/features/admin/hooks/use-admin-sources"
 import { defaultExtractionModeForSourceType } from "./source-defaults"
 
 describe("defaultExtractionModeForSourceType", () => {
@@ -1319,6 +1459,33 @@ describe("defaultExtractionModeForSourceType", () => {
 
   it.each(["rss", "ical", "manual"] as const)("%s defaults to deterministic", (sourceType) => {
     expect(defaultExtractionModeForSourceType(sourceType)).toBe("deterministic")
+  })
+})
+
+describe("source extraction mode integration", () => {
+  it("requires extraction_mode in EventSource schema parsing", () => {
+    const row = {
+      id: "source-1",
+      name: "Example",
+      url: "https://example.com",
+      source_type: "website",
+      extraction_mode: "deterministic_then_llm",
+      city_id: null,
+      is_active: true,
+      auto_approve: false,
+      scrape_interval_hours: 24,
+      last_scraped_at: null,
+      last_status: "pending",
+      error_count: 0,
+      notes: null,
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    }
+    expect(eventSourceRowSchema.parse(row).extraction_mode).toBe("deterministic_then_llm")
+  })
+
+  it("source list select includes extraction_mode", () => {
+    expect(EVENT_SOURCE_SELECT).toContain("extraction_mode")
   })
 })
 ```
@@ -1368,11 +1535,26 @@ export interface EventSource {
 ```ts
 extraction_mode: z.enum(["deterministic", "llm", "deterministic_then_llm"]),
 ```
-- [ ] Step 4: In `apps/web/src/features/admin/hooks/use-admin-sources.ts`, replace the source select string with:
+- [ ] Step 4: In `apps/web/src/features/admin/hooks/use-admin-sources.ts`, add this exported constant and use it in `.select(EVENT_SOURCE_SELECT)`:
 ```ts
-"id, name, url, source_type, extraction_mode, city_id, is_active, auto_approve, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
+export const EVENT_SOURCE_SELECT =
+  "id, name, url, source_type, extraction_mode, city_id, is_active, auto_approve, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
 ```
-- [ ] Step 5: In `useCreateAdminSource`, keep the payload type as `Omit<EventSource, "id" | "created_at" | "updated_at">` so inserts require `extraction_mode`.
+- [ ] Step 5: In `apps/web/src/features/admin/hooks/use-admin-sources.ts`, keep `useCreateAdminSource` mutation typed exactly as:
+```ts
+mutationFn: async (payload: Omit<EventSource, "id" | "created_at" | "updated_at">) => {
+  if (payload.source_type !== "manual") {
+    const validation = validateExternalUrl(payload.url)
+    if (!validation.ok) {
+      throw new Error(validation.reason ?? "Invalid source URL")
+    }
+  }
+  const { error } = await supabase.from("event_sources").insert(payload)
+  if (error) {
+    throw error
+  }
+}
+```
 - [ ] Step 6: In `admin-sources.tsx`, initialize new sources with:
 ```ts
 const [newSource, setNewSource] = useState({
