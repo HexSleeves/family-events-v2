@@ -28,8 +28,6 @@ importers:
 
   apps/cron-db-maintenance: {}
 
-  apps/cron-process-source-queue: {}
-
   apps/cron-scrape-sources: {}
 
   apps/cron-tag-queue: {}

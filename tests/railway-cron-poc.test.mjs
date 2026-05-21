@@ -62,16 +62,6 @@ test("reads expected cron service config from committed railway.toml files", () 
         rootDirectory: "apps/cron-scrape-sources",
         builder: "DOCKERFILE",
         dockerfilePath: "Dockerfile",
-        cronSchedule: "0 * * * *",
-        restartPolicyType: "ON_FAILURE",
-        requiredLatestDeploymentStatus: "SUCCESS",
-      },
-      {
-        name: "cron-process-source-queue",
-        sourceRepo: "HexSleeves/family-events-v2",
-        rootDirectory: "apps/cron-process-source-queue",
-        builder: "DOCKERFILE",
-        dockerfilePath: "Dockerfile",
         cronSchedule: "* * * * *",
         restartPolicyType: "ON_FAILURE",
         requiredLatestDeploymentStatus: "SUCCESS",
@@ -185,7 +175,7 @@ test("fails with minimal diagnostics when Railway metadata drifts", () => {
       },
       {
         name: "cron-scrape-sources",
-        cronSchedule: "0 * * * *",
+        cronSchedule: "* * * * *",
         source: { repo: "HexSleeves/family-events-v2" },
         restartPolicyType: "ON_FAILURE",
         latestDeployment: {
