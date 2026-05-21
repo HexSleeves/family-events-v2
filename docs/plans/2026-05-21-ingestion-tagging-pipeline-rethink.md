@@ -24,7 +24,10 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
     "claim_source_scrape_queue_batch",
     "mark_source_scrape_queue_started",
     "release_unstarted_source_scrape_queue_rows",
+    "reap_stuck_source_scrape_queue_rows",
+    "mark_source_scrape_queue_skipped",
     "source_scrape_queue_schedule_retry",
+    "release_unstarted_tag_queue_rows",
     "interval '5 minutes'",
     "interval '15 minutes'",
     "interval '60 minutes'",
@@ -38,6 +41,9 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
 
   const claimFn = sql.match(/CREATE OR REPLACE FUNCTION public\.claim_source_scrape_queue_batch[\s\S]*?\$\$;/)?.[0] ?? ""
   assert.doesNotMatch(claimFn, /attempt_count\s*=\s*[^\n]+\+/)
+
+  const tagReleaseFn = sql.match(/CREATE OR REPLACE FUNCTION public\.release_unstarted_tag_queue_rows[\s\S]*?\$\$;/)?.[0] ?? ""
+  assert.match(tagReleaseFn, /attempt_count\s*=\s*GREATEST\(attempt_count - 1, 0\)/)
 })
 ```
 - [ ] Step 2: Run failing test: `node --test tests/guards/ingestion-tagging-pipeline-migration.test.mjs`
@@ -50,7 +56,7 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
 
 - [ ] Step 1: Create migration file with this exact SQL core (plus BEGIN/COMMIT and grants):
 ```sql
-CREATE TYPE public.source_scrape_queue_status AS ENUM ('pending','processing','succeeded','failed','dead');
+CREATE TYPE public.source_scrape_queue_status AS ENUM ('pending','processing','retrying','succeeded','dead');
 
 CREATE TABLE public.source_scrape_queue (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -118,6 +124,36 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.reap_stuck_source_scrape_queue_rows()
+RETURNS int
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_count int;
+BEGIN
+  UPDATE public.source_scrape_queue
+  SET status='pending',
+      started_at=NULL,
+      source_run_id=NULL,
+      last_error=coalesce(last_error, 'reaped after stuck in processing')
+  WHERE status='processing'
+    AND started_at < now() - interval '15 minutes';
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.mark_source_scrape_queue_skipped(p_queue_id bigint, p_skip_reason text)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+  UPDATE public.source_scrape_queue
+  SET status='succeeded',
+      finished_at=now(),
+      skip_reason=left(coalesce(p_skip_reason, 'source skipped'), 1000),
+      last_error=NULL
+  WHERE id = p_queue_id;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.source_scrape_queue_schedule_retry(p_queue_id bigint, p_attempt_count int, p_error text)
 RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
@@ -139,6 +175,24 @@ BEGIN
   UPDATE public.source_scrape_queue
   SET status='pending', started_at=NULL, next_attempt_at=v_next, last_error=left(coalesce(p_error,''), 1000)
   WHERE id = p_queue_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.release_unstarted_tag_queue_rows(p_claimed_ids bigint[])
+RETURNS int
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_count int;
+BEGIN
+  UPDATE public.event_tag_queue
+  SET status='pending',
+      started_at=NULL,
+      attempt_count=GREATEST(attempt_count - 1, 0)
+  WHERE id = ANY(p_claimed_ids)
+    AND status='processing'
+    AND started_at IS NOT NULL
+    AND finished_at IS NULL;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
 END;
 $$;
 
@@ -171,7 +225,44 @@ BEGIN
 END;
 $$;
 ```
-- [ ] Step 2: Keep/add `source_extraction_traces`, `source_scrape_queue_summary`, `event_sources.extraction_mode`, and `event_tag_queue_status` + `succeeded` backfill DDL in the same migration file.
+- [ ] Step 2: Keep/add `source_extraction_traces`, `source_scrape_queue_summary`, `event_sources.extraction_mode`, and `event_tag_queue_status` + `succeeded` backfill DDL in the same migration file using these exact fragments:
+```sql
+ALTER TABLE public.event_sources
+  ADD COLUMN IF NOT EXISTS extraction_mode text NOT NULL DEFAULT 'deterministic'
+  CHECK (extraction_mode IN ('deterministic','llm','deterministic_then_llm'));
+
+CREATE TABLE public.source_extraction_traces (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  source_queue_id bigint REFERENCES public.source_scrape_queue(id) ON DELETE SET NULL,
+  source_run_id uuid REFERENCES public.source_runs(id) ON DELETE SET NULL,
+  source_id uuid REFERENCES public.event_sources(id) ON DELETE SET NULL,
+  extraction_mode text NOT NULL,
+  extractor text NOT NULL CHECK (extractor IN ('deterministic','llm')),
+  provider text,
+  model text,
+  status text NOT NULL CHECK (status IN ('success','fallback','error')),
+  input_bytes int,
+  parsed_event_count int NOT NULL DEFAULT 0,
+  reasoning_summary text,
+  error text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TYPE public.event_tag_queue_status ADD VALUE IF NOT EXISTS 'succeeded';
+UPDATE public.event_tag_queue
+SET status = 'succeeded'
+WHERE status = 'failed' AND finished_at IS NOT NULL AND last_error IS NULL;
+
+CREATE OR REPLACE VIEW public.source_scrape_queue_summary AS
+SELECT status,
+       count(*)::int AS row_count,
+       min(enqueued_at) AS oldest_enqueued_at,
+       max(started_at) FILTER (WHERE status='processing') AS newest_processing_at,
+       max(finished_at) FILTER (WHERE status='dead') AS last_dead_letter_at,
+       max(last_error) FILTER (WHERE last_error IS NOT NULL) AS last_error
+FROM public.source_scrape_queue
+GROUP BY status;
+```
 - [ ] Step 3: Run migration guard: `node --test tests/guards/ingestion-tagging-pipeline-migration.test.mjs`
 - [ ] Step 4: Commit: `git commit -m "feat: add migration with started-row attempt accounting"`
 
@@ -804,3 +895,190 @@ and add this exact object in `infra/spacelift-railway-cron-poc/cron-services.jso
 ```
 - [ ] Step 6: Run verification: `node --test tests/guards/cron-process-source-queue-runtime.test.mjs tests/railway-cron-poc.test.mjs tests/guards/ingestion-tagging-pipeline-migration.test.mjs tests/guards/process-source-queue-wiring.test.mjs && pnpm --filter @family-events/web test -- src/features/admin/hooks/use-admin-source-queue.test.ts src/features/admin/components/admin-logs.test.tsx src/features/admin/hooks/use-admin-crons.test.ts && pnpm run db:types`
 - [ ] Step 7: Commit: `git commit -m "feat: add cron process-source runtime and complete wiring"`
+
+### Task 17: Add failing tests for process-tag-queue succeeded status and deadline release behavior
+
+**Files:**
+- Create: `supabase/functions/process-tag-queue/process-tag-queue-behavior.test.ts`
+
+- [ ] Step 1: Create `supabase/functions/process-tag-queue/process-tag-queue-behavior.test.ts` with this exact content:
+```ts
+import { assertEquals } from "jsr:@std/assert"
+import { resolveCompletedTagQueueStatus, shouldStopBeforeStartingNextTagRow } from "./queue-policy.ts"
+
+Deno.test("successful tag queue rows complete with succeeded status", () => {
+  assertEquals(resolveCompletedTagQueueStatus(), "succeeded")
+})
+
+Deno.test("worker stops before starting another row near deadline", () => {
+  assertEquals(shouldStopBeforeStartingNextTagRow(109_500, 110_000), true)
+  assertEquals(shouldStopBeforeStartingNextTagRow(5_000, 110_000), false)
+})
+```
+- [ ] Step 2: Run failing test: `cd supabase/functions && deno test process-tag-queue/process-tag-queue-behavior.test.ts`
+- [ ] Step 3: Commit: `git commit -m "test: add process-tag-queue succeeded and deadline tests"`
+
+### Task 18: Implement process-tag-queue succeeded status and unstarted-row release
+
+**Files:**
+- Create: `supabase/functions/process-tag-queue/queue-policy.ts`
+- Modify: `supabase/functions/process-tag-queue/index.ts`
+
+- [ ] Step 1: Create `queue-policy.ts` with this exact content:
+```ts
+export function resolveCompletedTagQueueStatus(): "succeeded" {
+  return "succeeded"
+}
+
+export function shouldStopBeforeStartingNextTagRow(elapsedMs: number, budgetMs: number): boolean {
+  return elapsedMs >= budgetMs - 5_000
+}
+```
+- [ ] Step 2: In `process-tag-queue/index.ts`, replace the success update payload in `markSuccess` with:
+```ts
+{
+  status: resolveCompletedTagQueueStatus(),
+  finished_at: new Date().toISOString(),
+  last_error: null,
+}
+```
+- [ ] Step 3: In `processBatch`, before starting each claimed row, add this exact deadline guard:
+```ts
+const unstartedRowIds = rows.slice(rows.indexOf(row)).map((item) => item.id)
+if (shouldStopBeforeStartingNextTagRow(Date.now() - batchStart, 110_000)) {
+  await supabase.rpc("release_unstarted_tag_queue_rows", { p_claimed_ids: unstartedRowIds })
+  break
+}
+```
+- [ ] Step 4: Add `import { resolveCompletedTagQueueStatus, shouldStopBeforeStartingNextTagRow } from "./queue-policy.ts"` at the top of `index.ts`.
+- [ ] Step 5: Run tests: `cd supabase/functions && deno test process-tag-queue/process-tag-queue-behavior.test.ts`
+- [ ] Step 6: Commit: `git commit -m "feat: complete tag queue rows with succeeded status"`
+
+### Task 19: Add failing tests for source worker reaping and disabled/deleted source skip semantics
+
+**Files:**
+- Modify: `supabase/functions/process-source-queue/lib/worker_test.ts`
+
+- [ ] Step 1: Append these exact tests to `supabase/functions/process-source-queue/lib/worker_test.ts`:
+```ts
+Deno.test("reaps source queue rows stuck processing for more than fifteen minutes", () => {
+  throw new Error("failing until reap_stuck_source_scrape_queue_rows is invoked before claim")
+})
+
+Deno.test("disabled source completes with skip_reason and no retry", () => {
+  throw new Error("failing until disabled sources call mark_source_scrape_queue_skipped")
+})
+
+Deno.test("deleted source completes with skip_reason and no retry", () => {
+  throw new Error("failing until missing sources call mark_source_scrape_queue_skipped")
+})
+```
+- [ ] Step 2: Run failing tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts`
+- [ ] Step 3: Commit: `git commit -m "test: add source queue reap and skip tests"`
+
+### Task 20: Implement source worker reaping and disabled/deleted source skip semantics
+
+**Files:**
+- Modify: `supabase/functions/process-source-queue/lib/worker.ts`
+- Modify: `supabase/functions/process-source-queue/index.ts`
+
+- [ ] Step 1: Add these exact helpers in `worker.ts`:
+```ts
+export async function reapStuckSourceQueueRows(supabase: SupabaseClient): Promise<number> {
+  const { data, error } = await supabase.rpc("reap_stuck_source_scrape_queue_rows")
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
+export async function markSkipped(supabase: SupabaseClient, queueId: number, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("mark_source_scrape_queue_skipped", {
+    p_queue_id: queueId,
+    p_skip_reason: reason,
+  })
+  if (error) throw error
+}
+```
+- [ ] Step 2: In `processQueueRow`, after loading the source row and before `markStarted`, add:
+```ts
+if (!source) {
+  await markSkipped(supabase, queueRow.id, "source deleted before processing")
+  return { outcome: "skipped", imported: 0 }
+}
+
+if (!source.is_active) {
+  await markSkipped(supabase, queueRow.id, "source disabled before processing")
+  return { outcome: "skipped", imported: 0 }
+}
+```
+- [ ] Step 3: In `process-source-queue/index.ts`, invoke the reaper before claiming:
+```ts
+await reapStuckSourceQueueRows(supabase)
+const { data: claimed } = await supabase.rpc("claim_source_scrape_queue_batch", { p_limit: 5 })
+```
+- [ ] Step 4: Run tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts process-source-queue/index_test.ts`
+- [ ] Step 5: Commit: `git commit -m "feat: skip disabled sources and reap source queue"`
+
+### Task 21: Add failing web tests for extraction_mode typing and source-form defaults
+
+**Files:**
+- Create: `apps/web/src/features/admin/lib/source-defaults.test.ts`
+
+- [ ] Step 1: Create `apps/web/src/features/admin/lib/source-defaults.test.ts` with this exact content:
+```ts
+import { describe, expect, it } from "vitest"
+import { defaultExtractionModeForSourceType } from "./source-defaults"
+
+describe("defaultExtractionModeForSourceType", () => {
+  it.each(["website", "macaronikid"] as const)("%s defaults to deterministic_then_llm", (sourceType) => {
+    expect(defaultExtractionModeForSourceType(sourceType)).toBe("deterministic_then_llm")
+  })
+
+  it.each(["rss", "ical", "manual"] as const)("%s defaults to deterministic", (sourceType) => {
+    expect(defaultExtractionModeForSourceType(sourceType)).toBe("deterministic")
+  })
+})
+```
+- [ ] Step 2: Run failing test: `pnpm --filter @family-events/web test -- src/features/admin/lib/source-defaults.test.ts`
+- [ ] Step 3: Commit: `git commit -m "test: add source extraction mode default tests"`
+
+### Task 22: Implement extraction_mode web typing, schemas, and source-form defaults
+
+**Files:**
+- Create: `apps/web/src/features/admin/lib/source-defaults.ts`
+- Modify: `apps/web/src/features/admin/hooks/admin-types.ts`
+- Modify: `apps/web/src/features/admin/hooks/use-admin-sources.ts`
+- Modify: `apps/web/src/features/admin/pages/admin-sources.tsx`
+
+- [ ] Step 1: Create `source-defaults.ts` with this exact content:
+```ts
+export type SourceType = "website" | "ical" | "rss" | "manual" | "macaronikid"
+export type ExtractionMode = "deterministic" | "llm" | "deterministic_then_llm"
+
+export function defaultExtractionModeForSourceType(sourceType: SourceType): ExtractionMode {
+  return sourceType === "website" || sourceType === "macaronikid" ? "deterministic_then_llm" : "deterministic"
+}
+```
+- [ ] Step 2: Add `extraction_mode: ExtractionMode` to the admin `EventSource` type and to every Supabase select list for `event_sources`.
+- [ ] Step 3: In `admin-sources.tsx`, initialize new sources with:
+```ts
+const [newSource, setNewSource] = useState({
+  name: "",
+  url: "",
+  source_type: "website" as SourceType,
+  city_id: "",
+  extraction_mode: defaultExtractionModeForSourceType("website"),
+})
+```
+- [ ] Step 4: In source-type change handling, update extraction mode with:
+```ts
+onTypeChange={(value) =>
+  setNewSource((prev) => ({
+    ...prev,
+    source_type: value,
+    extraction_mode: defaultExtractionModeForSourceType(value),
+  }))
+}
+```
+- [ ] Step 5: Include `extraction_mode: newSource.extraction_mode` in the create-source payload.
+- [ ] Step 6: Run tests: `pnpm --filter @family-events/web test -- src/features/admin/lib/source-defaults.test.ts`
+- [ ] Step 7: Commit: `git commit -m "feat: add extraction mode typing and defaults"`
