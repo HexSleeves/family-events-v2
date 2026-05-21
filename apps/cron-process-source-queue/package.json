@@ -1,0 +1,6 @@
+{
+  "name": "@family-events/cron-process-source-queue",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Railway cron service that hits process-source-queue every minute"
+}
