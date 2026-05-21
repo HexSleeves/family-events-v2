@@ -42,8 +42,22 @@ Any new RPC that needs elevated privileges (bypass RLS, write to admin tables, e
 1. Author the real function as `private.<name>` with `SECURITY DEFINER`. Grant EXECUTE on it to whichever roles legitimately reach the wrapper (typically `authenticated, service_role`; add `anon` only if the wrapper is anon-callable).
 2. Author a thin `public.<name>` wrapper as `SECURITY INVOKER` whose body is `SELECT [* FROM] private.<name>(args);`. Preserve all default values on the wrapper so PostgREST clients calling with omitted optional args continue to work.
 3. `REVOKE EXECUTE ON FUNCTION public.<name>(args) FROM PUBLIC, anon;` for admin-only RPCs. Anon-callable RPCs get default privs.
+4. Verify every role granted EXECUTE in step 1 also holds `USAGE` on schema `private`. `anon` and `authenticated` have it from `20260601002200`; `service_role` has it from `20260601005600`. Any other role you grant EXECUTE to needs its own USAGE grant — without it the SECURITY INVOKER wrapper fails at name-resolution time with `42501: permission denied for schema private` and the failure is invisible to the migration itself (it runs as `postgres`).
+5. Verify in a one-off SQL block after the migration:
 
-Reference migration: `supabase/migrations/20260601002100_wrap_security_definer_rpcs.sql`.
+   ```sql
+   SET LOCAL ROLE service_role; -- or authenticated / anon
+   SELECT public.<name>(<args>);
+   RESET ROLE;
+   ```
+
+   Catches the USAGE/EXECUTE mismatch before deploy.
+
+Reference migrations:
+
+- Initial wrap: `supabase/migrations/20260601002100_wrap_security_definer_rpcs.sql`
+- Queue wrap: `supabase/migrations/20260601005100_wrap_queue_security_definer_rpcs.sql`
+- USAGE grant for service_role: `supabase/migrations/20260601005600_grant_private_schema_usage_service_role.sql`
 
 ### Reading Supabase project URL / service-role key
 
