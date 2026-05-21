@@ -27,7 +27,9 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
     "reap_stuck_source_scrape_queue_rows",
     "mark_source_scrape_queue_skipped",
     "source_scrape_queue_schedule_retry",
+    "admin_retry_source_scrape_queue",
     "release_unstarted_tag_queue_rows",
+    "source_scrape_queue_source_active_uniq",
     "interval '5 minutes'",
     "interval '15 minutes'",
     "interval '60 minutes'",
@@ -44,6 +46,8 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
 
   const tagReleaseFn = sql.match(/CREATE OR REPLACE FUNCTION public\.release_unstarted_tag_queue_rows[\s\S]*?\$\$;/)?.[0] ?? ""
   assert.match(tagReleaseFn, /attempt_count\s*=\s*GREATEST\(attempt_count - 1, 0\)/)
+
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS source_scrape_queue_source_active_uniq[\s\S]*WHERE source_id IS NOT NULL[\s\S]*status IN \('pending','processing'\)/)
 })
 ```
 - [ ] Step 2: Run failing test: `node --test tests/guards/ingestion-tagging-pipeline-migration.test.mjs`
@@ -54,7 +58,7 @@ test("migration includes no-attempt-burn claim and enqueue-only admin due scrape
 **Files:**
 - Create: `supabase/migrations/20260601004100_ingestion_tagging_pipeline_rethink.sql`
 
-- [ ] Step 1: Create migration file with this exact SQL core (plus BEGIN/COMMIT and grants):
+- [ ] Step 1: Create migration file with this exact SQL core. Wrap all SQL from Step 1 and Step 2 in one `BEGIN; ... COMMIT;` block and include only the grants shown in Step 2:
 ```sql
 CREATE TYPE public.source_scrape_queue_status AS ENUM ('pending','processing','retrying','succeeded','dead');
 
@@ -71,6 +75,10 @@ CREATE TABLE public.source_scrape_queue (
   last_error text,
   skip_reason text
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS source_scrape_queue_source_active_uniq
+  ON public.source_scrape_queue (source_id)
+  WHERE source_id IS NOT NULL AND status IN ('pending','processing');
 
 CREATE OR REPLACE FUNCTION public.claim_source_scrape_queue_batch(p_limit int DEFAULT 5)
 RETURNS SETOF public.source_scrape_queue
@@ -224,6 +232,34 @@ BEGIN
   RETURN public.run_due_source_scrapes();
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION public.admin_retry_source_scrape_queue(p_queue_id bigint)
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_source_id uuid;
+BEGIN
+  IF NOT private.is_admin() THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT source_id INTO v_source_id
+  FROM public.source_scrape_queue
+  WHERE id = p_queue_id AND status = 'dead';
+
+  IF v_source_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  INSERT INTO public.source_scrape_queue (source_id)
+  VALUES (v_source_id)
+  ON CONFLICT DO NOTHING;
+
+  RETURN EXISTS (
+    SELECT 1 FROM public.source_scrape_queue
+    WHERE source_id = v_source_id AND status IN ('pending','processing')
+  );
+END;
+$$;
 ```
 - [ ] Step 2: Keep/add `source_extraction_traces`, `source_scrape_queue_summary`, `event_sources.extraction_mode`, and `event_tag_queue_status` + `succeeded` backfill DDL in the same migration file using these exact fragments:
 ```sql
@@ -262,6 +298,19 @@ SELECT status,
        max(last_error) FILTER (WHERE last_error IS NOT NULL) AS last_error
 FROM public.source_scrape_queue
 GROUP BY status;
+
+GRANT SELECT ON public.source_scrape_queue_summary TO authenticated;
+GRANT SELECT ON public.source_extraction_traces TO authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_source_scrape_queue_batch(int) TO service_role;
+GRANT EXECUTE ON FUNCTION public.mark_source_scrape_queue_started(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_unstarted_source_scrape_queue_rows(bigint[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.reap_stuck_source_scrape_queue_rows() TO service_role;
+GRANT EXECUTE ON FUNCTION public.mark_source_scrape_queue_skipped(bigint, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.source_scrape_queue_schedule_retry(bigint, int, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.release_unstarted_tag_queue_rows(bigint[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.run_due_source_scrapes() TO service_role;
+GRANT EXECUTE ON FUNCTION public.admin_run_due_scrapes() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_retry_source_scrape_queue(bigint) TO authenticated;
 ```
 - [ ] Step 3: Run migration guard: `node --test tests/guards/ingestion-tagging-pipeline-migration.test.mjs`
 - [ ] Step 4: Commit: `git commit -m "feat: add migration with started-row attempt accounting"`
@@ -479,10 +528,60 @@ describe("useRunDueScrapes", () => {
 - Modify: `supabase/functions/scrape-due-sources/index.ts`
 - Modify: `apps/web/src/features/admin/hooks/use-admin-crons.ts`
 
-- [ ] Step 1: Create `source-queue.ts` with these exact signatures:
+- [ ] Step 1: Create `source-queue.ts` with this exact content:
 ```ts
-export async function enqueueSourceScrape(supabase: SupabaseClient, sourceId: string): Promise<{ queue_id: number | null; deduped: boolean }>
-export async function kickProcessSourceQueue(supabaseUrl: string, serviceRoleKey: string): Promise<void>
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+export interface EnqueueSourceScrapeResult {
+  queue_id: number | null
+  deduped: boolean
+}
+
+export async function enqueueSourceScrape(
+  supabase: SupabaseClient,
+  sourceId: string
+): Promise<EnqueueSourceScrapeResult> {
+  const { data: inserted, error: insertError } = await supabase
+    .from("source_scrape_queue")
+    .insert({ source_id: sourceId })
+    .select("id")
+    .maybeSingle()
+
+  if (!insertError && inserted) {
+    return { queue_id: Number(inserted.id), deduped: false }
+  }
+
+  const { data: existing, error: selectError } = await supabase
+    .from("source_scrape_queue")
+    .select("id")
+    .eq("source_id", sourceId)
+    .in("status", ["pending", "processing"])
+    .order("enqueued_at", { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+  return { queue_id: existing ? Number(existing.id) : null, deduped: true }
+}
+
+export async function kickProcessSourceQueue(
+  supabaseUrl: string,
+  serviceRoleKey: string
+): Promise<void> {
+  const response = await fetch(`${supabaseUrl}/functions/v1/process-source-queue`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+    body: "{}",
+  })
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "")
+    throw new Error(`process-source-queue ${response.status}: ${body.slice(0, 200)}`)
+  }
+}
 ```
 - [ ] Step 2: Replace `scrape-source/index.ts` core processing with:
 ```ts
@@ -539,6 +638,18 @@ Deno.test("invalid llm ParsedEvent shape writes trace + schedules retry + does n
 Deno.test("retry schedule is 5m then 15m then 60m then dead on 4th failure", () => {
   assertEquals(true, false)
 })
+
+Deno.test("worker creates and links a fresh source_run before extraction starts", () => {
+  assertEquals(true, false)
+})
+
+Deno.test("deterministic_then_llm falls back to llm when deterministic extraction returns no valid events", () => {
+  assertEquals(true, false)
+})
+
+Deno.test("deterministic mode extraction failure schedules retry and imports no events", () => {
+  assertEquals(true, false)
+})
 ```
 - [ ] Step 2: Create `supabase/functions/process-source-queue/index_test.ts` with this exact content:
 ```ts
@@ -571,8 +682,110 @@ export async function scheduleRetry(supabase: SupabaseClient, queueId: number, a
   })
   if (error) throw error
 }
+
+export async function createAndLinkSourceRun(
+  supabase: SupabaseClient,
+  queueId: number,
+  sourceId: string
+): Promise<string> {
+  const { data: run, error: runError } = await supabase
+    .from("source_runs")
+    .insert({ source_id: sourceId, status: "running" })
+    .select("id")
+    .single()
+  if (runError) throw runError
+
+  const runId = String(run.id)
+  const { error: linkError } = await supabase
+    .from("source_scrape_queue")
+    .update({ source_run_id: runId })
+    .eq("id", queueId)
+  if (linkError) throw linkError
+
+  return runId
+}
+
+export async function persistExtractionTrace(
+  supabase: SupabaseClient,
+  input: {
+    source_queue_id: number
+    source_run_id: string
+    source_id: string
+    extraction_mode: ExtractionMode
+    extractor: "deterministic" | "llm"
+    status: "success" | "fallback" | "error"
+    error?: string | null
+    parsed_event_count: number
+  }
+): Promise<void> {
+  const { error } = await supabase.from("source_extraction_traces").insert(input)
+  if (error) throw error
+}
 ```
-- [ ] Step 2: Add this exact invalid-LLM failure block in `processQueueRow(...)` before any `processSource(...)` call:
+- [ ] Step 2: At the start of `processQueueRow(...)`, load the source row, create/link a run, and mark the row started with this exact sequence:
+```ts
+const { data: source, error: sourceError } = await supabase
+  .from("event_sources")
+  .select("*")
+  .eq("id", queueRow.source_id)
+  .maybeSingle()
+if (sourceError) throw sourceError
+if (!source) {
+  await markSkipped(supabase, queueRow.id, "source deleted before processing")
+  return { outcome: "skipped", imported: 0 }
+}
+if (!source.is_active) {
+  await markSkipped(supabase, queueRow.id, "source disabled before processing")
+  return { outcome: "skipped", imported: 0 }
+}
+
+const runId = await createAndLinkSourceRun(supabase, queueRow.id, source.id)
+const startedRow = await markStarted(supabase, queueRow.id)
+```
+- [ ] Step 3: Add this exact deterministic extraction failure/fallback block before any `processSource(...)` call:
+```ts
+let parsedEvents: ParsedEvent[] = []
+let deterministicError: unknown = null
+
+if (source.extraction_mode !== "llm") {
+  try {
+    const deterministicEvents = validateParsedEvents(await parser.extractEvents(source, artifact, parserContext))
+    await persistExtractionTrace(supabase, {
+      source_queue_id: queueRow.id,
+      source_run_id: runId,
+      source_id: source.id,
+      extraction_mode: source.extraction_mode,
+      extractor: "deterministic",
+      status: deterministicEvents.length > 0 ? "success" : "fallback",
+      parsed_event_count: deterministicEvents.length,
+    })
+    parsedEvents = deterministicEvents
+  } catch (err) {
+    deterministicError = err
+    await persistExtractionTrace(supabase, {
+      source_queue_id: queueRow.id,
+      source_run_id: runId,
+      source_id: source.id,
+      extraction_mode: source.extraction_mode,
+      extractor: "deterministic",
+      status: "error",
+      error: err instanceof Error ? err.message : String(err),
+      parsed_event_count: 0,
+    })
+  }
+}
+
+if (source.extraction_mode === "deterministic" && (deterministicError || parsedEvents.length === 0)) {
+  await scheduleRetry(
+    supabase,
+    queueRow.id,
+    startedRow.attempt_count,
+    deterministicError instanceof Error ? deterministicError.message : "Deterministic extraction returned no valid events",
+  )
+  return { outcome: "retry", imported: 0 }
+}
+```
+- [ ] Step 4: Add this exact invalid-LLM failure block in `processQueueRow(...)` before any `processSource(...)` call:
 ```ts
 let llmEvents: ParsedEvent[] = []
 try {
@@ -597,7 +810,7 @@ try {
   return { outcome: "retry", imported: 0 }
 }
 ```
-- [ ] Step 3: Add this exact no-partial-publish guard immediately after validation:
+- [ ] Step 5: Add this exact no-partial-publish guard immediately after validation:
 ```ts
 const validLlmEvents = validateParsedEvents(llmEvents)
 if (validLlmEvents.length !== llmEvents.length) {
@@ -615,7 +828,17 @@ if (validLlmEvents.length !== llmEvents.length) {
   return { outcome: "retry", imported: 0 }
 }
 ```
-- [ ] Step 4: In `index.ts`, use this exact claim/start/release structure:
+- [ ] Step 6: Before calling `processSource`, set final events with:
+```ts
+if (source.extraction_mode === "llm" || (source.extraction_mode === "deterministic_then_llm" && parsedEvents.length === 0)) {
+  parsedEvents = validLlmEvents
+}
+
+const result = await processSource(supabase, source, runId, parsedEvents)
+await supabase.from("source_scrape_queue").update({ status: "succeeded", finished_at: new Date().toISOString() }).eq("id", queueRow.id)
+return { outcome: "succeeded", imported: result.eventsImported }
+```
+- [ ] Step 7: In `index.ts`, use this exact claim/start/release structure:
 ```ts
 const { data: claimed } = await supabase.rpc("claim_source_scrape_queue_batch", { p_limit: 5 })
 const rows = (claimed ?? []) as Array<{ id: number }>
@@ -630,8 +853,8 @@ if (rest.length > 0) {
   })
 }
 ```
-- [ ] Step 5: Run tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts process-source-queue/index_test.ts`
-- [ ] Step 6: Commit: `git commit -m "feat: implement source worker no-burn and invalid-llm failure handling"`
+- [ ] Step 8: Run tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts process-source-queue/index_test.ts`
+- [ ] Step 9: Commit: `git commit -m "feat: implement source worker no-burn and invalid-llm failure handling"`
 
 ### Task 11: Add failing wiring tests for process-source-queue runtime registration
 
@@ -735,18 +958,79 @@ sourceQueueSummary: ["admin", "source-queue-summary"] as const,
 deadSourceQueueRows: ["admin", "source-queue-dead-rows"] as const,
 deadTagQueueRows: ["admin", "tag-queue-dead-rows"] as const,
 ```
-- [ ] Step 2: Create `use-admin-source-queue.ts` with these exact exported hooks:
+- [ ] Step 2: Create `use-admin-source-queue.ts` with this exact content:
 ```ts
-export function useAdminSourceQueueSummary() {}
-export function useAdminDeadSourceQueueRows() {}
-export function useAdminRetrySourceQueue() {}
-```
-and in `useAdminRetrySourceQueue().onSuccess`, include exactly:
-```ts
-void queryClient.invalidateQueries({ queryKey: qk.admin.sourceQueueSummary })
-void queryClient.invalidateQueries({ queryKey: qk.admin.deadSourceQueueRows })
-void queryClient.invalidateQueries({ queryKey: qk.admin.sourceRuns })
-void queryClient.invalidateQueries({ queryKey: qk.admin.tagQueueSummary })
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { supabase } from "@/lib/supabase"
+import { qk } from "@/lib/query-keys"
+
+export interface SourceQueueSummaryRow {
+  status: string
+  row_count: number
+  oldest_enqueued_at: string | null
+  newest_processing_at: string | null
+  last_dead_letter_at: string | null
+  last_error: string | null
+}
+
+export interface DeadSourceQueueRow {
+  id: number
+  source_id: string | null
+  source_run_id: string | null
+  attempt_count: number
+  last_error: string | null
+  finished_at: string | null
+  skip_reason: string | null
+}
+
+export function useAdminSourceQueueSummary() {
+  return useQuery({
+    queryKey: qk.admin.sourceQueueSummary,
+    queryFn: async (): Promise<SourceQueueSummaryRow[]> => {
+      const { data, error } = await supabase
+        .from("source_scrape_queue_summary")
+        .select("status, row_count, oldest_enqueued_at, newest_processing_at, last_dead_letter_at, last_error")
+      if (error) throw error
+      return (data ?? []) as SourceQueueSummaryRow[]
+    },
+    refetchInterval: 10_000,
+  })
+}
+
+export function useAdminDeadSourceQueueRows() {
+  return useQuery({
+    queryKey: qk.admin.deadSourceQueueRows,
+    queryFn: async (): Promise<DeadSourceQueueRow[]> => {
+      const { data, error } = await supabase
+        .from("source_scrape_queue")
+        .select("id, source_id, source_run_id, attempt_count, last_error, finished_at, skip_reason")
+        .eq("status", "dead")
+        .order("finished_at", { ascending: false })
+        .limit(25)
+      if (error) throw error
+      return (data ?? []) as DeadSourceQueueRow[]
+    },
+  })
+}
+
+export function useAdminRetrySourceQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (queueId: number) => {
+      const { data, error } = await supabase.rpc("admin_retry_source_scrape_queue", {
+        p_queue_id: queueId,
+      })
+      if (error) throw error
+      return data as boolean
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sourceQueueSummary })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.deadSourceQueueRows })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.sourceRuns })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.tagQueueSummary })
+    },
+  })
+}
 ```
 - [ ] Step 3: In `use-admin-tag-queue.ts`, add this exact hook:
 ```ts
@@ -1058,8 +1342,38 @@ export function defaultExtractionModeForSourceType(sourceType: SourceType): Extr
   return sourceType === "website" || sourceType === "macaronikid" ? "deterministic_then_llm" : "deterministic"
 }
 ```
-- [ ] Step 2: Add `extraction_mode: ExtractionMode` to the admin `EventSource` type and to every Supabase select list for `event_sources`.
-- [ ] Step 3: In `admin-sources.tsx`, initialize new sources with:
+- [ ] Step 2: In `apps/web/src/lib/types.ts`, add this exact type and field:
+```ts
+export type ExtractionMode = "deterministic" | "llm" | "deterministic_then_llm"
+
+export interface EventSource {
+  id: string
+  name: string
+  url: string
+  source_type: "website" | "ical" | "rss" | "manual" | "macaronikid"
+  extraction_mode: ExtractionMode
+  city_id: string | null
+  is_active: boolean
+  auto_approve: boolean
+  scrape_interval_hours: number
+  last_scraped_at: string | null
+  last_status: "pending" | "success" | "error" | "partial" | null
+  error_count: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+```
+- [ ] Step 3: In `apps/web/src/lib/schemas/admin.ts`, add the exact schema field:
+```ts
+extraction_mode: z.enum(["deterministic", "llm", "deterministic_then_llm"]),
+```
+- [ ] Step 4: In `apps/web/src/features/admin/hooks/use-admin-sources.ts`, replace the source select string with:
+```ts
+"id, name, url, source_type, extraction_mode, city_id, is_active, auto_approve, scrape_interval_hours, last_scraped_at, last_status, error_count, notes, created_at, updated_at"
+```
+- [ ] Step 5: In `useCreateAdminSource`, keep the payload type as `Omit<EventSource, "id" | "created_at" | "updated_at">` so inserts require `extraction_mode`.
+- [ ] Step 6: In `admin-sources.tsx`, initialize new sources with:
 ```ts
 const [newSource, setNewSource] = useState({
   name: "",
@@ -1069,7 +1383,7 @@ const [newSource, setNewSource] = useState({
   extraction_mode: defaultExtractionModeForSourceType("website"),
 })
 ```
-- [ ] Step 4: In source-type change handling, update extraction mode with:
+- [ ] Step 7: In source-type change handling, update extraction mode with:
 ```ts
 onTypeChange={(value) =>
   setNewSource((prev) => ({
@@ -1079,6 +1393,6 @@ onTypeChange={(value) =>
   }))
 }
 ```
-- [ ] Step 5: Include `extraction_mode: newSource.extraction_mode` in the create-source payload.
-- [ ] Step 6: Run tests: `pnpm --filter @family-events/web test -- src/features/admin/lib/source-defaults.test.ts`
-- [ ] Step 7: Commit: `git commit -m "feat: add extraction mode typing and defaults"`
+- [ ] Step 8: Include `extraction_mode: newSource.extraction_mode` in the create-source payload.
+- [ ] Step 9: Run tests: `pnpm --filter @family-events/web test -- src/features/admin/lib/source-defaults.test.ts`
+- [ ] Step 10: Commit: `git commit -m "feat: add extraction mode typing and defaults"`
