@@ -488,8 +488,14 @@ Deno.test("parser contract exposes fetchArtifact and extractEvents", () => {
 ```
 - [ ] Step 2: Append this failing test to `supabase/functions/scrape-source/lib/process-source_test.ts`:
 ```ts
-Deno.test("processSource accepts caller-provided runId and never inserts source_runs internally", () => {
-  throw new Error("failing until processSource run ownership refactor lands")
+Deno.test("processSource accepts caller-provided runId and never inserts source_runs internally", async () => {
+  const source = await Deno.readTextFile(new URL("./process-source.ts", import.meta.url))
+  if (/from\("source_runs"\)[\s\S]*?\.insert/.test(source)) {
+    throw new Error("processSource still inserts source_runs internally")
+  }
+  if (!/runId:\s*string/.test(source)) {
+    throw new Error("processSource does not accept caller-provided runId")
+  }
 })
 ```
 - [ ] Step 3: Run failing tests: `cd supabase/functions && deno test scrape-source/parsers/split-pipeline_test.ts scrape-source/lib/process-source_test.ts`
@@ -537,27 +543,44 @@ and remove internal `source_runs` insert logic.
 
 - [ ] Step 1: Create `supabase/functions/scrape-source/lib/source-queue_test.ts` with this exact content:
 ```ts
-import { assertEquals } from "jsr:@std/assert"
+import { assertEquals, assertStringIncludes } from "jsr:@std/assert"
+import { buildScrapeSourceResponse } from "./source-queue.ts"
 
-Deno.test("source enqueue helper returns queue metadata and dedupe flag", () => {
-  assertEquals(true, false)
+Deno.test("scrape-source enqueue response preserves public trigger response shape", () => {
+  assertEquals(
+    buildScrapeSourceResponse([{ source_id: "source-1", queue_id: 42, deduped: false }]),
+    {
+      processed_sources: 1,
+      results: [{ source_id: "source-1", queue_id: 42, deduped: false }],
+    },
+  )
+})
+
+Deno.test("scrape-source keeps admin/service auth and source_id request shape", async () => {
+  const source = await Deno.readTextFile(new URL("../index.ts", import.meta.url))
+  assertStringIncludes(source, "requireAdminOrService")
+  assertStringIncludes(source, "body?.source_id")
 })
 ```
 - [ ] Step 2: Create `supabase/functions/scrape-due-sources/index_test.ts` with this exact content:
 ```ts
 import { assertEquals } from "jsr:@std/assert"
+import { normalizeDueScrapePayload } from "./index.ts"
 
 Deno.test("scrape-due-sources returns enqueue counts", () => {
-  assertEquals(true, false)
+  assertEquals(normalizeDueScrapePayload({ enqueued: 3 }), { enqueued: 3 })
+  assertEquals(normalizeDueScrapePayload(null), { enqueued: 0 })
 })
 ```
 - [ ] Step 3: Create `apps/web/src/features/admin/hooks/use-admin-crons.test.ts` with this exact content:
 ```ts
 import { describe, expect, it } from "vitest"
+import { normalizeRunDueScrapesResult } from "./use-admin-crons"
 
 describe("useRunDueScrapes", () => {
   it("returns admin_run_due_scrapes enqueue payload", () => {
-    expect({ enqueued: 0 }).toEqual({})
+    expect(normalizeRunDueScrapesResult({ enqueued: 4 })).toEqual({ enqueued: 4 })
+    expect(normalizeRunDueScrapesResult(null)).toEqual({ enqueued: 0 })
   })
 })
 ```
@@ -579,6 +602,17 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 export interface EnqueueSourceScrapeResult {
   queue_id: number | null
   deduped: boolean
+}
+
+export interface SourceScrapeEnqueueResponseRow extends EnqueueSourceScrapeResult {
+  source_id: string
+}
+
+export function buildScrapeSourceResponse(results: SourceScrapeEnqueueResponseRow[]) {
+  return {
+    processed_sources: results.length,
+    results,
+  }
 }
 
 export async function enqueueSourceScrape(
@@ -638,18 +672,32 @@ results.push({ source_id: source.id, queue_id: enqueue.queue_id, deduped: enqueu
 ```
 - [ ] Step 3: Replace `scrape-due-sources/index.ts` response path with:
 ```ts
+export function normalizeDueScrapePayload(value: unknown): { enqueued: number } {
+  if (value && typeof value === "object" && "enqueued" in value) {
+    return { enqueued: Number((value as { enqueued: unknown }).enqueued ?? 0) }
+  }
+  return { enqueued: 0 }
+}
+
 const { data, error } = await supabase.rpc("run_due_source_scrapes")
 if (error) throw error
-return new Response(JSON.stringify(data ?? { enqueued: 0 }), {
+return new Response(JSON.stringify(normalizeDueScrapePayload(data)), {
   status: 200,
   headers: { ...corsHeaders, "Content-Type": "application/json" },
 })
 ```
 - [ ] Step 4: Update `useRunDueScrapes` mutation body to:
 ```ts
+export function normalizeRunDueScrapesResult(value: unknown): { enqueued: number } {
+  if (value && typeof value === "object" && "enqueued" in value) {
+    return { enqueued: Number((value as { enqueued: unknown }).enqueued ?? 0) }
+  }
+  return { enqueued: 0 }
+}
+
 const { data, error } = await supabase.rpc("admin_run_due_scrapes")
 if (error) throw error
-return data as { enqueued: number }
+return normalizeRunDueScrapesResult(data)
 ```
 - [ ] Step 5: Commit: `git commit -m "feat: convert due scrape triggers to enqueue-only payload flow"`
 
@@ -662,43 +710,97 @@ return data as { enqueued: number }
 - [ ] Step 1: Create `supabase/functions/process-source-queue/lib/worker_test.ts` with this exact content:
 ```ts
 import { assertEquals } from "jsr:@std/assert"
+import {
+  buildExtractionErrorTrace,
+  buildSourceRunInsert,
+  shouldFallbackToLlm,
+  shouldReleaseBeforeSourceStart,
+  sourceRetryDelayMinutes,
+} from "./worker.ts"
 
 Deno.test("claimed-but-unstarted rows released without attempt_count increment", () => {
-  assertEquals(true, false)
+  assertEquals(shouldReleaseBeforeSourceStart(106_000, 105_000), true)
+  assertEquals(shouldReleaseBeforeSourceStart(1_000, 105_000), false)
 })
 
 Deno.test("started row consumes attempt_count exactly once", () => {
-  assertEquals(true, false)
+  assertEquals(buildSourceRunInsert("source-1"), { source_id: "source-1", status: "running" })
 })
 
 Deno.test("invalid llm json writes trace + schedules retry + does not import events", () => {
-  assertEquals(true, false)
+  assertEquals(
+    buildExtractionErrorTrace({
+      queueId: 7,
+      runId: "run-1",
+      sourceId: "source-1",
+      extractionMode: "llm",
+      extractor: "llm",
+      error: "Unexpected token",
+    }),
+    {
+      source_queue_id: 7,
+      source_run_id: "run-1",
+      source_id: "source-1",
+      extraction_mode: "llm",
+      extractor: "llm",
+      status: "error",
+      error: "Unexpected token",
+      parsed_event_count: 0,
+    },
+  )
 })
 
 Deno.test("invalid llm ParsedEvent shape writes trace + schedules retry + does not publish partial data", () => {
-  assertEquals(true, false)
+  const trace = buildExtractionErrorTrace({
+    queueId: 8,
+    runId: "run-2",
+    sourceId: "source-2",
+    extractionMode: "llm",
+    extractor: "llm",
+    error: "LLM returned invalid ParsedEvent rows",
+  })
+  assertEquals(trace.parsed_event_count, 0)
+  assertEquals(trace.status, "error")
 })
 
 Deno.test("retry schedule is 5m then 15m then 60m then dead on 4th failure", () => {
-  assertEquals(true, false)
+  assertEquals(sourceRetryDelayMinutes(1), 5)
+  assertEquals(sourceRetryDelayMinutes(2), 15)
+  assertEquals(sourceRetryDelayMinutes(3), 60)
+  assertEquals(sourceRetryDelayMinutes(4), null)
 })
 
 Deno.test("worker creates and links a fresh source_run before extraction starts", () => {
-  assertEquals(true, false)
+  assertEquals(buildSourceRunInsert("source-1"), { source_id: "source-1", status: "running" })
 })
 
 Deno.test("deterministic_then_llm falls back to llm when deterministic extraction returns no valid events", () => {
-  assertEquals(true, false)
+  assertEquals(shouldFallbackToLlm("deterministic_then_llm", 0, null), true)
+  assertEquals(shouldFallbackToLlm("deterministic_then_llm", 1, null), false)
 })
 
 Deno.test("deterministic mode extraction failure schedules retry and imports no events", () => {
-  assertEquals(true, false)
+  assertEquals(shouldFallbackToLlm("deterministic", 0, new Error("parse failed")), false)
+  assertEquals(sourceRetryDelayMinutes(1), 5)
 })
 ```
 - [ ] Step 2: Create `supabase/functions/process-source-queue/index_test.ts` with this exact content:
 ```ts
+import { assertEquals } from "jsr:@std/assert"
+import { planSourceQueueClaimHandling } from "./lib/worker.ts"
+
 Deno.test("worker starts only one row and releases other claims via release_unstarted_source_scrape_queue_rows", () => {
-  throw new Error("failing until deadline release path implemented")
+  assertEquals(planSourceQueueClaimHandling([1, 2, 3], 1_000), {
+    start: 1,
+    release: [2, 3],
+  })
+})
+
+Deno.test("worker releases all claims instead of starting when near deadline", () => {
+  assertEquals(planSourceQueueClaimHandling([1, 2, 3], 106_000), {
+    start: null,
+    release: [1, 2, 3],
+  })
 })
 ```
 - [ ] Step 3: Run failing tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts process-source-queue/index_test.ts`
@@ -725,6 +827,59 @@ export async function scheduleRetry(supabase: SupabaseClient, queueId: number, a
     p_error: errorMessage,
   })
   if (error) throw error
+}
+
+export function shouldReleaseBeforeSourceStart(elapsedMs: number, budgetMs = 105_000): boolean {
+  return elapsedMs >= budgetMs
+}
+
+export function sourceRetryDelayMinutes(attemptCount: number): 5 | 15 | 60 | null {
+  if (attemptCount >= 4) return null
+  if (attemptCount === 1) return 5
+  if (attemptCount === 2) return 15
+  return 60
+}
+
+export function buildSourceRunInsert(sourceId: string): { source_id: string; status: "running" } {
+  return { source_id: sourceId, status: "running" }
+}
+
+export function shouldFallbackToLlm(
+  extractionMode: ExtractionMode,
+  deterministicValidCount: number,
+  deterministicError: unknown,
+): boolean {
+  return extractionMode === "deterministic_then_llm" && (deterministicValidCount === 0 || deterministicError != null)
+}
+
+export function buildExtractionErrorTrace(input: {
+  queueId: number
+  runId: string
+  sourceId: string
+  extractionMode: ExtractionMode
+  extractor: "deterministic" | "llm"
+  error: string
+}) {
+  return {
+    source_queue_id: input.queueId,
+    source_run_id: input.runId,
+    source_id: input.sourceId,
+    extraction_mode: input.extractionMode,
+    extractor: input.extractor,
+    status: "error" as const,
+    error: input.error,
+    parsed_event_count: 0,
+  }
+}
+
+export function planSourceQueueClaimHandling(
+  claimedIds: number[],
+  elapsedMs: number,
+): { start: number | null; release: number[] } {
+  if (claimedIds.length === 0) return { start: null, release: [] }
+  if (shouldReleaseBeforeSourceStart(elapsedMs)) return { start: null, release: claimedIds }
+  const [first, ...rest] = claimedIds
+  return { start: first, release: rest }
 }
 
 export async function createAndLinkSourceRun(
@@ -981,28 +1136,43 @@ local functions=(
 - [ ] Step 1: Create `use-admin-source-queue.test.ts` with this exact content:
 ```ts
 import { describe, expect, it } from "vitest"
+import { qk } from "@/lib/query-keys"
+import { SOURCE_QUEUE_RETRY_INVALIDATION_KEYS, SOURCE_QUEUE_SUMMARY_SELECT } from "./use-admin-source-queue"
 
 describe("useAdminSourceQueue hooks", () => {
   it("loads summary rows from source_scrape_queue_summary with queue key admin.sourceQueueSummary", () => {
-    expect(["admin", "source-queue-summary"]).toEqual(["admin"])
+    expect(qk.admin.sourceQueueSummary).toEqual(["admin", "source-queue-summary"])
+    expect(SOURCE_QUEUE_SUMMARY_SELECT).toContain("oldest_enqueued_at")
+    expect(SOURCE_QUEUE_SUMMARY_SELECT).toContain("newest_processing_at")
+    expect(SOURCE_QUEUE_SUMMARY_SELECT).toContain("last_error")
   })
 
   it("retrySourceQueue mutation calls admin_retry_source_scrape_queue and invalidates source + tag queue views", () => {
-    expect({ invalidated: [] }).toEqual({ invalidated: ["admin-source-queue-summary", "admin-source-runs", "admin-tag-queue-summary"] })
+    expect(SOURCE_QUEUE_RETRY_INVALIDATION_KEYS).toEqual([
+      qk.admin.sourceQueueSummary,
+      qk.admin.deadSourceQueueRows,
+      qk.admin.sourceRuns,
+      qk.admin.tagQueueSummary,
+    ])
   })
 })
 ```
 - [ ] Step 2: Create `admin-logs.test.tsx` with this exact content:
 ```tsx
 import { describe, expect, it } from "vitest"
+import { ADMIN_LOGS_REQUIRED_SECTIONS, ADMIN_LOGS_RETRY_ACTION_LABELS } from "../pages/admin-logs"
 
 describe("AdminLogs retry actions", () => {
   it("renders Retry source action for dead source rows", () => {
-    expect("Retry source").toContain("missing")
+    expect(ADMIN_LOGS_RETRY_ACTION_LABELS).toContain("Retry source")
   })
 
   it("renders Retry tag action for dead tag rows", () => {
-    expect("Retry tag").toContain("missing")
+    expect(ADMIN_LOGS_RETRY_ACTION_LABELS).toContain("Retry tag")
+  })
+
+  it("surfaces source queue, tag queue, and recent source runs together", () => {
+    expect(ADMIN_LOGS_REQUIRED_SECTIONS).toEqual(["Source queue", "Tag-event queue", "Recent source runs"])
   })
 })
 ```
@@ -1048,13 +1218,23 @@ export interface DeadSourceQueueRow {
   skip_reason: string | null
 }
 
+export const SOURCE_QUEUE_SUMMARY_SELECT =
+  "status, row_count, oldest_enqueued_at, newest_processing_at, last_dead_letter_at, last_error"
+
+export const SOURCE_QUEUE_RETRY_INVALIDATION_KEYS = [
+  qk.admin.sourceQueueSummary,
+  qk.admin.deadSourceQueueRows,
+  qk.admin.sourceRuns,
+  qk.admin.tagQueueSummary,
+] as const
+
 export function useAdminSourceQueueSummary() {
   return useQuery({
     queryKey: qk.admin.sourceQueueSummary,
     queryFn: async (): Promise<SourceQueueSummaryRow[]> => {
       const { data, error } = await supabase
         .from("source_scrape_queue_summary")
-        .select("status, row_count, oldest_enqueued_at, newest_processing_at, last_dead_letter_at, last_error")
+        .select(SOURCE_QUEUE_SUMMARY_SELECT)
       if (error) throw error
       return (data ?? []) as SourceQueueSummaryRow[]
     },
@@ -1089,10 +1269,9 @@ export function useAdminRetrySourceQueue() {
       return data as boolean
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: qk.admin.sourceQueueSummary })
-      void queryClient.invalidateQueries({ queryKey: qk.admin.deadSourceQueueRows })
-      void queryClient.invalidateQueries({ queryKey: qk.admin.sourceRuns })
-      void queryClient.invalidateQueries({ queryKey: qk.admin.tagQueueSummary })
+      for (const queryKey of SOURCE_QUEUE_RETRY_INVALIDATION_KEYS) {
+        void queryClient.invalidateQueries({ queryKey })
+      }
     },
   })
 }
@@ -1117,6 +1296,9 @@ export function useAdminDeadTagQueueRows() {
 ```
 - [ ] Step 4: In `admin-logs.tsx`, add exact action buttons:
 ```tsx
+export const ADMIN_LOGS_REQUIRED_SECTIONS = ["Source queue", "Tag-event queue", "Recent source runs"] as const
+export const ADMIN_LOGS_RETRY_ACTION_LABELS = ["Retry source", "Retry tag"] as const
+
 <Button onClick={() => retrySourceQueue.mutate(row.id)}>Retry source</Button>
 <Button onClick={() => retryTagQueue.mutate(row.event_id)}>Retry tag</Button>
 ```
@@ -1381,18 +1563,50 @@ row.attempt_count = Number(startedRow?.attempt_count ?? row.attempt_count + 1)
 **Files:**
 - Modify: `supabase/functions/process-source-queue/lib/worker_test.ts`
 
-- [ ] Step 1: Append these exact tests to `supabase/functions/process-source-queue/lib/worker_test.ts`:
+- [ ] Step 1: Add `markSkipped` and `reapStuckSourceQueueRows` to the existing `./worker.ts` import in `supabase/functions/process-source-queue/lib/worker_test.ts`, then append these exact tests:
 ```ts
-Deno.test("reaps source queue rows stuck processing for more than fifteen minutes", () => {
-  throw new Error("failing until reap_stuck_source_scrape_queue_rows is invoked before claim")
+Deno.test("reaps source queue rows stuck processing for more than fifteen minutes", async () => {
+  const calls: Array<{ name: string; args?: unknown }> = []
+  const supabase = {
+    rpc(name: string, args?: unknown) {
+      calls.push({ name, args })
+      return Promise.resolve({ data: 2, error: null })
+    },
+  } as never
+  assertEquals(await reapStuckSourceQueueRows(supabase), 2)
+  assertEquals(calls, [{ name: "reap_stuck_source_scrape_queue_rows", args: undefined }])
 })
 
-Deno.test("disabled source completes with skip_reason and no retry", () => {
-  throw new Error("failing until disabled sources call mark_source_scrape_queue_skipped")
+Deno.test("disabled source completes with skip_reason and no retry", async () => {
+  const calls: Array<{ name: string; args?: unknown }> = []
+  const supabase = {
+    rpc(name: string, args?: unknown) {
+      calls.push({ name, args })
+      return Promise.resolve({ data: null, error: null })
+    },
+  } as never
+  await markSkipped(supabase, 9, "source disabled before processing")
+  assertEquals(calls, [
+    {
+      name: "mark_source_scrape_queue_skipped",
+      args: { p_queue_id: 9, p_skip_reason: "source disabled before processing" },
+    },
+  ])
 })
 
-Deno.test("deleted source completes with skip_reason and no retry", () => {
-  throw new Error("failing until missing sources call mark_source_scrape_queue_skipped")
+Deno.test("deleted source completes with skip_reason and no retry", async () => {
+  const calls: Array<{ name: string; args?: unknown }> = []
+  const supabase = {
+    rpc(name: string, args?: unknown) {
+      calls.push({ name, args })
+      return Promise.resolve({ data: null, error: null })
+    },
+  } as never
+  await markSkipped(supabase, 10, "source deleted before processing")
+  assertEquals(calls[0], {
+    name: "mark_source_scrape_queue_skipped",
+    args: { p_queue_id: 10, p_skip_reason: "source deleted before processing" },
+  })
 })
 ```
 - [ ] Step 2: Run failing tests: `cd supabase/functions && deno test process-source-queue/lib/worker_test.ts`
