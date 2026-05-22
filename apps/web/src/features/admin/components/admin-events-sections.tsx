@@ -321,7 +321,8 @@ export function AdminVirtualEventsList({
                     measureElement={(element) => {
                       void virtualizer.measureElement(element)
                     }}
-                    isLoading={isFetchingNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onFetchNextPage={onFetchNextPage}
                   />
                 )
               }
