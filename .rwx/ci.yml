@@ -51,6 +51,8 @@ tasks:
     filter:
       - pnpm-lock.yaml
       - package.json
+      - pnpm-workspace.yaml
+      - .npmrc
       - apps/web/package.json
       - packages/*/package.json
     timeout: 10m
