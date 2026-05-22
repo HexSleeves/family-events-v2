@@ -39,7 +39,11 @@ const adminEventEnrichedRowSchema = eventRowSchema.extend({
     .nullable()
     .optional()
     .transform((value): Json | null => (value ?? null) as Json | null),
-  is_outdoor: z.boolean().nullable(),
+  is_outdoor: z
+    .boolean()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   search_vector: z
     .string()
     .nullable()

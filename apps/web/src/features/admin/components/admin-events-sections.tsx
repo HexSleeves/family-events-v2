@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import type {
-  AiTagProvider,
   City,
   Event,
   EventAiTraceWithParsed,
@@ -294,17 +293,19 @@ export function AdminVirtualEventsList({
     )
   }
 
+  if (isError) {
+    return (
+      <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+        <p>{error instanceof Error ? error.message : "Unable to load admin events."}</p>
+        <Button size="sm" className="mt-2" variant="outline" onClick={onRetry}>
+          Retry
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
-      {isError ? (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          <p>{error instanceof Error ? error.message : "Unable to load admin events."}</p>
-          <Button size="sm" className="mt-2" variant="outline" onClick={onRetry}>
-            Retry
-          </Button>
-        </div>
-      ) : null}
-
       {events.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
           No events match these filters.
@@ -533,18 +534,32 @@ function AdminVirtualEventRow({
 interface AdminEventsListLoaderRowProps {
   virtualRow: VirtualItem
   measureElement: (element: Element | null) => void
-  isLoading: boolean
+  isFetchingNextPage: boolean
+  onFetchNextPage: () => void
 }
 
 function AdminEventsListLoaderRow({
   virtualRow,
   measureElement,
-  isLoading,
+  isFetchingNextPage,
+  onFetchNextPage,
 }: AdminEventsListLoaderRowProps) {
+  const triggerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        measureElement(node)
+        if (!isFetchingNextPage) {
+          onFetchNextPage()
+        }
+      }
+    },
+    [measureElement, isFetchingNextPage, onFetchNextPage]
+  )
+
   return (
     <div
       key="admin-events-loader-row"
-      ref={measureElement}
+      ref={triggerRef}
       data-index={virtualRow.index}
       className="w-full"
       style={{
@@ -557,7 +572,7 @@ function AdminEventsListLoaderRow({
       }}
     >
       <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-        {isLoading ? "Loading next events..." : "Load more events available."}
+        {isFetchingNextPage ? "Loading next events..." : "Load more events available."}
       </div>
     </div>
   )
@@ -643,6 +658,7 @@ export function AdminEventReviewDialog({
                 ))}
                 {allTags.map((tag) => (
                   <button
+                    type="button"
                     key={tag.id}
                     onClick={() => onToggleTag(tag.id)}
                     className={cn(

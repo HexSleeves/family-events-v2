@@ -220,7 +220,7 @@ export function AdminEventsPage() {
     return result
   }, [events, selectedIds])
 
-  const selectedLoadedIds = [...selectedVisibleIds]
+  const selectedLoadedIds = useMemo(() => [...selectedVisibleIds], [selectedVisibleIds])
   const allLoadedSelected = loadedCount > 0 && selectedLoadedIds.length === events.length
 
   const selectedDraftIds = useMemo(
