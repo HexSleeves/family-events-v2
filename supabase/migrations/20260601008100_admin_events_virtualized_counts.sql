@@ -129,10 +129,6 @@ BEGIN
           )
         )
       )
-      AND (
-        p_after_created_at IS NULL
-        OR (e.created_at, e.id) < (p_after_created_at, p_after_id)
-      )
   ),
   base_count AS (
     SELECT COUNT(*)::bigint AS total_count FROM base
@@ -142,6 +138,10 @@ BEGIN
       b.*, c.total_count
     FROM base b
     CROSS JOIN base_count c
+    WHERE (
+      p_after_created_at IS NULL
+      OR (b.created_at, b.id) < (p_after_created_at, p_after_id)
+    )
     ORDER BY b.created_at DESC, b.id DESC
     LIMIT (SELECT page_size FROM search_input)
   )

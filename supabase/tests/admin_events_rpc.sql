@@ -254,7 +254,9 @@ BEGIN
     ORDER BY created_at DESC, id DESC;
 
   CREATE TEMP TABLE IF NOT EXISTS _admin_events_cursor_page_two AS
-    SELECT 0::int;
+    SELECT id, created_at
+    FROM _admin_events_cursor_page_one
+    WHERE false;
 
   TRUNCATE _admin_events_cursor_page_one;
   TRUNCATE _admin_events_cursor_page_two;

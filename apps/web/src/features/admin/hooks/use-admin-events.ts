@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { sanitizePostgrestLike } from "@/lib/utils"
 import { UNASSIGNED_CITY_KEY } from "@/lib/group-by-city"
 import { fetchAdminEventsPage } from "@/lib/db/rpc-admin-events"
-import type { AdminEventsPageResult } from "@/lib/db/rpc-admin-events"
+import type { AdminEventsCursor, AdminEventsPageResult } from "@/lib/db/rpc-admin-events"
 import type { CityFilterValue } from "./use-city-filter"
 import type { Event } from "@/lib/types"
 
@@ -36,8 +36,23 @@ export function useAdminEventsInfinite(
     queryFn: ({ pageParam }) => {
       return fetchAdminEventsPage(filters, pageParam)
     },
-    initialPageParam: {} as const,
-    getNextPageParam: (lastPage: AdminEventsPageResult) => lastPage.nextCursor,
+    initialPageParam: {} as AdminEventsCursor,
+    getNextPageParam: (lastPage: AdminEventsPageResult, allPages: AdminEventsPageResult[]) => {
+      if (lastPage.rows.length === 0 || lastPage.totalCount <= 0) {
+        return undefined
+      }
+
+      const loadedCount = allPages.reduce((count, page) => count + page.rows.length, 0)
+      if (loadedCount >= lastPage.totalCount) {
+        return undefined
+      }
+
+      const finalRow = lastPage.rows[lastPage.rows.length - 1]
+      return {
+        afterCreatedAt: finalRow.created_at,
+        afterId: finalRow.id,
+      }
+    },
   })
 
   const data = query.data?.pages
@@ -63,7 +78,7 @@ export function useAdminEventFacets(keyword: string) {
   return useQuery({
     queryKey: qk.admin.events.facets(keyword),
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("admin_event_facets", {
+      const { data, error } = await supabase.rpc("admin_event_facets", {
         p_keyword: sanitizePostgrestLike(keyword) || undefined,
       })
       if (error) {

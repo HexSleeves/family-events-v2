@@ -32,6 +32,16 @@ import type { CityFilterValue } from "@/features/admin/hooks/use-city-filter"
 
 type EventStatusFilter = Event["status"] | "all"
 
+const STATUS_CONFIG: Record<Event["status"], { label: string; color: string }> = {
+  draft: { label: "Draft", color: "bg-muted text-muted-foreground" },
+  published: {
+    label: "Published",
+    color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
+  rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive" },
+  archived: { label: "Archived", color: "bg-muted/50 text-muted-foreground" },
+}
+
 function getActiveTotal({
   facets,
   statusFilter,
@@ -58,16 +68,80 @@ function getActiveTotal({
   }, 0)
 }
 
+function AdminEventReviewSection({
+  onUpdateStatus,
+}: {
+  onUpdateStatus: (eventId: string, status: Event["status"]) => Promise<void>
+}) {
+  const selectedEventId = useAdminStore((state) => state.selectedEventId)
+  const editingTagIds = useAdminStore((state) => state.editingTagIds)
+  const setSelectedEventId = useAdminStore((state) => state.setSelectedEventId)
+  const setEditingTagIds = useAdminStore((state) => state.setEditingTagIds)
+
+  const selectedEvent = useAdminEventDetail(selectedEventId ?? undefined)
+  const { data: selectedEventTrace, isLoading: isTraceLoading } =
+    useAdminEventAiTrace(selectedEventId)
+  const { data: allTags = [] } = useTags()
+  const { mutate: updateTags } = useUpdateAdminEventTags()
+  const { toastError } = useAdminToast()
+
+  const tagNameById = new Map(allTags.map((tag) => [tag.id, tag.name]))
+  const tagNameBySlug = new Map(allTags.map((tag) => [tag.slug, tag.name]))
+
+  useEffect(() => {
+    if (selectedEventId && !selectedEvent.isLoading && selectedEvent.data === null) {
+      setSelectedEventId(null)
+    }
+  }, [selectedEvent.data, selectedEvent.isLoading, selectedEventId, setSelectedEventId])
+
+  async function saveTagOverrides() {
+    if (!selectedEvent.data) return
+    try {
+      await updateTags({ eventId: selectedEvent.data.id, tagIds: editingTagIds })
+      toast.success("Tags updated")
+    } catch (error) {
+      toastError(error, "Failed to update tags.")
+    }
+  }
+
+  return (
+    <AdminEventReviewDialog
+      event={selectedEvent.data ?? null}
+      open={Boolean(selectedEvent.data)}
+      onOpenChange={(open) => {
+        if (!open) setSelectedEventId(null)
+      }}
+      editingTagIds={editingTagIds}
+      allTags={allTags}
+      tagNameById={tagNameById}
+      tagNameBySlug={tagNameBySlug}
+      onToggleTag={(tagId) => {
+        setEditingTagIds(
+          editingTagIds.includes(tagId)
+            ? editingTagIds.filter((id) => id !== tagId)
+            : [...editingTagIds, tagId]
+        )
+      }}
+      onSaveTags={saveTagOverrides}
+      selectedEventTrace={selectedEventTrace ?? null}
+      isTraceLoading={isTraceLoading}
+      onPublish={() => {
+        if (selectedEvent.data) void onUpdateStatus(selectedEvent.data.id, "published")
+      }}
+      onReject={() => {
+        if (selectedEvent.data) void onUpdateStatus(selectedEvent.data.id, "rejected")
+      }}
+    />
+  )
+}
+
 export function AdminEventsPage() {
   const keyword = useAdminStore((state) => state.keyword)
   const statusFilter = useAdminStore((state) => state.statusFilter)
-  const selectedEventId = useAdminStore((state) => state.selectedEventId)
-  const editingTagIds = useAdminStore((state) => state.editingTagIds)
   const selectedIds = useAdminStore((state) => state.selectedIds)
   const setKeyword = useAdminStore((state) => state.setKeyword)
   const setStatusFilter = useAdminStore((state) => state.setStatusFilter)
   const setSelectedEventId = useAdminStore((state) => state.setSelectedEventId)
-  const setEditingTagIds = useAdminStore((state) => state.setEditingTagIds)
   const toggleSelectedId = useAdminStore((state) => state.toggleSelectedId)
   const setSelectedIds = useAdminStore((state) => state.setSelectedIds)
   const clearSelectedIds = useAdminStore((state) => state.clearSelectedIds)
@@ -85,16 +159,11 @@ export function AdminEventsPage() {
     refetch: refetchEvents,
   } = useAdminEventsInfinite(keyword, statusFilter, cityFilter)
 
-  const events = eventList?.events ?? []
+  const events = useMemo(() => eventList?.events ?? [], [eventList?.events])
   const loadedCount = eventList?.loadedCount ?? 0
   const totalCount = eventList?.totalCount ?? 0
   const hasNextPage = eventList?.hasNextPage ?? listHasNextPage
   const isFetchingNext = eventList?.isFetchingNextPage ?? isFetchingNextPage
-
-  const selectedEvent = useAdminEventDetail(selectedEventId ?? undefined)
-  const { data: selectedEventTrace, isLoading: isTraceLoading } =
-    useAdminEventAiTrace(selectedEventId)
-  const { data: allTags = [] } = useTags()
 
   const { data: facets = [] } = useAdminEventFacets(keyword)
   const { data: cities = [] } = useAdminCities()
@@ -143,16 +212,13 @@ export function AdminEventsPage() {
 
   const totalCountForToolbar = totalCount > 0 ? totalCount : activeTotal
 
-  useEffect(() => {
-    if (selectedEventId && !selectedEvent.isLoading && selectedEvent.data === null) {
-      setSelectedEventId(null)
+  const selectedVisibleIds = useMemo(() => {
+    const result = new Set<string>()
+    for (const event of events) {
+      if (selectedIds.has(event.id)) result.add(event.id)
     }
-  }, [selectedEvent.data, selectedEvent.isLoading, selectedEventId, setSelectedEventId])
-
-  const selectedVisibleIds = useMemo(
-    () => new Set(events.map((event) => event.id).filter((id) => selectedIds.has(id))),
-    [events, selectedIds]
-  )
+    return result
+  }, [events, selectedIds])
 
   const selectedLoadedIds = [...selectedVisibleIds]
   const allLoadedSelected = loadedCount > 0 && selectedLoadedIds.length === events.length
@@ -163,29 +229,11 @@ export function AdminEventsPage() {
     [events, selectedLoadedIds]
   )
 
-  const tagNameById = new Map(allTags.map((tag) => [tag.id, tag.name]))
-  const tagNameBySlug = new Map(allTags.map((tag) => [tag.slug, tag.name]))
-
-  const statusConfig: Record<Event["status"], { label: string; color: string }> = {
-    draft: { label: "Draft", color: "bg-muted text-muted-foreground" },
-    published: {
-      label: "Published",
-      color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    },
-    rejected: { label: "Rejected", color: "bg-destructive/10 text-destructive" },
-    archived: { label: "Archived", color: "bg-muted/50 text-muted-foreground" },
-  }
-
   const { toastError } = useAdminToast()
 
   const updateStatusMutation = useUpdateAdminEventStatus()
   const batchUpdateStatusMutation = useBatchUpdateAdminEventStatus()
   const deleteEventsMutation = useDeleteAdminEvents()
-  const { mutate: updateTags } = useUpdateAdminEventTags()
-
-  function toggleSelect(id: string) {
-    toggleSelectedId(id)
-  }
 
   function handleKeywordChange(nextKeyword: string) {
     setKeyword(nextKeyword)
@@ -240,6 +288,7 @@ export function AdminEventsPage() {
       const { count } = await deleteEventsMutation.mutateAsync(selectedLoadedIds)
       toast.success(`${count} event${count === 1 ? "" : "s"} deleted`)
       clearSelectedIds()
+      const selectedEventId = useAdminStore.getState().selectedEventId
       if (selectedEventId && selectedLoadedIds.includes(selectedEventId)) {
         setSelectedEventId(null)
       }
@@ -255,17 +304,6 @@ export function AdminEventsPage() {
       setSelectedEventId(null)
     } catch (error) {
       toastError(error, "Failed to update event status.")
-    }
-  }
-
-  async function saveTagOverrides() {
-    if (!selectedEvent.data) return
-
-    try {
-      await updateTags({ eventId: selectedEvent.data.id, tagIds: editingTagIds })
-      toast.success("Tags updated")
-    } catch (error) {
-      toastError(error, "Failed to update tags.")
     }
   }
 
@@ -307,57 +345,27 @@ export function AdminEventsPage() {
       <AdminEventsList
         events={events}
         selectedIds={selectedIds}
-        statusConfig={statusConfig}
+        statusConfig={STATUS_CONFIG}
         cities={cities}
-        hasNextPage={hasNextPage}
-        isLoading={isEventListLoading}
-        isError={isEventListError}
-        error={eventListError}
-        isFetchingNextPage={isFetchingNext}
+        queryState={{
+          hasNextPage,
+          isLoading: isEventListLoading,
+          isError: isEventListError,
+          error: eventListError,
+          isFetchingNextPage: isFetchingNext,
+        }}
         onFetchNextPage={fetchNextPage}
         onRetry={() => {
           void refetchEvents()
         }}
-        onToggleSelect={toggleSelect}
+        onToggleSelect={toggleSelectedId}
         onOpenReview={(event) => {
           setSelectedEventId(event.id)
         }}
         onUpdateStatus={updateStatus}
       />
 
-      <AdminEventReviewDialog
-        event={selectedEvent.data ?? null}
-        open={Boolean(selectedEvent.data)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedEventId(null)
-          }
-        }}
-        editingTagIds={editingTagIds}
-        allTags={allTags}
-        tagNameById={tagNameById}
-        tagNameBySlug={tagNameBySlug}
-        onToggleTag={(tagId) => {
-          setEditingTagIds(
-            editingTagIds.includes(tagId)
-              ? editingTagIds.filter((id) => id !== tagId)
-              : [...editingTagIds, tagId]
-          )
-        }}
-        onSaveTags={saveTagOverrides}
-        selectedEventTrace={selectedEventTrace ?? null}
-        isTraceLoading={isTraceLoading}
-        onPublish={() => {
-          if (selectedEvent.data) {
-            void updateStatus(selectedEvent.data.id, "published")
-          }
-        }}
-        onReject={() => {
-          if (selectedEvent.data) {
-            void updateStatus(selectedEvent.data.id, "rejected")
-          }
-        }}
-      />
+      <AdminEventReviewSection onUpdateStatus={updateStatus} />
     </div>
   )
 }

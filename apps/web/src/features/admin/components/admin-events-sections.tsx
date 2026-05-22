@@ -208,6 +208,14 @@ export function AdminEventsBulkBar({
   )
 }
 
+interface EventsListQueryState {
+  hasNextPage: boolean
+  isLoading: boolean
+  isError: boolean
+  error?: unknown
+  isFetchingNextPage: boolean
+}
+
 interface EventsListProps {
   events: Event[]
   selectedIds: Set<string>
@@ -225,33 +233,42 @@ interface EventsListProps {
   onRetry: () => void
 }
 
+interface AdminEventsListProps {
+  events: Event[]
+  selectedIds: Set<string>
+  statusConfig: Record<Event["status"], { label: string; color: string }>
+  cities: City[]
+  queryState: EventsListQueryState
+  onToggleSelect: (id: string) => void
+  onOpenReview: (event: Event) => void
+  onUpdateStatus: (id: string, status: Event["status"]) => void
+  onFetchNextPage: () => void
+  onRetry: () => void
+}
+
 export function AdminEventsList({
   events,
   selectedIds,
   statusConfig,
   cities,
-  hasNextPage,
-  isLoading,
-  isError,
-  error,
-  isFetchingNextPage,
+  queryState,
   onFetchNextPage,
   onRetry,
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
-}: EventsListProps) {
+}: AdminEventsListProps) {
   return (
     <AdminVirtualEventsList
       events={events}
       selectedIds={selectedIds}
       statusConfig={statusConfig}
       cities={cities}
-      hasNextPage={hasNextPage}
-      isLoading={isLoading}
-      isError={isError}
-      error={error}
-      isFetchingNextPage={isFetchingNextPage}
+      hasNextPage={queryState.hasNextPage}
+      isLoading={queryState.isLoading}
+      isError={queryState.isError}
+      error={queryState.error}
+      isFetchingNextPage={queryState.isFetchingNextPage}
       onFetchNextPage={onFetchNextPage}
       onRetry={onRetry}
       onToggleSelect={onToggleSelect}

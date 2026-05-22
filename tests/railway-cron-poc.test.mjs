@@ -52,7 +52,7 @@ test("reads expected cron service config from committed railway.toml files", () 
         rootDirectory: "apps/cron-tag-queue",
         builder: "DOCKERFILE",
         dockerfilePath: "Dockerfile",
-        cronSchedule: "* * * * *",
+        cronSchedule: "*/5 * * * *",
         restartPolicyType: "ON_FAILURE",
         requiredLatestDeploymentStatus: "SUCCESS",
       },
@@ -115,7 +115,7 @@ test("extracts live Railway service metadata from nested JSON without reading se
                 source: {
                   repo: "HexSleeves/family-events-v2",
                 },
-                cronSchedule: "* * * * *",
+                cronSchedule: "*/5 * * * *",
                 latestDeployment: {
                   status: "SUCCESS",
                   instances: [{ status: "EXITED" }],
@@ -147,7 +147,7 @@ test("extracts live Railway service metadata from nested JSON without reading se
   }
 
   assert.deepEqual(collectRailwayServiceState("cron-tag-queue", live), {
-    cronSchedule: "* * * * *",
+    cronSchedule: "*/5 * * * *",
     restartPolicyType: "ON_FAILURE",
     sourceRepo: "HexSleeves/family-events-v2",
     rootDirectory: "apps/cron-tag-queue",
@@ -176,7 +176,7 @@ test("fails with minimal diagnostics when Railway metadata drifts", () => {
     services: [
       {
         name: "cron-tag-queue",
-        cronSchedule: "*/5 * * * *",
+        cronSchedule: "* * * * *",
         source: { repo: "HexSleeves/family-events-v2" },
         restartPolicyType: "ALWAYS",
         latestDeployment: {
