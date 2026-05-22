@@ -47,7 +47,7 @@ Turborepo monorepo with a React 19 + Vite 8 web app (`apps/web`), Supabase backe
 ### Gotchas
 
 - **Node 24 required** — pinned in `mise.toml`. Use `nvm install 24 && nvm use 24` if not active.
-- **pnpm 11.1.2** — declared in `packageManager` field. Activate with `corepack enable && corepack prepare pnpm@11.1.2 --activate`.
+- **pnpm 11.2.2** — declared in `packageManager` field. Activate with `corepack enable && corepack prepare pnpm@11.2.2 --activate`.
 - **Linter is oxlint** (not ESLint), **formatter is oxfmt** (not Prettier). Don't install ESLint/Prettier.
 - **`pnpm run check`** and **`pnpm run test`** (root-level turbo commands) will fail because they include Android/iOS workspaces. Always scope to web/shared/contracts/design-system for TS checks on this VM.
 - **Supabase local ports**: API 55321, DB 55322, Studio 55323, Inbucket 55324.

@@ -30,6 +30,11 @@ output/playwright/
 
 config/credentials.json
 supabase/.temp/
+supabase/*bak*.sql
+supabase/*backup*.sql
+supabase/*dump*.sql
+*.dump
+*.sql.gz
 
 .claude/
 .augment/

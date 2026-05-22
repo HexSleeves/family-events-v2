@@ -76,6 +76,16 @@ test("reads expected cron service config from committed railway.toml files", () 
         restartPolicyType: "ON_FAILURE",
         requiredLatestDeploymentStatus: "SUCCESS",
       },
+      {
+        name: "cron-cleanup-stale",
+        sourceRepo: "HexSleeves/family-events-v2",
+        rootDirectory: "apps/cron-cleanup-stale",
+        builder: "DOCKERFILE",
+        dockerfilePath: "Dockerfile",
+        cronSchedule: "*/30 * * * *",
+        restartPolicyType: "ON_FAILURE",
+        requiredLatestDeploymentStatus: "SUCCESS",
+      },
     ]
   )
 })
