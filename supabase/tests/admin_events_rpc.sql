@@ -94,16 +94,13 @@ END $$;
 
 DO $$
 BEGIN
-  SET LOCAL ROLE anon;
-
-  BEGIN
-    PERFORM public.admin_events_enriched();
-    RESET ROLE;
+  IF has_function_privilege(
+    'anon',
+    'public.admin_events_enriched(text,uuid,boolean,text,timestamptz,uuid,int)',
+    'EXECUTE'
+  ) THEN
     RAISE EXCEPTION 'ANON_ALLOWED_EVENTS';
-  EXCEPTION
-    WHEN insufficient_privilege THEN
-      RESET ROLE;
-  END;
+  END IF;
 
   RAISE NOTICE 'ANON_EVENTS_DENIED';
 END $$;
@@ -131,16 +128,13 @@ END $$;
 
 DO $$
 BEGIN
-  SET LOCAL ROLE anon;
-
-  BEGIN
-    PERFORM public.admin_event_facets();
-    RESET ROLE;
+  IF has_function_privilege(
+    'anon',
+    'public.admin_event_facets(text)',
+    'EXECUTE'
+  ) THEN
     RAISE EXCEPTION 'ANON_ALLOWED_FACETS';
-  EXCEPTION
-    WHEN insufficient_privilege THEN
-      RESET ROLE;
-  END;
+  END IF;
 
   RAISE NOTICE 'ANON_FACETS_DENIED';
 END $$;
