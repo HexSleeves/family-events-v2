@@ -62,3 +62,4 @@ playwright/
 # AI
 .playwright-mcp/
 .vix/
+.desloppify/
