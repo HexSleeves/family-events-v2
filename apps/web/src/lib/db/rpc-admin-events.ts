@@ -85,7 +85,7 @@ export async function fetchAdminEventsPage(
     rows,
     totalCount,
     nextCursor:
-      loadedCount > 0 && loadedCount < totalCount
+      loadedCount > 0 && loadedCount === limit && loadedCount < totalCount
         ? {
             afterCreatedAt: rows[loadedCount - 1].created_at,
             afterId: rows[loadedCount - 1].id,

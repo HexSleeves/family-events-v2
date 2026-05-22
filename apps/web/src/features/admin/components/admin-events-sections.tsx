@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useCallback } from "react"
 import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
 import {
   AlertTriangle,
@@ -36,14 +36,16 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AgeRangeBadge, TagBadge } from "@/features/events/components/tag-badge"
 import { FilterBar, FormGrid } from "@/components/v2"
+import { formatProviderLabel } from "@/features/admin/utils/format-provider-label"
 
 export type AdminEventStatusFilter = Event["status"] | "all"
 
-export function formatProviderLabel(provider: AiTagProvider | null | undefined) {
-  if (provider === "openai") return "OpenAI"
-  if (provider === "ollama") return "Ollama"
-  if (provider === "localai") return "LocalAI"
-  return "Unknown"
+export interface EventsListQueryState {
+  hasNextPage: boolean
+  isLoading: boolean
+  isError: boolean
+  error?: unknown
+  isFetchingNextPage: boolean
 }
 
 interface StatusFilterBarProps {
@@ -67,6 +69,7 @@ export function AdminEventStatusFilterBar({
       <FilterBar>
         {(["all", "draft", "published", "rejected"] as const).map((status) => (
           <button
+            type="button"
             key={status}
             onClick={() => onChange(status)}
             className={cn(
@@ -208,42 +211,17 @@ export function AdminEventsBulkBar({
   )
 }
 
-interface EventsListQueryState {
-  hasNextPage: boolean
-  isLoading: boolean
-  isError: boolean
-  error?: unknown
-  isFetchingNextPage: boolean
-}
-
 interface EventsListProps {
   events: Event[]
   selectedIds: Set<string>
   statusConfig: Record<Event["status"], { label: string; color: string }>
   cities: City[]
-  onToggleSelect: (id: string) => void
-  onOpenReview: (event: Event) => void
-  onUpdateStatus: (id: string, status: Event["status"]) => void
-  hasNextPage: boolean
-  isLoading: boolean
-  isError: boolean
-  error?: unknown
-  isFetchingNextPage: boolean
-  onFetchNextPage: () => void
-  onRetry: () => void
-}
-
-interface AdminEventsListProps {
-  events: Event[]
-  selectedIds: Set<string>
-  statusConfig: Record<Event["status"], { label: string; color: string }>
-  cities: City[]
   queryState: EventsListQueryState
+  onFetchNextPage: () => void
+  onRetry: () => void
   onToggleSelect: (id: string) => void
   onOpenReview: (event: Event) => void
   onUpdateStatus: (id: string, status: Event["status"]) => void
-  onFetchNextPage: () => void
-  onRetry: () => void
 }
 
 export function AdminEventsList({
@@ -257,18 +235,14 @@ export function AdminEventsList({
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
-}: AdminEventsListProps) {
+}: EventsListProps) {
   return (
     <AdminVirtualEventsList
       events={events}
       selectedIds={selectedIds}
       statusConfig={statusConfig}
       cities={cities}
-      hasNextPage={queryState.hasNextPage}
-      isLoading={queryState.isLoading}
-      isError={queryState.isError}
-      error={queryState.error}
-      isFetchingNextPage={queryState.isFetchingNextPage}
+      queryState={queryState}
       onFetchNextPage={onFetchNextPage}
       onRetry={onRetry}
       onToggleSelect={onToggleSelect}
@@ -283,17 +257,14 @@ export function AdminVirtualEventsList({
   selectedIds,
   statusConfig,
   cities,
-  hasNextPage,
-  isLoading,
-  isError,
-  error,
-  isFetchingNextPage,
+  queryState,
   onFetchNextPage,
   onRetry,
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
 }: EventsListProps) {
+  const { hasNextPage, isLoading, isError, error, isFetchingNextPage } = queryState
   const cityNames = new Map(cities.map((city) => [city.id, city.name]))
 
   const hasLoader = hasNextPage
@@ -307,15 +278,6 @@ export function AdminVirtualEventsList({
 
   const virtualRows = virtualizer.getVirtualItems()
   const loaderIndex = hasLoader ? events.length : null
-
-  useEffect(() => {
-    if (!hasLoader || isFetchingNextPage) return
-
-    const shouldLoad = virtualRows.some((row) => row.index === loaderIndex)
-    if (shouldLoad) {
-      onFetchNextPage()
-    }
-  }, [hasLoader, isFetchingNextPage, loaderIndex, onFetchNextPage, virtualRows])
 
   if (isLoading) {
     return (

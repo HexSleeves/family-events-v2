@@ -140,7 +140,14 @@ BEGIN
     CROSS JOIN base_count c
     WHERE (
       p_after_created_at IS NULL
-      OR (b.created_at, b.id) < (p_after_created_at, p_after_id)
+      OR (
+        p_after_id IS NULL
+        AND b.created_at < p_after_created_at
+      )
+      OR (
+        p_after_id IS NOT NULL
+        AND (b.created_at, b.id) < (p_after_created_at, p_after_id)
+      )
     )
     ORDER BY b.created_at DESC, b.id DESC
     LIMIT (SELECT page_size FROM search_input)

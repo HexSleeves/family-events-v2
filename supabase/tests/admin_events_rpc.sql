@@ -354,7 +354,7 @@ BEGIN
   FROM public.admin_event_facets('ADMIN RPC Facet Seed');
 
   SELECT total_count INTO list_total
-  FROM public.admin_events_enriched('ADMIN RPC Facet Seed', p_limit => 200)
+  FROM public.admin_events_enriched(p_keyword => 'ADMIN RPC Facet Seed', p_limit => 200)
   LIMIT 1;
 
   SELECT COALESCE(SUM(count), 0)

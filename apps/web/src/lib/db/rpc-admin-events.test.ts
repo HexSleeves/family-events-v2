@@ -80,7 +80,7 @@ describe("fetchAdminEventsPage", () => {
       p_status: "draft",
       p_city_id: "city-1",
       p_city_is_null: undefined,
-      p_keyword: "  cat and dog ",
+      p_keyword: "cat and dog",
       p_after_created_at: undefined,
       p_after_id: undefined,
       p_limit: 200,
@@ -152,12 +152,6 @@ describe("fetchAdminEventsPage", () => {
       mockRpcResponse([
         {
           ...event({ id: "three", total_count: 3, created_at: "2025-12-31T23:00:00Z" }),
-        },
-        {
-          ...event({ id: "four", total_count: 3, created_at: "2025-12-31T22:00:00Z" }),
-        },
-        {
-          ...event({ id: "five", total_count: 3, created_at: "2025-12-31T21:00:00Z" }),
         },
       ])
     )

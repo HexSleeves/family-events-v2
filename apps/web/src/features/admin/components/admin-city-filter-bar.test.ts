@@ -89,7 +89,7 @@ describe("AdminCityFilterBar", () => {
         onChange: vi.fn(),
       })
     )
-    expect(html).toContain("(1,234)")
+    expect(html).toContain(`(${(1234).toLocaleString()})`)
   })
 
   it("renders Unassigned when selected with zero count", () => {
@@ -98,7 +98,7 @@ describe("AdminCityFilterBar", () => {
         cities,
         counts: { ny: 2 },
         total: 2,
-        value: "none",
+        value: UNASSIGNED_CITY_KEY,
         onChange: vi.fn(),
       })
     )

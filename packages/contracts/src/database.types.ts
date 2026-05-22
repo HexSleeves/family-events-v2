@@ -1384,6 +1384,14 @@ export type Database = {
       }
       admin_db_health_snapshot: { Args: never; Returns: Json }
       admin_delete_rating: { Args: { p_id: string }; Returns: boolean }
+      admin_event_facets: {
+        Args: { p_keyword?: string }
+        Returns: {
+          city_id: string | null
+          count: number
+          status: string
+        }[]
+      }
       admin_events_enriched: {
         Args: {
           p_after_created_at?: string
@@ -1395,39 +1403,40 @@ export type Database = {
           p_status?: string
         }
         Returns: {
-          address: string
-          admin_last_edited_at: string
-          admin_last_edited_by: string
+          address: string | null
+          admin_last_edited_at: string | null
+          admin_last_edited_by: string | null
           admin_locked_fields: string[]
-          age_max: number
-          age_min: number
-          ai_confidence: number
-          ai_tag_model: string
-          ai_tag_provider: string
-          ai_tag_status: string
-          city_id: string
+          age_max: number | null
+          age_min: number | null
+          ai_confidence: number | null
+          ai_tag_model: string | null
+          ai_tag_provider: string | null
+          ai_tag_status: string | null
+          city_id: string | null
           created_at: string
-          description: string
-          end_datetime: string
+          description: string | null
+          end_datetime: string | null
           id: string
           images: Json
           is_featured: boolean
           is_free: boolean
-          latitude: number
-          longitude: number
-          price: number
-          recurrence_info: Json
-          search_vector: unknown
-          source_id: string
-          source_name: string
-          source_url: string
+          is_outdoor: boolean | null
+          latitude: number | null
+          longitude: number | null
+          price: number | null
+          recurrence_info: Json | null
+          search_vector: string | null
+          source_id: string | null
+          source_name: string | null
+          source_url: string | null
           start_datetime: string
           status: string
           timezone: string
           title: string
           total_count: number
           updated_at: string
-          venue_name: string
+          venue_name: string | null
           view_count: number
         }[]
       }
@@ -1470,6 +1479,14 @@ export type Database = {
       }
       admin_reject_invite_request: {
         Args: { p_notes?: string; p_request_id: string }
+        Returns: boolean
+      }
+      admin_delete_dead_source_queue: {
+        Args: { p_queue_id: number }
+        Returns: boolean
+      }
+      admin_delete_dead_tag_queue: {
+        Args: { p_queue_id: number }
         Returns: boolean
       }
       admin_retry_source_scrape_queue: {
