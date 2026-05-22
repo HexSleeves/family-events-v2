@@ -1,9 +1,10 @@
+import { useEffect } from "react"
+import { useWindowVirtualizer } from "@tanstack/react-virtual"
 import {
   AlertTriangle,
   Bot,
   Check,
   CheckCheck,
-  ChevronDown,
   Eye,
   Pencil,
   Search,
@@ -27,18 +28,14 @@ import { cn, formatEventPrice } from "@/lib/utils"
 import { cleanDescription } from "@family-events/shared"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { ClientDate } from "@/components/client-date"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AgeRangeBadge, TagBadge } from "@/features/events/components/tag-badge"
 import { FilterBar, FormGrid } from "@/components/v2"
-import { groupByCity } from "@/lib/group-by-city"
-import type { CityFilterValue } from "@/features/admin/hooks/use-city-filter"
 
 export type AdminEventStatusFilter = Event["status"] | "all"
 
@@ -95,7 +92,8 @@ export function AdminEventStatusFilterBar({
 interface ToolbarProps {
   keyword: string
   onKeywordChange: (value: string) => void
-  eventCount: number
+  loadedCount: number
+  totalCount: number
   allVisibleSelected: boolean
   onToggleSelectAll: () => void
 }
@@ -103,10 +101,15 @@ interface ToolbarProps {
 export function AdminEventsToolbar({
   keyword,
   onKeywordChange,
-  eventCount,
+  loadedCount,
+  totalCount,
   allVisibleSelected,
   onToggleSelectAll,
 }: ToolbarProps) {
+  const buttonLabel = allVisibleSelected
+    ? "Deselect loaded"
+    : `Select loaded (${loadedCount} of ${totalCount})`
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative min-w-[200px] flex-1 sm:max-w-sm">
@@ -118,7 +121,7 @@ export function AdminEventsToolbar({
           className="min-h-[44px] pl-9"
         />
       </div>
-      {eventCount > 0 && (
+      {loadedCount > 0 && (
         <Button
           variant="outline"
           size="sm"
@@ -134,9 +137,7 @@ export function AdminEventsToolbar({
           >
             <Check className="size-3" />
           </span>
-          <span className="truncate">
-            {allVisibleSelected ? "Deselect all visible" : `Select all visible (${eventCount})`}
-          </span>
+          <span className="truncate">{buttonLabel}</span>
         </Button>
       )}
     </div>
@@ -208,14 +209,20 @@ export function AdminEventsBulkBar({
 }
 
 interface EventsListProps {
-  events: EventWithDetails[]
+  events: Event[]
   selectedIds: Set<string>
   statusConfig: Record<Event["status"], { label: string; color: string }>
   cities: City[]
-  cityFilter: CityFilterValue
   onToggleSelect: (id: string) => void
-  onOpenReview: (event: EventWithDetails) => void
+  onOpenReview: (event: Event) => void
   onUpdateStatus: (id: string, status: Event["status"]) => void
+  hasNextPage: boolean
+  isLoading: boolean
+  isError: boolean
+  error?: unknown
+  isFetchingNextPage: boolean
+  onFetchNextPage: () => void
+  onRetry: () => void
 }
 
 export function AdminEventsList({
@@ -223,167 +230,269 @@ export function AdminEventsList({
   selectedIds,
   statusConfig,
   cities,
-  cityFilter,
+  hasNextPage,
+  isLoading,
+  isError,
+  error,
+  isFetchingNextPage,
+  onFetchNextPage,
+  onRetry,
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
 }: EventsListProps) {
-  if (cityFilter !== "all") {
+  return (
+    <AdminVirtualEventsList
+      events={events}
+      selectedIds={selectedIds}
+      statusConfig={statusConfig}
+      cities={cities}
+      hasNextPage={hasNextPage}
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      isFetchingNextPage={isFetchingNextPage}
+      onFetchNextPage={onFetchNextPage}
+      onRetry={onRetry}
+      onToggleSelect={onToggleSelect}
+      onOpenReview={onOpenReview}
+      onUpdateStatus={onUpdateStatus}
+    />
+  )
+}
+
+export function AdminVirtualEventsList({
+  events,
+  selectedIds,
+  statusConfig,
+  cities,
+  hasNextPage,
+  isLoading,
+  isError,
+  error,
+  isFetchingNextPage,
+  onFetchNextPage,
+  onRetry,
+  onToggleSelect,
+  onOpenReview,
+  onUpdateStatus,
+}: EventsListProps) {
+  const cityNames = new Map(cities.map((city) => [city.id, city.name]))
+
+  const hasLoader = hasNextPage
+  const count = events.length + (hasLoader ? 1 : 0)
+  const virtualizer = useWindowVirtualizer({
+    count,
+    estimateSize: () => 112,
+    overscan: 12,
+    measureElement: (element) => element?.getBoundingClientRect().height ?? 0,
+  })
+
+  const virtualRows = virtualizer.getVirtualItems()
+  const loaderIndex = hasLoader ? events.length : null
+
+  useEffect(() => {
+    if (!hasLoader || isFetchingNextPage) return
+
+    const shouldLoad = virtualRows.some((row) => row.index === loaderIndex)
+    if (shouldLoad) {
+      onFetchNextPage()
+    }
+  }, [hasLoader, isFetchingNextPage, loaderIndex, onFetchNextPage, virtualRows])
+
+  if (isLoading) {
     return (
-      <div className="space-y-2">
-        {events.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            isSelected={selectedIds.has(event.id)}
-            statusConfig={statusConfig}
-            onToggleSelect={onToggleSelect}
-            onOpenReview={onOpenReview}
-            onUpdateStatus={onUpdateStatus}
-          />
+      <div className="space-y-3" data-testid="admin-events-list-loading">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="h-28 rounded-xl border border-border/60 p-4">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="mt-3 h-3 w-2/3" />
+            <Skeleton className="mt-2 h-3 w-1/3" />
+            <Skeleton className="mt-3 h-9 w-full" />
+          </div>
         ))}
       </div>
     )
   }
 
-  const groups = groupByCity(events, cities)
   return (
     <div className="space-y-3">
-      {groups.map((group) => {
-        if (group.items.length === 0) return null
-        return (
-          <Collapsible key={group.key} defaultOpen={false}>
-            <Card className="border-border/60">
-              <CollapsibleTrigger className="w-full group">
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-2">
-                    <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
-                    <h3 className="font-semibold text-sm text-foreground">{group.label}</h3>
-                    <Badge variant="outline" className="text-[10px]">
-                      {group.items.length}
-                    </Badge>
-                  </div>
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="border-t border-border/60 p-3 space-y-2">
-                  {group.items.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      isSelected={selectedIds.has(event.id)}
-                      statusConfig={statusConfig}
-                      onToggleSelect={onToggleSelect}
-                      onOpenReview={onOpenReview}
-                      onUpdateStatus={onUpdateStatus}
-                    />
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )
-      })}
+      {isError ? (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p>{error instanceof Error ? error.message : "Unable to load admin events."}</p>
+          <Button size="sm" className="mt-2" variant="outline" onClick={onRetry}>
+            Retry
+          </Button>
+        </div>
+      ) : null}
+
+      {events.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+          No events match these filters.
+        </div>
+      ) : (
+        <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+          <div className="absolute left-0 top-0 w-full">
+            {virtualRows.map((virtualRow) => {
+              if (hasLoader && virtualRow.index === loaderIndex) {
+                return (
+                  <AdminEventsListLoaderRow
+                    key="admin-events-loader-row"
+                    virtualRow={virtualRow}
+                    measureElement={virtualizer.measureElement}
+                    isLoading={isFetchingNextPage}
+                  />
+                )
+              }
+
+              const event = events[virtualRow.index]
+              if (!event) {
+                return null
+              }
+
+              const cityName = event.city_id
+                ? (cityNames.get(event.city_id) ?? "Unknown city")
+                : "Unassigned"
+
+              return (
+                <article
+                  key={event.id}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  className="w-full"
+                  style={{
+                    transform: `translateY(${virtualRow.start}px)`,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    paddingBottom: "0.75rem",
+                  }}
+                >
+                  <AdminVirtualEventRow
+                    event={event}
+                    cityName={cityName}
+                    statusConfig={statusConfig}
+                    isSelected={selectedIds.has(event.id)}
+                    onToggleSelect={onToggleSelect}
+                    onOpenReview={onOpenReview}
+                    onUpdateStatus={onUpdateStatus}
+                  />
+                </article>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 interface EventCardProps {
-  event: EventWithDetails
+  event: Event
+  cityName: string
   isSelected: boolean
   statusConfig: Record<Event["status"], { label: string; color: string }>
   onToggleSelect: (id: string) => void
-  onOpenReview: (event: EventWithDetails) => void
+  onOpenReview: (event: Event) => void
   onUpdateStatus: (id: string, status: Event["status"]) => void
 }
 
-function EventCard({
+function AdminVirtualEventRow({
   event,
+  cityName,
   isSelected,
   statusConfig,
   onToggleSelect,
   onOpenReview,
   onUpdateStatus,
 }: EventCardProps) {
-  const imageUrl =
-    safeImageSrc(event.images?.[0]) ?? `https://picsum.photos/seed/${event.id}/200/200`
+  const imageUrl = safeImageSrc(event.images?.[0])
   const status = statusConfig[event.status]
 
+  const providerLabel = formatProviderLabel(event.ai_tag_provider)
+  const aiConfidence =
+    event.ai_confidence == null ? null : `${Math.round(event.ai_confidence * 100)}%`
+
   return (
-    <Card
+    <article
       className={cn(
-        "border-border/60 transition-colors",
+        "rounded-xl border border-border/60 bg-background p-3 transition-colors",
         isSelected && "border-primary/50 bg-primary/5"
       )}
     >
-      <CardContent className="p-4">
-        <div className="flex gap-3 items-start">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(event.id)}
-            className="mt-1 shrink-0"
-            aria-label={`Select ${event.title}`}
-          />
-          <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-muted">
-            <img src={imageUrl} alt={event.title} className="size-full object-cover" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
-                {event.title}
-              </h3>
-              <span
-                className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}
-              >
-                {status.label}
-              </span>
+      <div className="flex gap-3 items-start">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggleSelect(event.id)}
+          className="mt-1 shrink-0"
+          aria-label={`Select ${event.title}`}
+        />
+        <div className="size-14 rounded-lg overflow-hidden shrink-0 bg-muted">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={event.title}
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-[10px] text-muted-foreground">
+              No image
             </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+          )}
+        </div>
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-start gap-2 flex-wrap">
+            <h3 className="font-semibold text-sm text-foreground leading-tight flex-1">
+              {event.title}
+            </h3>
+            <Badge variant="outline" className="text-[10px]">
+              {cityName}
+            </Badge>
+            <span
+              className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", status.color)}
+            >
+              {status.label}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+            <span>
+              <ClientDate value={event.start_datetime} pattern="MMM d, h:mm a" />
+            </span>
+            <span>{event.venue_name ?? "No venue"}</span>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap text-xs">
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Bot className="size-3" />
               <span>
-                <ClientDate value={event.start_datetime} pattern="MMM d, h:mm a" />
+                {providerLabel}
+                {event.ai_tag_model ? ` • ${event.ai_tag_model}` : ""}
               </span>
-              <span>{event.venue_name}</span>
-              {event.ai_confidence !== null && (
-                <span className="flex items-center gap-1">
-                  <Tag className="size-3" />
-                  AI: {Math.round((event.ai_confidence ?? 0) * 100)}%
-                </span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Tag className="size-3" />
+              {aiConfidence ? `Confidence ${aiConfidence}` : "Confidence n/a"}
+            </span>
+            <span
+              className={cn(
+                "rounded-full border border-border px-2 py-0.5 text-[10px]",
+                event.ai_tag_status === "success" ? "text-emerald-700" : "text-amber-600"
               )}
-              {(event.ai_tag_provider || event.ai_tag_status) && (
-                <span className="flex items-center gap-1">
-                  <Bot className="size-3" />
-                  {event.ai_tag_provider ? (
-                    <>
-                      {formatProviderLabel(event.ai_tag_provider)}
-                      {event.ai_tag_model && (
-                        <span className="text-muted-foreground/70">· {event.ai_tag_model}</span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground/70">Unknown provider</span>
-                  )}
-                  {event.ai_tag_status === "fallback" && (
-                    <span className="ml-1 rounded bg-amber-500/15 px-1 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600">
-                      Fallback
-                    </span>
-                  )}
-                  {event.ai_tag_status === "error" && (
-                    <span className="ml-1 rounded bg-destructive/15 px-1 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
-                      Error
-                    </span>
-                  )}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
-              {event.tags?.slice(0, 2).map((tag) => (
-                <TagBadge key={tag.tag_id} tag={tag.tag} />
-              ))}
-            </div>
+            >
+              AI {event.ai_tag_status ?? "pending"}
+            </span>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Button variant="ghost" size="icon" aria-label="Edit event" className="size-11" asChild>
+
+          <div className="flex items-center gap-1.5">
+            <AgeRangeBadge ageMin={event.age_min} ageMax={event.age_max} />
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <Button variant="ghost" size="icon" aria-label="Edit event" className="size-9" asChild>
               <Link to={`/admin/events/${event.id}/edit`}>
                 <Pencil className="size-4" />
               </Link>
@@ -392,7 +501,7 @@ function EventCard({
               variant="ghost"
               size="icon"
               aria-label="Review event"
-              className="size-11"
+              className="size-9"
               onClick={() => onOpenReview(event)}
             >
               <Eye className="size-4" />
@@ -403,7 +512,7 @@ function EventCard({
                   variant="ghost"
                   size="icon"
                   aria-label="Publish event"
-                  className="size-11 text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20"
+                  className="size-9 text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20"
                   onClick={() => onUpdateStatus(event.id, "published")}
                 >
                   <Check className="size-4" />
@@ -412,7 +521,7 @@ function EventCard({
                   variant="ghost"
                   size="icon"
                   aria-label="Reject event"
-                  className="size-11 text-destructive hover:bg-destructive/10"
+                  className="size-9 text-destructive hover:bg-destructive/10"
                   onClick={() => onUpdateStatus(event.id, "rejected")}
                 >
                   <X className="size-4" />
@@ -424,16 +533,49 @@ function EventCard({
                 variant="ghost"
                 size="icon"
                 aria-label="Archive event"
-                className="size-11 text-destructive hover:bg-destructive/10"
+                className="size-9 text-destructive hover:bg-destructive/10"
                 onClick={() => onUpdateStatus(event.id, "archived")}
               >
-                <X className="size-4" />
+                <XCircle className="size-4" />
               </Button>
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </article>
+  )
+}
+
+interface AdminEventsListLoaderRowProps {
+  virtualRow: { key: string | number; index: number; start: number }
+  measureElement: (element: Element | null) => number
+  isLoading: boolean
+}
+
+function AdminEventsListLoaderRow({
+  virtualRow,
+  measureElement,
+  isLoading,
+}: AdminEventsListLoaderRowProps) {
+  return (
+    <div
+      key="admin-events-loader-row"
+      ref={measureElement}
+      data-index={virtualRow.index}
+      className="w-full"
+      style={{
+        transform: `translateY(${virtualRow.start}px)`,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        paddingBottom: "0.75rem",
+      }}
+    >
+      <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+        {isLoading ? "Loading next events..." : "Load more events available."}
+      </div>
+    </div>
   )
 }
 
