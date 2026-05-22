@@ -401,7 +401,6 @@ export type Database = {
           images: Json
           is_featured: boolean
           is_free: boolean
-          is_outdoor: boolean | null
           latitude: number | null
           longitude: number | null
           price: number | null
