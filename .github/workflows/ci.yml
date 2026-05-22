@@ -463,6 +463,8 @@ jobs:
           echo "admin_password=$ADMIN_PASSWORD" >> "$GITHUB_OUTPUT"
 
       - name: Promote admin via setup-local
+        env:
+          SEND_EMAIL_HOOK_SECRET: "v1,whsec_Y2ktZHVtbXktc2VjcmV0LWZvci1lMmUtdGVzdGluZw=="
         run: bash scripts/setup-local.sh
 
       - name: Verify admin is enabled
