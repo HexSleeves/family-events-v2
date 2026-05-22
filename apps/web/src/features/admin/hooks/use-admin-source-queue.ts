@@ -83,7 +83,7 @@ export function useDeleteDeadSourceQueueRow() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (queueId: number): Promise<boolean> => {
-      const { data, error } = await supabase.rpc("admin_delete_dead_source_queue", {
+      const { data, error } = await (supabase.rpc as any)("admin_delete_dead_source_queue", {
         p_queue_id: queueId,
       })
       if (error) throw error

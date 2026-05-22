@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useWindowVirtualizer } from "@tanstack/react-virtual"
+import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual"
 import {
   AlertTriangle,
   Bot,
@@ -94,7 +94,7 @@ interface ToolbarProps {
   onKeywordChange: (value: string) => void
   loadedCount: number
   totalCount: number
-  allVisibleSelected: boolean
+  allLoadedSelected: boolean
   onToggleSelectAll: () => void
 }
 
@@ -103,10 +103,10 @@ export function AdminEventsToolbar({
   onKeywordChange,
   loadedCount,
   totalCount,
-  allVisibleSelected,
+  allLoadedSelected,
   onToggleSelectAll,
 }: ToolbarProps) {
-  const buttonLabel = allVisibleSelected
+  const buttonLabel = allLoadedSelected
     ? "Deselect loaded"
     : `Select loaded (${loadedCount} of ${totalCount})`
 
@@ -132,7 +132,7 @@ export function AdminEventsToolbar({
             aria-hidden="true"
             className={cn(
               "inline-flex size-3.5 shrink-0 items-center justify-center rounded-md border border-input shadow-xs transition-colors",
-              allVisibleSelected && "border-primary bg-primary text-primary-foreground"
+              allLoadedSelected && "border-primary bg-primary text-primary-foreground"
             )}
           >
             <Check className="size-3" />
@@ -339,7 +339,9 @@ export function AdminVirtualEventsList({
                   <AdminEventsListLoaderRow
                     key="admin-events-loader-row"
                     virtualRow={virtualRow}
-                    measureElement={virtualizer.measureElement}
+                    measureElement={(element) => {
+                      void virtualizer.measureElement(element)
+                    }}
                     isLoading={isFetchingNextPage}
                   />
                 )
@@ -357,7 +359,9 @@ export function AdminVirtualEventsList({
               return (
                 <article
                   key={event.id}
-                  ref={virtualizer.measureElement}
+                  ref={(element) => {
+                    void virtualizer.measureElement(element)
+                  }}
                   data-index={virtualRow.index}
                   className="w-full"
                   style={{
@@ -547,8 +551,8 @@ function AdminVirtualEventRow({
 }
 
 interface AdminEventsListLoaderRowProps {
-  virtualRow: { key: string | number; index: number; start: number }
-  measureElement: (element: Element | null) => number
+  virtualRow: VirtualItem
+  measureElement: (element: Element | null) => void
   isLoading: boolean
 }
 

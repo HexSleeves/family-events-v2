@@ -1,8 +1,8 @@
 import { z } from "zod"
 
-import { adminEventFacetRowSchema, eventRowSchema, parseRowsWithSentry } from "@/lib/schemas"
+import { eventRowSchema, parseRowsWithSentry } from "@/lib/schemas"
 import { supabase } from "@/lib/supabase"
-import type { Event } from "@/lib/types"
+import type { Event, Json } from "@/lib/types"
 
 export interface AdminEventsCursor {
   afterCreatedAt?: string
@@ -33,6 +33,13 @@ const defaultAdminEventsLimit = 200
 const maxAdminEventsLimit = 500
 
 const adminEventEnrichedRowSchema = eventRowSchema.extend({
+  recurrence_info: z
+    .unknown()
+    .nullable()
+    .optional()
+    .transform((value) => (value ?? null) as Json),
+  is_outdoor: z.boolean().nullable(),
+  search_vector: z.string().nullable(),
   total_count: z.coerce.number().int().nonnegative(),
 })
 

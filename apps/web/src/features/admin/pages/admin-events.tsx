@@ -2,15 +2,15 @@ import { useEffect, useMemo } from "react"
 import { useAdminStore } from "@/features/admin/stores/admin-store"
 import { useAdminToast } from "@/features/admin/hooks/use-admin-toast"
 import {
-  AdminCityFilterBar,
   AdminEventReviewDialog,
   AdminEventsBulkBar,
   AdminEventsList,
   AdminEventsToolbar,
   AdminEventStatusFilterBar,
 } from "@/features/admin/components/admin-events-sections"
+import { AdminCityFilterBar } from "@/features/admin/components/admin-city-filter-bar"
+import { useAdminEventDetail } from "@/features/admin/hooks/use-admin-event-detail"
 import {
-  useAdminEventDetail,
   useAdminEventAiTrace,
   useUpdateAdminEventTags,
 } from "@/features/admin/hooks/use-admin-event-ai-trace"
@@ -326,7 +326,7 @@ export function AdminEventsPage() {
       />
 
       <AdminEventReviewDialog
-        event={selectedEvent.data}
+        event={selectedEvent.data ?? null}
         open={Boolean(selectedEvent.data)}
         onOpenChange={(open) => {
           if (!open) {

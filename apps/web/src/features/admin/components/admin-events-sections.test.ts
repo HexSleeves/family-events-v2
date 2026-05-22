@@ -6,6 +6,21 @@ import type { Event } from "@/lib/types"
 
 import { AdminEventsList, AdminEventsToolbar } from "./admin-events-sections"
 
+vi.mock("@tanstack/react-virtual", () => ({
+  useWindowVirtualizer: vi.fn((options: { count: number; estimateSize: () => number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: options.count }, (_, index) => ({
+        key: index,
+        index,
+        start: index * options.estimateSize(),
+        end: (index + 1) * options.estimateSize(),
+        size: options.estimateSize(),
+      })),
+    getTotalSize: () => options.count * options.estimateSize(),
+    measureElement: () => 0,
+  })),
+}))
+
 function adminEvent(overrides: Partial<Event> = {}): Event {
   return {
     id: "event-base",
@@ -54,7 +69,7 @@ describe("AdminEventsToolbar", () => {
         onKeywordChange: vi.fn(),
         loadedCount: 3,
         totalCount: 10,
-        allVisibleSelected: false,
+        allLoadedSelected: false,
         onToggleSelectAll: vi.fn(),
       })
     )
@@ -69,7 +84,7 @@ describe("AdminEventsToolbar", () => {
         onKeywordChange: vi.fn(),
         loadedCount: 3,
         totalCount: 10,
-        allVisibleSelected: true,
+        allLoadedSelected: true,
         onToggleSelectAll: vi.fn(),
       })
     )

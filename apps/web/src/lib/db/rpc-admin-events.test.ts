@@ -11,6 +11,15 @@ vi.mock("@/lib/supabase", () => ({
 
 describe("fetchAdminEventsPage", () => {
   const mockRpc = vi.mocked(supabase.rpc)
+  const mockRpcResponse = <T>(data: T) =>
+    ({
+      data,
+      error: null,
+      count: null,
+      status: 200,
+      statusText: "OK",
+      success: true,
+    }) as Parameters<typeof mockRpc.mockResolvedValueOnce>[0]
 
   const event = (overrides: Record<string, unknown> = {}) => ({
     id: `event-${Math.random()}`,
@@ -42,6 +51,7 @@ describe("fetchAdminEventsPage", () => {
     view_count: 0,
     search_vector: null,
     admin_locked_fields: [],
+    is_outdoor: null,
     admin_last_edited_at: null,
     admin_last_edited_by: null,
     created_at: "2026-05-01T00:00:00Z",
@@ -50,14 +60,13 @@ describe("fetchAdminEventsPage", () => {
   })
 
   it("builds RPC params for first page and cursor page", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: [
+    mockRpc.mockResolvedValueOnce(
+      mockRpcResponse([
         {
           ...event({ id: "first-event", total_count: 99 }),
         },
-      ],
-      error: null,
-    })
+      ])
+    )
 
     await fetchAdminEventsPage({
       status: "draft",
@@ -71,20 +80,19 @@ describe("fetchAdminEventsPage", () => {
       p_status: "draft",
       p_city_id: "city-1",
       p_city_is_null: undefined,
-      p_keyword: "cat and dog",
+      p_keyword: "  cat and dog ",
       p_after_created_at: undefined,
       p_after_id: undefined,
       p_limit: 200,
     })
 
-    mockRpc.mockResolvedValueOnce({
-      data: [
+    mockRpc.mockResolvedValueOnce(
+      mockRpcResponse([
         {
           ...event({ id: "second-event", total_count: 99, created_at: "2026-05-01T00:00:00Z" }),
         },
-      ],
-      error: null,
-    })
+      ])
+    )
 
     await fetchAdminEventsPage(
       { status: "draft", limit: 25 },
@@ -106,17 +114,16 @@ describe("fetchAdminEventsPage", () => {
   })
 
   it("returns totalCount from total_count column", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: [
+    mockRpc.mockResolvedValueOnce(
+      mockRpcResponse([
         {
           ...event({ id: "row-1", total_count: "101", created_at: "2026-05-01T01:00:00Z" }),
         },
         {
           ...event({ id: "row-2", total_count: "101", created_at: "2026-05-01T00:00:00Z" }),
         },
-      ],
-      error: null,
-    })
+      ])
+    )
 
     const page = await fetchAdminEventsPage({ limit: 2 })
     expect(page.totalCount).toBe(101)
@@ -124,17 +131,16 @@ describe("fetchAdminEventsPage", () => {
   })
 
   it("returns nextCursor only when more rows remain", async () => {
-    mockRpc.mockResolvedValueOnce({
-      data: [
+    mockRpc.mockResolvedValueOnce(
+      mockRpcResponse([
         {
-          ...event({ id: "one", total_count: 5, created_at: "2026-05-01T01:00:00Z" }),
+          ...event({ id: "one", total_count: 3, created_at: "2026-05-01T01:00:00Z" }),
         },
         {
-          ...event({ id: "two", total_count: 5, created_at: "2026-05-01T00:00:00Z" }),
+          ...event({ id: "two", total_count: 3, created_at: "2026-05-01T00:00:00Z" }),
         },
-      ],
-      error: null,
-    })
+      ])
+    )
 
     const first = await fetchAdminEventsPage({ limit: 2 })
     expect(first.nextCursor).toEqual({
@@ -142,20 +148,19 @@ describe("fetchAdminEventsPage", () => {
       afterId: "two",
     })
 
-    mockRpc.mockResolvedValueOnce({
-      data: [
+    mockRpc.mockResolvedValueOnce(
+      mockRpcResponse([
         {
-          ...event({ id: "three", total_count: 5, created_at: "2025-12-31T23:00:00Z" }),
+          ...event({ id: "three", total_count: 3, created_at: "2025-12-31T23:00:00Z" }),
         },
         {
-          ...event({ id: "four", total_count: 5, created_at: "2025-12-31T22:00:00Z" }),
+          ...event({ id: "four", total_count: 3, created_at: "2025-12-31T22:00:00Z" }),
         },
         {
-          ...event({ id: "five", total_count: 5, created_at: "2025-12-31T21:00:00Z" }),
+          ...event({ id: "five", total_count: 3, created_at: "2025-12-31T21:00:00Z" }),
         },
-      ],
-      error: null,
-    })
+      ])
+    )
 
     const second = await fetchAdminEventsPage({ limit: 2 }, first.nextCursor)
     expect(second.nextCursor).toBeUndefined()
