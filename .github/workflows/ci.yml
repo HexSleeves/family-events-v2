@@ -390,6 +390,8 @@ jobs:
 
       - name: Read Supabase env
         id: supabase
+        env:
+          SEND_EMAIL_HOOK_SECRET: "v1,whsec_Y2ktZHVtbXktc2VjcmV0LWZvci1lMmUtdGVzdGluZw=="
         run: |
           STATUS=$(bash scripts/supabase.sh status --output env)
           api_url=$(echo "$STATUS" | grep '^API_URL='          | cut -d'"' -f2)
