@@ -86,6 +86,16 @@ test("reads expected cron service config from committed railway.toml files", () 
         restartPolicyType: "ON_FAILURE",
         requiredLatestDeploymentStatus: "SUCCESS",
       },
+      {
+        name: "cron-enrich-events",
+        sourceRepo: "HexSleeves/family-events-v2",
+        rootDirectory: "apps/cron-enrich-events",
+        builder: "DOCKERFILE",
+        dockerfilePath: "Dockerfile",
+        cronSchedule: "*/15 * * * *",
+        restartPolicyType: "ON_FAILURE",
+        requiredLatestDeploymentStatus: "SUCCESS",
+      },
     ]
   )
 })

@@ -30,6 +30,8 @@ importers:
 
   apps/cron-db-maintenance: {}
 
+  apps/cron-enrich-events: {}
+
   apps/cron-scrape-sources: {}
 
   apps/cron-tag-queue: {}
