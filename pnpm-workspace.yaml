@@ -8,6 +8,9 @@ allowBuilds:
   esbuild: true
   supabase: false
 
+onlyBuiltDependencies:
+  - esbuild
+
 minimumReleaseAgeExclude:
   - '@vitest/*'
   - vitest
