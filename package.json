@@ -28,6 +28,7 @@
     "test:e2e": "pnpm --filter @family-events/web test:e2e",
     "ios:generate": "pnpm --filter @family-events/ios generate",
     "ios:test": "pnpm --filter @family-events/ios test",
+    "db:test": "bash scripts/test.sh",
     "db:start": "bash scripts/supabase.sh start",
     "db:stop": "bash scripts/supabase.sh stop",
     "db:migrate": "bash scripts/supabase.sh db push",
