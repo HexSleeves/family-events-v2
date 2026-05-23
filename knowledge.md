@@ -15,7 +15,7 @@ Turborepo monorepo for **family-events**: a consumer-facing web + iOS app for br
 
 ## Quickstart
 
-- Toolchain: `mise.toml` pins Node 24. Package manager: **pnpm 11.1.2**.
+- Toolchain: `mise.toml` pins Node 24. Package manager: **pnpm 11.2.2**.
 - Install: `pnpm install`
 - Dev (all workspaces): `pnpm run dev` (uses `turbo run dev`)
 - Web only: `pnpm --filter @family-events/web dev`

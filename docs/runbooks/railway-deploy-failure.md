@@ -20,7 +20,7 @@ Fix: Verify `RAILWAY_SERVICE_ID` env var matches the service in Railway dashboar
 
 ### Deployment failed
 
-Check `railway status --service <name>` for `latestDeployment.status`.
+Check `railway service status --service <name>` for `latestDeployment.status`.
 Values: `SUCCESS`, `FAILED`, `CRASHED`, `BUILDING`, `DEPLOYING`.
 
 ## Manual verification
