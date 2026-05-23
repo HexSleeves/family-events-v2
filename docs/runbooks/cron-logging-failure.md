@@ -17,7 +17,7 @@ SELECT * FROM private.railway_cron_runs
 ORDER BY ran_at DESC LIMIT 20;
 
 -- Check if a label has never run
-SELECT label FROM (VALUES ('cron-tag-queue'),('cron-scrape-sources'),('cron-db-maintenance'),('cron-cleanup-stale')) AS t(label)
+SELECT label FROM (VALUES ('cron-tag-queue'),('cron-review-events'),('cron-scrape-sources'),('cron-db-maintenance'),('cron-cleanup-stale')) AS t(label)
 WHERE label NOT IN (SELECT DISTINCT label FROM private.railway_cron_runs);
 ```
 

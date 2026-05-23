@@ -44,7 +44,7 @@ Use explicit boundary layers per platform and enforce them with repository guard
 `apps/web/src/lib`
 
 - Owns the web anti-corruption layer for Supabase, generated DB aliases, query keys, row parsing, and domain mappers.
-- `apps/web/src/lib/supabase.ts` is the only runtime constructor for the Supabase browser client.
+- `apps/web/src/lib/supabase/client.ts` is the only runtime constructor for the Supabase browser client.
 - Feature hooks and pages consume local `lib` abstractions and domain types instead of constructing SDK clients directly.
 
 `apps/web/src/features/*`
@@ -110,7 +110,7 @@ Use explicit boundary layers per platform and enforce them with repository guard
 ## Anti-Corruption Contracts
 
 1. External SDKs terminate at adapter modules:
-   - Web Supabase runtime: `apps/web/src/lib/supabase.ts`
+   - Web Supabase runtime: `apps/web/src/lib/supabase/client.ts`
    - iOS Supabase/runtime platform services: `FEData`; auth-specific Supabase calls: `FEAuth`
    - Android Supabase/Ktor/Room: `:data`; app-level Room construction: `:app`
 
@@ -136,7 +136,7 @@ Use explicit boundary layers per platform and enforce them with repository guard
 `tests/guards/domain-boundaries.test.mjs` enforces the first line of defense:
 
 - TypeScript shared/contracts packages remain platform-neutral.
-- Web runtime Supabase SDK imports stay behind `apps/web/src/lib/supabase.ts`.
+- Web runtime Supabase SDK imports stay behind `apps/web/src/lib/supabase/client.ts`.
 - iOS Supabase/CoreLocation/WeatherKit imports stay behind `FEData` or `FEAuth` where allowed.
 - Android Supabase/Ktor/Room imports stay behind `:data` or app-level assembly where allowed.
 - Gradle and Swift package dependency manifests keep external data SDK dependencies out of feature modules.

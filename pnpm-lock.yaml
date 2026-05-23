@@ -32,6 +32,8 @@ importers:
 
   apps/cron-enrich-events: {}
 
+  apps/cron-review-events: {}
+
   apps/cron-scrape-sources: {}
 
   apps/cron-tag-queue: {}
@@ -61,24 +63,12 @@ importers:
       '@t3-oss/env-core':
         specifier: ^0.13.11
         version: 0.13.11(typescript@6.0.3)(zod@4.4.3)
-      '@tailwindcss/vite':
-        specifier: ^4.3.0
-        version: 4.3.0(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))
       '@tanstack/react-query':
         specifier: ^5.100.11
         version: 5.100.11(react@19.2.6)
-      '@tanstack/react-query-devtools':
-        specifier: ^5.100.11
-        version: 5.100.11(@tanstack/react-query@5.100.11(react@19.2.6))(react@19.2.6)
-      '@tanstack/react-table':
-        specifier: ^8.21.3
-        version: 8.21.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-virtual':
         specifier: ^3.13.25
         version: 3.13.25(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@types/supercluster':
-        specifier: ^7.1.3
-        version: 7.1.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -176,6 +166,12 @@ importers:
       '@sentry/vite-plugin':
         specifier: ^5.3.0
         version: 5.3.0
+      '@tailwindcss/vite':
+        specifier: ^4.3.0
+        version: 4.3.0(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))
+      '@tanstack/react-query-devtools':
+        specifier: ^5.100.11
+        version: 5.100.11(@tanstack/react-query@5.100.11(react@19.2.6))(react@19.2.6)
       '@types/node':
         specifier: ^25.9.1
         version: 25.9.1
@@ -185,6 +181,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.15)
+      '@types/supercluster':
+        specifier: ^7.1.3
+        version: 7.1.3
       '@vitejs/plugin-react':
         specifier: ^6.0.2
         version: 6.0.2(vite@8.0.14(@types/node@25.9.1)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))
@@ -224,19 +223,19 @@ importers:
   packages/email:
     dependencies:
       '@react-email/render':
-        specifier: latest
+        specifier: ^2.0.8
         version: 2.0.8(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react:
-        specifier: latest
+        specifier: ^19.2.6
         version: 19.2.6
       react-dom:
-        specifier: latest
+        specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
       react-email:
-        specifier: latest
+        specifier: ^6.2.0
         version: 6.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       resend:
-        specifier: latest
+        specifier: ^6.12.3
         version: 6.12.3(@react-email/render@2.0.8(react-dom@19.2.6(react@19.2.6))(react@19.2.6))
     devDependencies:
       '@family-events/config-quality':
@@ -1950,22 +1949,11 @@ packages:
     peerDependencies:
       react: ^18 || ^19
 
-  '@tanstack/react-table@8.21.3':
-    resolution: {integrity: sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      react: '>=16.8'
-      react-dom: '>=16.8'
-
   '@tanstack/react-virtual@3.13.25':
     resolution: {integrity: sha512-bmNoqMu6gcAW9JGrKVB0Q1tN1i5RONZF8r1fW0bbE4Oyf3DwEGnzzQJ2OW+Ozg1P4s8PyugkHg2ULZoFQN+cqw==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  '@tanstack/table-core@8.21.3':
-    resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
-    engines: {node: '>=12'}
 
   '@tanstack/virtual-core@3.15.0':
     resolution: {integrity: sha512-0AwPGx0I8QxPYjAxShT/+z+ZOe9u8mW5rsXvivCTjRfRmz9a43+3mRyi4wwlyoUqOC56q/jatKa0Bh9M99BEHQ==}
@@ -3828,7 +3816,7 @@ snapshots:
     dependencies:
       '@babel/code-frame': 7.29.0
       '@babel/generator': 7.29.1
-      '@babel/parser': 7.27.0
+      '@babel/parser': 7.29.3
       '@babel/template': 7.28.6
       '@babel/types': 7.29.0
       debug: 4.4.3
@@ -5247,19 +5235,11 @@ snapshots:
       '@tanstack/query-core': 5.100.11
       react: 19.2.6
 
-  '@tanstack/react-table@8.21.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
-    dependencies:
-      '@tanstack/table-core': 8.21.3
-      react: 19.2.6
-      react-dom: 19.2.6(react@19.2.6)
-
   '@tanstack/react-virtual@3.13.25(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
       '@tanstack/virtual-core': 3.15.0
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
-
-  '@tanstack/table-core@8.21.3': {}
 
   '@tanstack/virtual-core@3.15.0': {}
 

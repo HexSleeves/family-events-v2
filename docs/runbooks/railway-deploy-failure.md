@@ -38,7 +38,7 @@ railway logs --service <service-name>
 
 ## Cron services
 
-The 4 cron services are: `cron-tag-queue`, `cron-scrape-sources`, `cron-db-maintenance`, `cron-cleanup-stale`.
+The cron services are: `cron-tag-queue`, `cron-review-events`, `cron-scrape-sources`, `cron-db-maintenance`, `cron-cleanup-stale`.
 Each has a `cron-runner.sh` that checks `public.is_cron_enabled` before running.
 If a service crashes, check:
 
