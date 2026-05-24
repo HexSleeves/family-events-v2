@@ -51,6 +51,7 @@ public final class SupabaseCommentRepo: CommentRepo, @unchecked Sendable {
         let pollInterval = self.pollInterval
         return AsyncStream { continuation in
             let task = Task { [weak self] in
+                defer { continuation.finish() }
                 guard let self else { return }
                 var lastKnown: [String: CommentDTO] = [:]
                 if let initial = try? await self.comments(for: eventID) {

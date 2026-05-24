@@ -49,6 +49,7 @@ public struct EventDetailScreen: View {
         }
         .task {
             await viewModel.load()
+            guard !Task.isCancelled else { return }
             viewModel.startObservingComments()
         }
         .onDisappear { viewModel.stopObservingComments() }

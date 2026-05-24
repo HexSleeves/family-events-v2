@@ -19,6 +19,10 @@ public enum CacheTTL {
         now: Date = Date()
     ) -> Bool {
         guard let lastFetchedAt else { return false }
-        return now.timeIntervalSince(lastFetchedAt) < ttl
+        let age = now.timeIntervalSince(lastFetchedAt)
+        // Negative age means the stored timestamp is in the future (e.g. clock
+        // drift after a device time change). Treat as stale to force a refetch.
+        guard age >= 0 else { return false }
+        return age < ttl
     }
 }

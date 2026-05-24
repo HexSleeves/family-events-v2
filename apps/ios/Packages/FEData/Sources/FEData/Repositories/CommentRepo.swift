@@ -13,7 +13,11 @@ public protocol CommentRepo: Sendable {
 public extension CommentRepo {
     /// Default no-op stream so existing test doubles don't have to implement
     /// observeComments. Real impls (SupabaseCommentRepo) override it.
+    /// Finishes immediately so consumers awaiting completion (or
+    /// `for await` loops without explicit cancellation) don't hang.
     func observeComments(for eventID: EventID) -> AsyncStream<CommentChange> {
-        AsyncStream { _ in }
+        AsyncStream { continuation in
+            continuation.finish()
+        }
     }
 }

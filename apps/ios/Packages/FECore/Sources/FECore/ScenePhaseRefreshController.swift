@@ -38,7 +38,11 @@ public final class ScenePhaseRefreshController {
     public init() {}
 
     /// Register the currently visible tab's view model. Pass `nil` to clear.
+    /// Cancels any in-flight refresh tied to the previous binding so stale
+    /// updates can't land on the new view model.
     public func bind(_ refreshable: (any Refreshable)?) {
+        inFlight?.cancel()
+        inFlight = nil
         activeRefreshable = refreshable as AnyObject?
         if let refreshable {
             refreshClosure = { [weak refreshable] in

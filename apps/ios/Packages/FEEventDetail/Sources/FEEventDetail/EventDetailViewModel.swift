@@ -70,6 +70,11 @@ public final class EventDetailViewModel: Refreshable {
         guard commentObservationTask == nil, let repo = commentRepo else { return }
         let stream = repo.observeComments(for: eventID)
         commentObservationTask = Task { [weak self] in
+            defer {
+                Task { @MainActor [weak self] in
+                    self?.commentObservationTask = nil
+                }
+            }
             for await change in stream {
                 guard let self else { return }
                 await self.applyCommentChange(change)

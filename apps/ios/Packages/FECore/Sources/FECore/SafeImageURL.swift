@@ -63,6 +63,7 @@ public enum SafeImageURL {
         guard let scheme = url.scheme?.lowercased(), allowedSchemes.contains(scheme) else {
             return nil
         }
+        guard let host = url.host, !host.isEmpty else { return nil }
         return url
     }
 }
