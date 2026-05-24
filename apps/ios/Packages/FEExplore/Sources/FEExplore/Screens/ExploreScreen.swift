@@ -8,7 +8,6 @@ public struct ExploreScreen: View {
     @Bindable var viewModel: ExploreViewModel
     public let onSelectEvent: (EventID) -> Void
     @State private var showFilters = false
-    @State private var viewMode: ExploreViewMode = .list
 
     public init(viewModel: ExploreViewModel, onSelectEvent: @escaping (EventID) -> Void) {
         self.viewModel = viewModel
@@ -18,29 +17,20 @@ public struct ExploreScreen: View {
     public var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 0) {
-                HStack {
-                    ExploreSearchBar(text: $viewModel.filters.keyword)
-                    Spacer()
-                    ExploreViewModeToggle(mode: $viewMode)
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                ExploreSearchBar(text: $viewModel.filters.keyword)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
 
                 ExploreActiveFiltersBar(filters: $viewModel.filters)
             }
 
-            if viewMode == .list {
-                ScrollView {
-                    listContent
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 12)
-                }
-                .refreshable {
-                    await viewModel.reload()
-                }
-            } else {
-                ExploreMapView(events: viewModel.events, onSelectEvent: onSelectEvent)
-                    .ignoresSafeArea(edges: .bottom)
+            ScrollView {
+                listContent
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
+            }
+            .refreshable {
+                await viewModel.reload()
             }
         }
         .navigationTitle("Explore")
