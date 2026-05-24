@@ -96,6 +96,43 @@ final class EventDetailRefreshTests: XCTestCase {
         XCTAssertTrue(vm.comments.isEmpty)
         vm.stopObservingComments()
     }
+
+    func test_stopThenStart_doesNotWipeNewHandle() async throws {
+        let commentRepo = StreamingCommentRepo()
+        let vm = EventDetailViewModel(
+            eventRepo: FakeEventRepository(),
+            favoriteRepo: FakeFavoriteRepo(),
+            commentRepo: commentRepo,
+            userID: UserID("u1"),
+            eventID: EventID("e1")
+        )
+        // First subscription cycle.
+        vm.startObservingComments()
+        vm.stopObservingComments()
+        // Second subscription must remain installed even after the first
+        // task's drain finishes. The watcher's identity check is what keeps
+        // the new handle from being wiped.
+        commentRepo.reset()
+        vm.startObservingComments()
+        // Let the cancelled first task's drain + watcher run.
+        try await Task.sleep(nanoseconds: 100_000_000)
+        // Emit on the new stream; it MUST land on the VM, proving the
+        // observation task is still installed.
+        let dto = CommentDTO(
+            id: "c_after_restart",
+            userID: UserID("u_other"),
+            eventID: EventID("e1"),
+            body: "hi",
+            isApproved: true,
+            isFlagged: false,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        commentRepo.emit(.inserted(dto))
+        try await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertTrue(vm.comments.contains(where: { $0.id == "c_after_restart" }))
+        vm.stopObservingComments()
+    }
 }
 
 /// In-process CommentRepo that exposes an async stream the test drives by
@@ -103,6 +140,11 @@ final class EventDetailRefreshTests: XCTestCase {
 private final class StreamingCommentRepo: CommentRepo, @unchecked Sendable {
     var seed: [CommentDTO] = []
     private var continuation: AsyncStream<CommentChange>.Continuation?
+
+    func reset() {
+        continuation?.finish()
+        continuation = nil
+    }
 
     func comments(for eventID: EventID) async throws -> [CommentDTO] { seed }
     func addComment(body: String, for userID: UserID, eventID: EventID) async throws -> CommentDTO {

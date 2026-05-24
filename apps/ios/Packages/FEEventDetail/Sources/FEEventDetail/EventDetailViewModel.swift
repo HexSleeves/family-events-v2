@@ -69,15 +69,24 @@ public final class EventDetailViewModel: Refreshable {
     public func startObservingComments() {
         guard commentObservationTask == nil, let repo = commentRepo else { return }
         let stream = repo.observeComments(for: eventID)
-        commentObservationTask = Task { [weak self] in
-            defer {
-                Task { @MainActor [weak self] in
-                    self?.commentObservationTask = nil
-                }
-            }
+        let task = Task { [weak self] in
             for await change in stream {
                 guard let self else { return }
                 await self.applyCommentChange(change)
+            }
+        }
+        commentObservationTask = task
+        // Watcher: when this specific task ends (cancel + drain, or natural
+        // stream finish), clear `commentObservationTask` only if it still
+        // points at us. Without the identity check, a stop+start cycle that
+        // races the old task's drain could wipe the *new* task's handle —
+        // leaking it from this VM's perspective and breaking idempotency on
+        // the next start.
+        Task { @MainActor [weak self, task] in
+            _ = await task.value
+            guard let self else { return }
+            if self.commentObservationTask == task {
+                self.commentObservationTask = nil
             }
         }
     }
