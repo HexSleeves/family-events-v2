@@ -5,7 +5,7 @@ on:
 
 base:
   image: ubuntu:24.04
-  config: rwx/base 1.1.0
+  config: rwx/base 1.1.1
 
 tasks:
   - key: code
@@ -15,7 +15,31 @@ tasks:
       repository: https://github.com/HexSleeves/family-events-v2.git
       ref: ${{ init.commit-sha }}
 
-  # Any other dependencies should be defined here and then `use`d by the sandbox task
+  - key: node
+    call: nodejs/install 1.1.14
+    with:
+      node-version: 24.11.0
+
+  - key: pnpm-install
+    use: [code, node]
+    run: |
+      corepack enable
+      pnpm install --frozen-lockfile
+    filter:
+      - pnpm-lock.yaml
+      - package.json
+      - pnpm-workspace.yaml
+      - .npmrc
+      - apps/web/package.json
+      - packages/*/package.json
+    timeout: 10m
+
+  # The sandbox task must be last. It drops into rwx-sandbox which keeps the
+  # environment alive for `rwx sandbox exec` calls from your local agent.
+  # Usage:
+  #   rwx sandbox start --wait      # pre-warm (optional, fast due to caching)
+  #   rwx sandbox exec -- pnpm test # run commands without leaving your machine
+  #   rwx sandbox stop              # clean up when done
   - key: sandbox
-    use: code
+    use: [code, pnpm-install]
     run: rwx-sandbox

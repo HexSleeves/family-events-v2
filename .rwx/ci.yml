@@ -2,27 +2,53 @@ on:
   cli:
     init:
       commit-sha: ${{ event.git.sha }}
+      branch: ${{ event.git.branch }}
+  cron:
+    # Keeps the pnpm tool cache warm before the 48h eviction window.
+    # Run at 05:00 UTC daily so the cache is always fresh for work-day pushes.
+    - key: rebuild-tool-cache
+      schedule: '0 5 * * *'
+      target: pnpm-install
+      init:
+        branch: ${{ event.git.branch }}
   github:
     pull_request:
       init:
         commit-sha: ${{ event.git.sha }}
+        pr-number: ${{ event.github.pull_request.number }}
+        branch: ${{ event.git.branch }}
       status-checks:
         name: CI
     push:
       init:
         commit-sha: ${{ event.git.sha }}
+        branch: ${{ event.git.branch }}
       status-checks:
         name: CI
+
+# Cancel superseded runs automatically.
+# All triggers define `branch` in their init so every condition is safe to evaluate.
+# Pool keyed by branch name covers both PR pushes (head branch) and direct pushes.
+concurrency-pools:
+  - id: HexSleeves/family-events-v2:branch-${{ init.branch }}
+    if: ${{ init.branch != 'main' }}
+    capacity: 1
+    on-overflow: cancel-running
+  - id: HexSleeves/family-events-v2:main
+    if: ${{ init.branch == 'main' }}
+    capacity: 1
+    on-overflow: queue
 
 base:
   image: ubuntu:24.04
   config: rwx/base 1.1.1
 
-# Tool caches require a vault named after the repo + branch in the RWX UI.
-# Uncomment once the vault `family-events-v2-main` is created:
-#
-# tool-cache:
-#   vault: family-events-v2-main
+# Tool cache uses the `default` vault (unlocked — all branches can write).
+# For production hardening, create a locked vault named `family-events-v2-main`
+# restricted to the `main` branch, then change the vault name below.
+# Steps: RWX UI → Vaults → New Vault → name it, set "Locked" → Access Control → add main branch.
+tool-cache:
+  vault: default
 
 tasks:
   # ── shared ─────────────────────────────────────────────────────────────────
@@ -56,7 +82,8 @@ tasks:
       - apps/web/package.json
       - packages/*/package.json
     timeout: 10m
-    # tool-cache: ci-pnpm-install   # enable once vault is configured
+    # Incremental tool cache: only re-installs packages that actually changed.
+    tool-cache: ci-pnpm-install
 
   - key: web-typecheck
     use: pnpm-install
@@ -103,6 +130,10 @@ tasks:
       - "apps/web/tsconfig*.json"
       - "packages/**"
     timeout: 15m
+    # Extra cores speed up Vite/Rollup bundling.
+    agent:
+      cpus: 4
+      memory: 8gb
     outputs:
       artifacts:
         - key: dist
@@ -123,6 +154,8 @@ tasks:
       pnpm docs:test
 
   # ── ios ────────────────────────────────────────────────────────────────────
+  # Only packages that compile on Linux (no Apple SDK) run here.
+  # Full iOS simulator tests live in the macOS GitHub Actions job.
 
   - key: swift-install
     run: |
