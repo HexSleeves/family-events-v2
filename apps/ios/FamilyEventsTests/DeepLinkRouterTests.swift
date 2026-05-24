@@ -54,6 +54,47 @@ final class DeepLinkRouterTests: XCTestCase {
         XCTAssertNil(DeepLinkRouter.route(from: url))
     }
 
+    // MARK: - New map / calendar routes (added in 5-tab PR)
+
+    func testParsesMapTabURL() {
+        let url = URL(string: "familyevents://map")!
+        let result = DeepLinkRouter.route(from: url)
+        XCTAssertEqual(result?.tab, .map)
+        XCTAssertEqual(result?.routes, [])
+    }
+
+    func testParsesCalendarTabURL() {
+        let url = URL(string: "familyevents://calendar")!
+        let result = DeepLinkRouter.route(from: url)
+        XCTAssertEqual(result?.tab, .calendar)
+        XCTAssertEqual(result?.routes, [])
+    }
+
+    func testReturnsNilWhenMapURLHasTrailingSegment() {
+        let url = URL(string: "familyevents://map/extra")!
+        XCTAssertNil(DeepLinkRouter.route(from: url))
+    }
+
+    func testReturnsNilWhenCalendarURLHasTrailingSegment() {
+        let url = URL(string: "familyevents://calendar/extra")!
+        XCTAssertNil(DeepLinkRouter.route(from: url))
+    }
+
+    func testParsesTabURLForMap() {
+        // The generic "tab/" host also resolves map by rawValue
+        let url = URL(string: "familyevents://tab/map")!
+        let result = DeepLinkRouter.route(from: url)
+        XCTAssertEqual(result?.tab, .map)
+        XCTAssertEqual(result?.routes, [])
+    }
+
+    func testParsesTabURLForCalendar() {
+        let url = URL(string: "familyevents://tab/calendar")!
+        let result = DeepLinkRouter.route(from: url)
+        XCTAssertEqual(result?.tab, .calendar)
+        XCTAssertEqual(result?.routes, [])
+    }
+
     func testParsesPasswordResetURL() throws {
         let url = URL(string: "familyevents://reset-password?token=tok_xyz")!
         let result = DeepLinkRouter.route(from: url)
