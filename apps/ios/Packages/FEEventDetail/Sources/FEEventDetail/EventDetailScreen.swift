@@ -191,16 +191,24 @@ public struct EventDetailScreen: View {
             .frame(maxWidth: .infinity)
             .frame(height: 260)
             .overlay {
-                if let urlString = event.images.first, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { image in
+                let resolvedURL = SafeImageURL.resolve(
+                    images: event.images,
+                    seed: event.id.rawValue,
+                    aspect: .hero
+                )
+                AsyncImage(url: resolvedURL) { phase in
+                    switch phase {
+                    case .empty:
+                        Color.clear
+                    case .success(let image):
                         image.resizable().aspectRatio(contentMode: .fill)
-                    } placeholder: {
+                    case .failure:
+                        Image(systemName: "photo")
+                            .font(.system(size: 48))
+                            .foregroundStyle(Color.dsTextMuted)
+                    @unknown default:
                         Color.clear
                     }
-                } else {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Color.dsTextMuted)
                 }
             }
             .clipped()

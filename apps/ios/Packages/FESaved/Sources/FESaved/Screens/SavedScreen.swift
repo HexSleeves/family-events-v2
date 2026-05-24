@@ -143,7 +143,11 @@ public struct SavedScreen: View {
                 EventCard(
                     title: event.title,
                     subtitle: subtitle(for: event),
-                    imageURL: event.imageURLs.first.flatMap(URL.init(string:)),
+                    imageURL: SafeImageURL.resolve(
+                        images: event.imageURLs,
+                        seed: event.id,
+                        aspect: .card
+                    ),
                     badge: event.isFree ? "Free" : nil,
                     onTap: { onSelectEvent(EventID(event.id)) }
                 )
