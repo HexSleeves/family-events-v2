@@ -102,14 +102,14 @@ public struct SavedScreen: View {
         VStack(spacing: 12) {
             Image(systemName: filter == .past ? "clock.arrow.circlepath" : "calendar.badge.clock")
                 .font(.system(size: 40))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
             Text(filter == .past ? "No past events yet" : "No upcoming saved events")
                 .font(.headline)
             Text(filter == .past
                  ? "Past saved events will show up here once your favorites have passed."
                  : "Save more upcoming events from Explore or Plan.")
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
                 .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity)
@@ -120,7 +120,7 @@ public struct SavedScreen: View {
     private func errorState(_ message: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle").font(.system(size: 36)).foregroundStyle(.orange)
-            Text(message).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
+            Text(message).foregroundStyle(Color.dsTextMuted).multilineTextAlignment(.center).padding(.horizontal, 24)
             Button("Retry") { Task { await coordinator.refresh(userID: userID) } }.buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity).padding(.top, 64)
@@ -129,9 +129,9 @@ public struct SavedScreen: View {
     @ViewBuilder
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "heart").font(.system(size: 48)).foregroundStyle(.secondary)
+            Image(systemName: "heart").font(.system(size: 48)).foregroundStyle(Color.dsTextMuted)
             Text("No saved events yet").font(.headline)
-            Text("Tap the heart on any event to save it for later.").foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 32)
+            Text("Tap the heart on any event to save it for later.").foregroundStyle(Color.dsTextMuted).multilineTextAlignment(.center).padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity).padding(.top, 64)
     }

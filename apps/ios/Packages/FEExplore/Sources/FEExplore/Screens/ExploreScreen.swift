@@ -77,7 +77,7 @@ public struct ExploreScreen: View {
                 .foregroundStyle(.orange)
             Text(message)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
                 .padding(.horizontal, 24)
             Button("Retry") { Task { await viewModel.reload() } }
                 .buttonStyle(.borderedProminent)
@@ -91,10 +91,10 @@ public struct ExploreScreen: View {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 48))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
             Text("No events match these filters.")
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
                 .padding(.horizontal, 24)
             if viewModel.filters.activeCount > 0 {
                 Button("Clear filters") { viewModel.filters = ExploreFilters() }

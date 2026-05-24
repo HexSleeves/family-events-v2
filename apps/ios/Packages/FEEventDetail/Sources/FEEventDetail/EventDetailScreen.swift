@@ -80,7 +80,7 @@ public struct EventDetailScreen: View {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: { viewModel.toggleFavorite() }) {
                     Image(systemName: viewModel.isFavorited ? "heart.fill" : "heart")
-                        .foregroundStyle(viewModel.isFavorited ? Color.pink : Color.primary)
+                        .foregroundStyle(viewModel.isFavorited ? Color.dsAccentSecondary : Color.dsTextPrimary)
                 }
                 .accessibilityLabel(viewModel.isFavorited ? "Unfavorite" : "Favorite")
             }
@@ -143,7 +143,7 @@ public struct EventDetailScreen: View {
             Text("Couldn't load this event")
                 .font(.title3.weight(.semibold))
             Text(message)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.dsTextMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
             Button("Retry") { Task { await viewModel.load() } }
@@ -200,7 +200,7 @@ public struct EventDetailScreen: View {
                 } else {
                     Image(systemName: "calendar")
                         .font(.system(size: 48))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.dsTextMuted)
                 }
             }
             .clipped()
@@ -281,7 +281,7 @@ public struct EventDetailScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dsTextMuted)
                 Text(value)
                     .font(.subheadline.weight(.medium))
                     .lineLimit(2)
@@ -301,7 +301,7 @@ public struct EventDetailScreen: View {
             sectionHeader("About")
             Text(description)
                 .font(.body)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.dsTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -320,7 +320,7 @@ public struct EventDetailScreen: View {
                         Text(venue).font(.subheadline.weight(.medium))
                     }
                     if let address = event.address, !address.isEmpty {
-                        Text(address).font(.caption).foregroundStyle(.secondary)
+                        Text(address).font(.caption).foregroundStyle(Color.dsTextMuted)
                     }
                 }
                 Spacer(minLength: 0)
@@ -335,7 +335,7 @@ public struct EventDetailScreen: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
-                    .background(Color.accentColor.opacity(0.12))
+                    .background(Color.dsAccentPrimarySoft)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
@@ -378,7 +378,7 @@ public struct EventDetailScreen: View {
             if event.ratingCount > 0 {
                 Text(communityRatingText(event: event))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dsTextMuted)
             }
         }
     }
@@ -407,8 +407,8 @@ public struct EventDetailScreen: View {
                 } label: {
                     Image(systemName: "paperplane.fill")
                         .padding(10)
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
+                        .background(Color.dsAccentPrimary)
+                        .foregroundStyle(Color.dsSurface)
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -418,12 +418,12 @@ public struct EventDetailScreen: View {
             if let err = viewModel.commentError {
                 Text(err)
                     .font(.caption)
-                    .foregroundStyle(Color.red)
+                    .foregroundStyle(Color.dsError)
             }
             if viewModel.comments.isEmpty {
                 Text("No comments yet. Be the first.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dsTextMuted)
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(viewModel.comments) { comment in
@@ -440,17 +440,17 @@ public struct EventDetailScreen: View {
             HStack(spacing: 8) {
                 Image(systemName: "person.crop.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dsTextMuted)
                 Text(comment.authorDisplayName ?? "Anonymous")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text(Self.commentDateFormatter.string(from: comment.createdAt))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.dsTextMuted)
             }
             Text(comment.body)
                 .font(.body)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.dsTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
@@ -470,7 +470,7 @@ public struct EventDetailScreen: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.headline)
-            .foregroundStyle(.primary)
+            .foregroundStyle(Color.dsTextPrimary)
     }
 
     private func appleMapsURL(for event: EventDTO) -> URL? {

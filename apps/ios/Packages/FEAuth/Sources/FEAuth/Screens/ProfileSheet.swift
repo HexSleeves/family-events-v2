@@ -155,7 +155,7 @@ private struct ProfileForm: View {
                     if let email = viewModel.profile?.email, !email.isEmpty {
                         Text(email)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.dsTextMuted)
                     }
                 }
             }
