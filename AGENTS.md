@@ -122,6 +122,30 @@ Do not rely on `app.settings.*` GUCs in functions called from pg_cron or pg_net 
 
 Event source types are an extensible enum. `brec` was added in commit `f7bab8bb`. When adding a new source type, update `packages/contracts` enum and the edge function source registry together so contracts and runtime stay in sync.
 
+## Post-work verification
+
+After finishing any change, run these for every workspace you touched before declaring done:
+
+```bash
+# Format (always)
+pnpm run format
+
+# Check + test scoped to touched workspace(s)
+pnpm --filter @family-events/web check        # if you touched apps/web
+pnpm --filter @family-events/web test
+
+pnpm --filter @family-events/shared check     # if you touched packages/shared
+pnpm --filter @family-events/shared test
+
+pnpm --filter @family-events/contracts check  # if you touched packages/contracts
+pnpm --filter @family-events/contracts test
+
+pnpm --filter @family-events/design-system check  # if you touched packages/design-system
+pnpm --filter @family-events/design-system test
+```
+
+Do NOT run root-level `pnpm run check` or `pnpm run test` — they include Android/iOS workspaces and will fail on Linux VMs.
+
 ## Gotchas
 
 - **Node 24 required** — pinned in `mise.toml`. Use `nvm install 24 && nvm use 24` if not active.
