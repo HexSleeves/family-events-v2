@@ -1,5 +1,4 @@
 import Foundation
-import CoreLocation
 import Observation
 import FECore
 import FEData
