@@ -134,7 +134,7 @@ tasks:
           path: apps/web/dist
 
   - key: packages-test
-    use: pnpm-install
+    use: [code, pnpm-install]
     run: pnpm packages:test
     filter:
       - "packages/**/*.ts"
