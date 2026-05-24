@@ -224,12 +224,7 @@ private struct ProfileForm: View {
 
     private var appearanceSection: some View {
         Section("Appearance") {
-            Picker("Theme", selection: $appearanceRawValue) {
-                ForEach(AppAppearancePreference.allCases) { option in
-                    Text(option.title).tag(option.rawValue)
-                }
-            }
-            .pickerStyle(.segmented)
+            ThemePickerCard(appearanceRawValue: $appearanceRawValue)
         }
     }
 
