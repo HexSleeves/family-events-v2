@@ -62,9 +62,11 @@ tasks:
     use: pnpm-install
     run: pnpm --filter @family-events/web typecheck
     filter:
-      - "**/*.ts"
-      - "**/*.tsx"
-      - "**/tsconfig*.json"
+      - "apps/web/**/*.ts"
+      - "apps/web/**/*.tsx"
+      - "apps/web/tsconfig*.json"
+      - "packages/**/*.ts"
+      - "packages/**/tsconfig*.json"
     outputs:
       problems:
         - matcher: tsc
@@ -105,6 +107,14 @@ tasks:
       artifacts:
         - key: dist
           path: apps/web/dist
+
+  - key: packages-test
+    use: pnpm-install
+    run: pnpm packages:test
+    filter:
+      - "packages/**/*.ts"
+      - "packages/*/package.json"
+      - "packages/*/vitest.config.*"
 
   - key: workspace-test
     use: pnpm-install

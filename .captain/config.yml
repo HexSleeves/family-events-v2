@@ -7,4 +7,4 @@ test-suites:
       print-summary: true
     retries:
       attempts: 2
-      command: pnpm --filter @family-events/web exec vitest '{{ file }}' --testNamePattern '{{ testNamePattern }}' --reporter=default --reporter=json --outputFile=./tmp/vitest.json
+      command: pnpm --filter @family-events/web exec vitest run '{{ file }}' --testNamePattern '{{ testNamePattern }}' --reporter=default --reporter=json --outputFile=./tmp/vitest.json
