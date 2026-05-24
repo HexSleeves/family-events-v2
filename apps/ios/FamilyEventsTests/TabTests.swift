@@ -3,7 +3,7 @@ import XCTest
 
 final class TabTests: XCTestCase {
     func testAllCasesExposed() {
-        XCTAssertEqual(AppTab.allCases, [.plan, .explore, .map, .calendar, .saved])
+        XCTAssertEqual(AppTab.allCases, [.plan, .explore, .saved])
     }
 
     func testSystemImagesAreNonEmpty() {
@@ -12,28 +12,10 @@ final class TabTests: XCTestCase {
         }
     }
 
-    // MARK: - New map / calendar cases (added in 5-tab PR)
-
     func testTitlesAreNonEmpty() {
         for tab in AppTab.allCases {
             XCTAssertFalse(tab.title.isEmpty, "tab \(tab) is missing title")
         }
-    }
-
-    func testMapTabTitle() {
-        XCTAssertEqual(AppTab.map.title, "Map")
-    }
-
-    func testCalendarTabTitle() {
-        XCTAssertEqual(AppTab.calendar.title, "Calendar")
-    }
-
-    func testMapTabSystemImage() {
-        XCTAssertEqual(AppTab.map.systemImage, "map.fill")
-    }
-
-    func testCalendarTabSystemImage() {
-        XCTAssertEqual(AppTab.calendar.systemImage, "calendar")
     }
 
     func testRawValueMatchesId() {
@@ -42,17 +24,10 @@ final class TabTests: XCTestCase {
         }
     }
 
-    func testMapRawValue() {
-        XCTAssertEqual(AppTab.map.rawValue, "map")
-    }
-
-    func testCalendarRawValue() {
-        XCTAssertEqual(AppTab.calendar.rawValue, "calendar")
-    }
-
     func testInitFromRawValue() {
-        XCTAssertEqual(AppTab(rawValue: "map"), .map)
-        XCTAssertEqual(AppTab(rawValue: "calendar"), .calendar)
+        XCTAssertEqual(AppTab(rawValue: "plan"), .plan)
+        XCTAssertEqual(AppTab(rawValue: "explore"), .explore)
+        XCTAssertEqual(AppTab(rawValue: "saved"), .saved)
     }
 
     func testUnknownRawValueReturnsNil() {
