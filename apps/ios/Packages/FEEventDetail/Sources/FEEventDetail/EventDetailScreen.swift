@@ -47,7 +47,12 @@ public struct EventDetailScreen: View {
                 content(for: event)
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            viewModel.startObservingComments()
+        }
+        .onDisappear { viewModel.stopObservingComments() }
+        .refreshable { await viewModel.refresh() }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
