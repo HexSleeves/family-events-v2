@@ -34,6 +34,15 @@
 BEGIN;
 
 -- 1) Extend list_events_needing_enrichment with tags text[].
+--
+-- PG won't allow CREATE OR REPLACE to change a function's RETURNS TABLE
+-- shape. Drop both the public wrapper and the private implementation
+-- before re-creating with the new column. No views or indexes depend
+-- on these RPCs — they're called only from edge functions over
+-- PostgREST — so no CASCADE concerns.
+
+DROP FUNCTION IF EXISTS public.list_events_needing_enrichment(int);
+DROP FUNCTION IF EXISTS private.list_events_needing_enrichment(int);
 
 CREATE OR REPLACE FUNCTION private.list_events_needing_enrichment(p_limit int DEFAULT 25)
 RETURNS TABLE (
