@@ -136,10 +136,6 @@ tasks:
   - key: packages-test
     use: [code, pnpm-install]
     run: pnpm packages:test
-    filter:
-      - "packages/**/*.ts"
-      - "packages/*/package.json"
-      - "packages/*/vitest.config.*"
 
   - key: workspace-test
     use: [code, pnpm-install]
