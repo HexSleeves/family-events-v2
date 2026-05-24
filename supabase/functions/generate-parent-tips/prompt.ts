@@ -27,7 +27,7 @@ const MAX_DESCRIPTION_CHARS = 2000;
 
 export function buildSystemPrompt(): string {
   return [
-    "You write 2-3 practical tips for parents bringing kids to a family event.",
+    "You write 1-3 practical tips for parents bringing kids to a family event.",
     "",
     "Tone: warm, direct, specific to the event. No generic advice.",
     "Each tip: one sentence, ideally under 25 words.",
@@ -47,7 +47,10 @@ export function buildSystemPrompt(): string {
 
 export function buildUserPrompt(ctx: ParentTipsEventContext): string {
   const safeTitle = ctx.title.slice(0, MAX_TITLE_CHARS);
-  const safeDescription = (ctx.description ?? "").slice(0, MAX_DESCRIPTION_CHARS);
+  const safeDescription = (ctx.description ?? "").slice(
+    0,
+    MAX_DESCRIPTION_CHARS,
+  );
 
   return [
     "<event_data>",
