@@ -56,13 +56,41 @@ Stop:
 
 ## CI and Local Verification Workflows
 
-Single command for repeatable local verification:
-- `pnpm run verify:workflow`
+For web/shared/package changes:
+
+```bash
+pnpm run verify:web
+```
+
+For iOS-only changes:
+
+```bash
+pnpm run verify:ios
+```
+
+For Android-only changes:
+
+```bash
+pnpm run verify:android
+```
+
+For full pre-push verification:
+
+```bash
+pnpm run verify:workflow
+```
+
+`verify:workflow` delegates to `verify:full`.
 
 Guard suites:
-- `pnpm run docs:test`
-- `pnpm run workspace:test`
 
-Pipeline mirrors:
-- Linux CI runs docs/workspace/web/shared/contracts/supabase checks.
-- macOS CI runs XcodeGen generation and iOS tests.
+```bash
+pnpm run docs:test
+pnpm run workspace:test
+```
+
+Artifact cleanup:
+
+```bash
+pnpm run clean:artifacts
+```

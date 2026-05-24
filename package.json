@@ -14,6 +14,11 @@
     "format:check": "turbo run format:check",
     "test": "turbo run test",
     "build": "turbo run build",
+    "web:check": "pnpm --filter @family-events/web check",
+    "web:test": "pnpm --filter @family-events/web test",
+    "web:build": "pnpm --filter @family-events/web build",
+    "packages:check": "pnpm --filter @family-events/contracts check && pnpm --filter @family-events/shared check && pnpm --filter @family-events/design-system check && pnpm --filter @family-events/email check",
+    "packages:test": "pnpm --filter @family-events/contracts test && pnpm --filter @family-events/shared test && pnpm --filter @family-events/design-system test",
     "android:check": "pnpm --filter @family-events/android check",
     "android:test": "pnpm --filter @family-events/android test",
     "android:build": "pnpm --filter @family-events/android build",
@@ -25,6 +30,10 @@
     "spacelift:poc:terraform:drift": "terraform -chdir=infra/spacelift-railway-cron-poc init -backend=false && terraform -chdir=infra/spacelift-railway-cron-poc plan -input=false -lock=false -var railway_fixture_path=../../tests/fixtures/railway-cron-poc-drift.json",
     "spacelift:poc:terraform:live": "terraform -chdir=infra/spacelift-railway-cron-poc plan -input=false -lock=false",
     "verify:workflow": "bash scripts/check-monorepo.sh",
+    "verify:web": "pnpm run docs:test && pnpm run workspace:test && pnpm run packages:check && pnpm run packages:test && pnpm run web:check && pnpm run web:test && pnpm run web:build",
+    "verify:ios": "pnpm run ios:test",
+    "verify:android": "pnpm run android:check && pnpm run android:test && pnpm run android:build",
+    "verify:full": "pnpm run verify:web && pnpm run verify:ios && pnpm run verify:android",
     "test:e2e": "pnpm --filter @family-events/web test:e2e",
     "ios:generate": "pnpm --filter @family-events/ios generate",
     "ios:test": "pnpm --filter @family-events/ios test",
@@ -36,7 +45,8 @@
     "db:functions:serve": "bash scripts/supabase.sh functions serve",
     "sync:url-validation": "node scripts/sync-url-validation.mjs",
     "clean": "turbo run clean && find . -name 'node_modules' -prune -o -name '.turbo' -print | xargs rm -rf",
-    "clean:dist": "find apps packages -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'build' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'out' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name '.next' -not -path '*/node_modules/*' -exec rm -rf {} +"
+    "clean:dist": "find apps packages -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'build' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'out' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name '.next' -not -path '*/node_modules/*' -exec rm -rf {} +",
+    "clean:artifacts": "bash scripts/clean-generated-artifacts.sh"
   },
   "devDependencies": {
     "oxfmt": "^0.51.0",
