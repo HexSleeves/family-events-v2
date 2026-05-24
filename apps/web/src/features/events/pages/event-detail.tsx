@@ -222,6 +222,7 @@ export function EventDetailPage() {
                   age_max: currentEvent.age_max,
                   is_outdoor: currentEvent.is_outdoor,
                   start_datetime: currentEvent.start_datetime,
+                  timezone: currentEvent.timezone,
                   tag_slugs: (currentEvent.tags ?? []).map((t) => t.tag.slug),
                 })
           }

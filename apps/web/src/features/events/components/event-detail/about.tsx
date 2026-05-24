@@ -31,10 +31,10 @@ export function EventDetailAbout({ description, tips }: EventDetailAboutProps) {
       <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
 
       {tips.length > 0 && (
-        <div className="mt-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 p-4">
+        <div className="mt-4 rounded-xl bg-accent-tertiary-soft border border-accent-tertiary/30 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Info className="size-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">Parent Tips</p>
+            <Info className="size-4 text-accent-tertiary shrink-0" />
+            <p className="text-xs font-semibold text-accent-tertiary">Parent Tips</p>
           </div>
           <ul className="space-y-2">
             {tips.map((tip, index) => {
@@ -42,12 +42,9 @@ export function EventDetailAbout({ description, tips }: EventDetailAboutProps) {
               return (
                 <li
                   key={`${tip.category}-${index}`}
-                  className="flex gap-2 text-xs text-blue-700 dark:text-blue-300 leading-relaxed"
+                  className="flex gap-2 text-xs text-accent-tertiary leading-relaxed"
                 >
-                  <Icon
-                    className="size-3.5 mt-0.5 shrink-0 text-blue-500 dark:text-blue-400"
-                    aria-hidden
-                  />
+                  <Icon className="size-3.5 mt-0.5 shrink-0 text-accent-tertiary/80" aria-hidden />
                   <span>
                     <span className="sr-only">{tip.category}: </span>
                     {tip.text}

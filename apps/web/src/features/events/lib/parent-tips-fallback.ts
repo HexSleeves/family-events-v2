@@ -16,7 +16,31 @@ export interface ParentTipsEventInput {
   age_max: number | null
   is_outdoor: boolean | null
   start_datetime: string
+  /**
+   * IANA timezone for the event (e.g. "America/Chicago"). Required so the
+   * evening / nap-window rule compares the event's local hour, not the
+   * viewer's browser-local hour.
+   */
+  timezone: string
   tag_slugs: string[]
+}
+
+function hourInTimezone(iso: string, timezone: string): number | null {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hourCycle: "h23",
+      timeZone: timezone,
+    })
+    const value = Number.parseInt(formatter.format(date), 10)
+    return Number.isFinite(value) ? value : null
+  } catch {
+    // Invalid IANA zone — fall back to UTC so the rule still has a defined
+    // baseline instead of silently using the viewer's local time.
+    return date.getUTCHours()
+  }
 }
 
 const MESSY_PLAY_SLUGS = new Set(["messy-play", "art", "painting", "craft", "crafts"])
@@ -54,8 +78,8 @@ const RULES: Rule[] = [
   {
     category: "timing",
     applies: (e) => {
-      const hour = new Date(e.start_datetime).getHours()
-      return Number.isFinite(hour) && hour >= 17
+      const hour = hourInTimezone(e.start_datetime, e.timezone)
+      return hour !== null && hour >= 17
     },
     text: () => "Late afternoon start — past the typical nap window, so plan for tired kids.",
   },

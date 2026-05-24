@@ -6,7 +6,8 @@ function buildEvent(overrides: Partial<ParentTipsEventInput> = {}): ParentTipsEv
     age_min: null,
     age_max: null,
     is_outdoor: null,
-    start_datetime: "2026-06-15T10:00:00Z",
+    start_datetime: "2026-06-15T15:00:00Z", // 10am America/Chicago default
+    timezone: "America/Chicago",
     tag_slugs: [],
     ...overrides,
   }
@@ -45,8 +46,44 @@ describe("deriveFallbackTips", () => {
   })
 
   it("warns about nap window for evening events", () => {
-    const tips = deriveFallbackTips(buildEvent({ start_datetime: "2026-06-15T18:30:00-04:00" }))
+    const tips = deriveFallbackTips(
+      // 6:30pm in Chicago = 23:30 UTC.
+      buildEvent({ start_datetime: "2026-06-15T23:30:00Z" })
+    )
     expect(tips.some((t) => t.category === "timing")).toBe(true)
+  })
+
+  it("fires timing rule exactly at 17:00 in event's timezone", () => {
+    const tips = deriveFallbackTips(
+      // 17:00 in Chicago = 22:00 UTC.
+      buildEvent({ start_datetime: "2026-06-15T22:00:00Z" })
+    )
+    expect(tips.some((t) => t.category === "timing")).toBe(true)
+  })
+
+  it("does not fire timing rule before 17:00 in event's timezone", () => {
+    const tips = deriveFallbackTips(
+      // 16:59 in Chicago = 21:59 UTC.
+      buildEvent({ start_datetime: "2026-06-15T21:59:00Z" })
+    )
+    expect(tips.some((t) => t.category === "timing")).toBe(false)
+  })
+
+  it("uses event timezone, not viewer's local timezone", () => {
+    const tips = deriveFallbackTips(
+      // 18:00 in Honolulu = 04:00 UTC next day. Verifies hour is read in
+      // event's TZ regardless of where the test runs.
+      buildEvent({
+        start_datetime: "2026-06-16T04:00:00Z",
+        timezone: "Pacific/Honolulu",
+      })
+    )
+    expect(tips.some((t) => t.category === "timing")).toBe(true)
+  })
+
+  it("does not bring snacks for age_min === 3 (boundary)", () => {
+    const tips = deriveFallbackTips(buildEvent({ age_min: 3, age_max: 5 }))
+    expect(tips.some((t) => t.category === "bring" && /snack/i.test(t.text))).toBe(false)
   })
 
   it("caps at three tips even when many rules fire", () => {
@@ -54,7 +91,8 @@ describe("deriveFallbackTips", () => {
       buildEvent({
         age_min: 1,
         is_outdoor: true,
-        start_datetime: "2026-06-15T19:00:00-04:00",
+        // 7pm Chicago.
+        start_datetime: "2026-06-16T00:00:00Z",
         tag_slugs: ["messy-play", "ticketed"],
       })
     )
