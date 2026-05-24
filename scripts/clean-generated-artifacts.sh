@@ -9,7 +9,7 @@ remove_path() {
   if [ -e "$target" ]; then
     rm -rf "$target" || {
       sleep 0.2
-      rm -rf "$target"
+      rm -rf "$target" || true
     }
     printf 'removed %s\n' "$target"
   fi

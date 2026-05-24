@@ -54,12 +54,11 @@ public final class CalendarViewModel: Refreshable {
             return
         }
         displayedMonth = calendar.startOfMonth(for: nextMonth)
-        if let firstSelectable = calendar.date(
-            byAdding: .day,
-            value: max(0, calendar.component(.day, from: selectedDate) - 1),
-            to: displayedMonth
-        ) {
-            selectedDate = calendar.startOfDay(for: firstSelectable)
+        let currentDay = calendar.component(.day, from: selectedDate)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: displayedMonth)?.count ?? 1
+        let clampedDay = min(currentDay, daysInMonth)
+        if let newSelected = calendar.date(bySetting: .day, value: clampedDay, of: displayedMonth) {
+            selectedDate = calendar.startOfDay(for: newSelected)
         }
         await loadMonth(displayedMonth, bypassCache: true)
     }

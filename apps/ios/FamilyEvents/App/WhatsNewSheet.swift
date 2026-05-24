@@ -5,11 +5,13 @@ import FEDesignSystem
 /// after the 5-tab parity upgrade. Gated by
 /// `@AppStorage("seen-tabs-onboarding-v2")` so dismissal is permanent.
 struct WhatsNewSheet: View {
-    @AppStorage("seen-tabs-onboarding-v2") private var hasSeen: Bool = false
+    private static let storageKey = "seen-tabs-onboarding-v2"
+
+    @AppStorage(storageKey) private var hasSeen: Bool = false
     @Environment(\.dismiss) private var dismiss
 
     static var shouldShow: Bool {
-        !UserDefaults.standard.bool(forKey: "seen-tabs-onboarding-v2")
+        !UserDefaults.standard.bool(forKey: storageKey)
     }
 
     var body: some View {
