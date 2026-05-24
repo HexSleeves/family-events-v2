@@ -60,6 +60,7 @@ struct RootView: View {
     @State private var showProfile = false
     @State private var planContext: PlanContext?
     @State private var cityName: String?
+    @State private var showWhatsNew = false
 
     init(
         authService: any AuthService,
@@ -141,6 +142,14 @@ struct RootView: View {
                     viewModel: ResetPasswordViewModel(token: pending.token, authService: authService, sessionStore: sessionStore),
                     onDone: { pendingResetToken = nil }
                 )
+            }
+        }
+        .sheet(isPresented: $showWhatsNew) {
+            WhatsNewSheet()
+        }
+        .onAppear {
+            if case .signedIn = sessionStore.state, WhatsNewSheet.shouldShow {
+                showWhatsNew = true
             }
         }
     }

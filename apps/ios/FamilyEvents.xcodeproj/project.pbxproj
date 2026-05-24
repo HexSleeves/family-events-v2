@@ -33,6 +33,7 @@
 		7B0A9FAFE60E6D7992148176 /* testFavoriteButtonFavoritedState.xxl-type.png in Resources */ = {isa = PBXBuildFile; fileRef = 2730E4B6201A36BB8AE2AB51 /* testFavoriteButtonFavoritedState.xxl-type.png */; };
 		81C5AD39915BC5D6F53C7326 /* DeepLinkRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3019C083099A4C42082B682 /* DeepLinkRouterTests.swift */; };
 		91060B2175DF81528C8C5813 /* FECityPicker in Frameworks */ = {isa = PBXBuildFile; productRef = CD468AED35D25C9BC77223C6 /* FECityPicker */; };
+		9414CA2A0843BF6D8A3D2F47 /* WhatsNewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65DD406E3CE274FFE1CC870 /* WhatsNewSheet.swift */; };
 		94EEB1BC4D63F16CCBFDC559 /* FEMap in Frameworks */ = {isa = PBXBuildFile; productRef = 08F9FD567B000CA1D09D533B /* FEMap */; };
 		9888A58B98D21EAF3186712A /* FESaved in Frameworks */ = {isa = PBXBuildFile; productRef = 5399C3FDB06EABBE86A2FD40 /* FESaved */; };
 		9A32F4E906DA64D49B2675FC /* FamilyEventsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE25634672A19F50ADD99C05 /* FamilyEventsApp.swift */; };
@@ -123,6 +124,7 @@
 		EE9CF4EEF16EBEB1C2DEA632 /* FECalendar */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FECalendar; path = Packages/FECalendar; sourceTree = SOURCE_ROOT; };
 		F30DD56DC40DC5C679F79DC8 /* FEExplore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FEExplore; path = Packages/FEExplore; sourceTree = SOURCE_ROOT; };
 		F6288D8480EB0B4748EB77C8 /* FEDesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FEDesignSystem; path = Packages/FEDesignSystem; sourceTree = SOURCE_ROOT; };
+		F65DD406E3CE274FFE1CC870 /* WhatsNewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewSheet.swift; sourceTree = "<group>"; };
 		F956075831CCA7450ADD1D45 /* testFavoriteButtonUnfavoritedState.light.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = testFavoriteButtonUnfavoritedState.light.png; sourceTree = "<group>"; };
 		FF1DA06D83C22E5936FD06AE /* FEPlan */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FEPlan; path = Packages/FEPlan; sourceTree = SOURCE_ROOT; };
 		FFC98CCA96F6CA9A0617A550 /* testEventCardWithoutBadge.light.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = testEventCardWithoutBadge.light.png; sourceTree = "<group>"; };
@@ -255,6 +257,7 @@
 				BE25634672A19F50ADD99C05 /* FamilyEventsApp.swift */,
 				0AA67236F4FFFB580DD258FF /* RootView.swift */,
 				8F62AF66C36F29653368CAFE /* Tab.swift */,
+				F65DD406E3CE274FFE1CC870 /* WhatsNewSheet.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -503,6 +506,7 @@
 				9A32F4E906DA64D49B2675FC /* FamilyEventsApp.swift in Sources */,
 				64B0B73A2386B6BD9A2766FC /* RootView.swift in Sources */,
 				D3AD884267172C4D1ECD17E9 /* Tab.swift in Sources */,
+				9414CA2A0843BF6D8A3D2F47 /* WhatsNewSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
