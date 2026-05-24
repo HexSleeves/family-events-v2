@@ -41,6 +41,8 @@
     "db:start": "bash scripts/supabase.sh start",
     "db:stop": "bash scripts/supabase.sh stop",
     "db:migrate": "bash scripts/supabase.sh db push",
+    "db:advisors:security": "bash scripts/supabase.sh db advisors --linked --type security --level warn --fail-on error",
+    "db:advisors:performance": "bash scripts/supabase.sh db advisors --linked --type performance --level warn --fail-on none",
     "db:types": "bash scripts/supabase.sh gen types typescript --local --schema public > packages/contracts/src/database.types.ts",
     "db:functions:serve": "bash scripts/supabase.sh functions serve",
     "sync:url-validation": "node scripts/sync-url-validation.mjs",
