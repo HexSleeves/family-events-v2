@@ -3,14 +3,6 @@ on:
     init:
       commit-sha: ${{ event.git.sha }}
       branch: ${{ event.git.branch }}
-  cron:
-    # Keeps the pnpm tool cache warm before the 48h eviction window.
-    # Run at 05:00 UTC daily so the cache is always fresh for work-day pushes.
-    - key: rebuild-tool-cache
-      schedule: '0 5 * * *'
-      target: pnpm-install
-      init:
-        branch: ${{ event.git.branch }}
   github:
     pull_request:
       init:
@@ -43,12 +35,16 @@ base:
   image: ubuntu:24.04
   config: rwx/base 1.1.1
 
-# Tool cache uses the `default` vault (unlocked — all branches can write).
-# For production hardening, create a locked vault named `family-events-v2-main`
-# restricted to the `main` branch, then change the vault name below.
-# Steps: RWX UI → Vaults → New Vault → name it, set "Locked" → Access Control → add main branch.
-tool-cache:
-  vault: default
+# Tool cache (disabled until vault is configured):
+# 1. Go to RWX UI → Vaults → default → Tool Caches tab → enable it
+#    (or create a new locked vault named `family-events-v2-main` restricted to main)
+# 2. Uncomment the two blocks below:
+#
+# tool-cache:
+#   vault: default
+#
+# Then add to pnpm-install task:
+#   tool-cache: ci-pnpm-install
 
 tasks:
   # ── shared ─────────────────────────────────────────────────────────────────
@@ -82,8 +78,6 @@ tasks:
       - apps/web/package.json
       - packages/*/package.json
     timeout: 10m
-    # Incremental tool cache: only re-installs packages that actually changed.
-    tool-cache: ci-pnpm-install
 
   - key: web-typecheck
     use: pnpm-install
@@ -148,7 +142,7 @@ tasks:
       - "packages/*/vitest.config.*"
 
   - key: workspace-test
-    use: pnpm-install
+    use: [code, pnpm-install]
     run: |
       pnpm workspace:test
       pnpm docs:test
