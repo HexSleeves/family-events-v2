@@ -52,26 +52,30 @@ Body baseline is 16px on mobile. Hero copy uses Fraunces at `clamp(28px, 4vw, 48
 
 ## Color
 
-Primary mode: **light**. Dark mode: opt-in, warm-dark not pure-black. The pivot from the current dark+pink palette is intentional — the memorable-thing ("knows my neighborhood") does not serve party-energy.
+Primary mode: **light**. Dark mode: opt-in, slate-dark not pure-black. The Dusk-Meadow palette (locked 2026-05-24) replaces the earlier warm-paper variant with a cooler, slightly more sophisticated read that still preserves the editorial Sunday-morning vibe.
+
+### Palette name: Dusk-Meadow (locked 2026-05-24)
+
+Sage anchor + peach action + muted blue admin + mustard kid-affordances. Light mode is a cream-sage bedrock (`#F5F2EC`). Dark mode is slate-cool (`#1A1C22`), never warm brown and never pure black.
 
 ### Semantic tokens (light)
 
 | Token | oklch | hex | Use |
 |---|---|---|---|
-| `--bg` | `oklch(97.5% 0.018 88)` | `#FAF6EE` | warm paper bedrock |
-| `--surface` | `#FFFFFF` | `#FFFFFF` | cards, sheets, admin panels |
-| `--surface-raised` | `oklch(94.5% 0.025 88)` | `#F2EBDB` | elevated panels |
-| `--text-primary` | `oklch(23% 0.025 78)` | `#2A2520` | warm charcoal — never `#000` |
-| `--text-muted` | `oklch(50% 0.035 78)` | `#766A56` | secondary text |
-| `--border` | `oklch(84% 0.035 82)` | `#D9CFB8` | hairlines |
-| `--accent-primary` (neighborhood green) | `oklch(0.45 0.08 165)` | `#256F5D` | brand anchor — parks, trust, primary CTA |
-| `--accent-primary-soft` | `oklch(0.93 0.04 165)` | `#DDEEE7` | pill background, hover tints |
-| `--accent-secondary` (flyer coral) | `oklch(0.65 0.16 35)` | `#E36B3F` | save, plan, this-weekend actions |
-| `--accent-secondary-soft` | `oklch(0.92 0.05 35)` | `#FAE0D2` | action chip background |
-| `--accent-tertiary` (civic blue) | `oklch(0.56 0.10 245)` | `#3B75AF` | location, distance, admin states, source credibility |
-| `--accent-tertiary-soft` | `oklch(0.93 0.03 240)` | `#DDE9F4` | location-band background |
-| `--accent-kid` (school-bus yellow) | `oklch(0.83 0.16 90)` | `#F2C94C` | kid-affordances only — age-fit, free, stroller, indoor-backup |
-| `--accent-kid-soft` | `oklch(0.93 0.06 90)` | `#FBEBB8` | pill background |
+| `--bg` | `oklch(97% 0.010 82)` | `#F5F2EC` | cream-sage bedrock |
+| `--surface` | `oklch(99% 0.006 88)` | `#FDFAF5` | cards, sheets, admin panels |
+| `--surface-raised` | `oklch(92% 0.018 82)` | `#EAE5D8` | elevated panels |
+| `--text-primary` | `oklch(20% 0.025 295)` | `#1E1A28` | deep plum — cooler than warm charcoal |
+| `--text-muted` | `oklch(46% 0.022 305)` | `#6B6275` | secondary text |
+| `--border` | `oklch(79% 0.018 82)` | `#C5BFB0` | hairlines |
+| `--accent-primary` (sage green) | `oklch(52% 0.080 158)` | `#4A8070` | brand anchor — parks, trust, primary CTA |
+| `--accent-primary-soft` | `oklch(92% 0.032 158)` | `#D8ECE5` | pill background, hover tints |
+| `--accent-secondary` (peach) | `oklch(72% 0.130 52)` | `#E89060` | save, plan, this-weekend actions |
+| `--accent-secondary-soft` | `oklch(93% 0.038 52)` | `#F8E3D0` | action chip background |
+| `--accent-tertiary` (muted blue) | `oklch(54% 0.070 248)` | `#5A7EA8` | location, distance, admin states, source credibility |
+| `--accent-tertiary-soft` | `oklch(91% 0.028 245)` | `#D2E3F0` | location-band background |
+| `--accent-kid` (mustard) | `oklch(74% 0.145 77)` | `#CCAA35` | kid-affordances only — age-fit, free, stroller, indoor-backup |
+| `--accent-kid-soft` | `oklch(92% 0.052 80)` | `#EEE4B0` | kid pill background |
 
 ### Semantic feedback colors
 
@@ -80,24 +84,26 @@ Primary mode: **light**. Dark mode: opt-in, warm-dark not pure-black. The pivot 
 | `--success` | `#2E7D5B` | confirmed states |
 | `--warning` | `#B7791F` | rain forecast, soft warnings |
 | `--error` | `#B94A48` | destructive, validation fails |
-| `--info` | `#3B75AF` | informational (same hue as tertiary) |
+| `--info` | `#5A7EA8` | informational (same hue as tertiary) |
 
 ### Dark mode (opt-in)
 
-| Token | oklch | hex |
-|---|---|---|
-| `--bg` | `oklch(18% 0.015 60)` | warm dark, never pure black |
-| `--surface` | `oklch(22% 0.018 60)` |  |
-| `--surface-raised` | `oklch(26% 0.02 60)` |  |
-| `--text-primary` | `oklch(94% 0.012 78)` | warm off-white |
-| `--text-muted` | `oklch(70% 0.02 78)` |  |
-| `--border` | `oklch(34% 0.02 70)` |  |
-| `--accent-primary` | `#4DA38D` | lightened green |
-| `--accent-secondary` | `#F08A60` | lightened coral |
-| `--accent-tertiary` | `#6FA0D3` | lightened blue |
-| `--accent-kid` | `#F2C94C` | unchanged — high contrast on warm dark |
+Slate-cool dark — the dark palette shifts hue toward blue-gray (not warm brown) to match the cooler text-primary in light mode.
 
-Dark-mode rule: preserve warmth. Reduce chroma 10–20%, never desaturate to gray.
+| Token | oklch | hex | Note |
+|---|---|---|---|
+| `--bg` | `oklch(18% 0.018 250)` | `#1A1C22` | slate dark, never pure black |
+| `--surface` | `oklch(22% 0.022 250)` | `#242830` | elevated cards |
+| `--surface-raised` | `oklch(26% 0.025 250)` | `#2E333E` | higher elevation |
+| `--text-primary` | `oklch(94% 0.012 265)` | `#ECEEF5` | cool off-white |
+| `--text-muted` | `oklch(65% 0.020 260)` | `#9098A8` | secondary text |
+| `--border` | `oklch(30% 0.022 252)` | `#383E4E` | hairlines |
+| `--accent-primary` | `oklch(68% 0.092 165)` | `#6AAE9A` | lightened sage |
+| `--accent-secondary` | `oklch(78% 0.095 52)` | `#E8A882` | lightened peach |
+| `--accent-tertiary` | `oklch(65% 0.070 250)` | `#7899C0` | lightened blue |
+| `--accent-kid` | `oklch(80% 0.135 78)` | `#D4B845` | mustard holds on slate dark |
+
+Dark-mode rule: shift to slate-cool, not warm brown. Reduce chroma 10–20%, lighten L 10–15 pts, never desaturate to gray.
 
 ### Color usage rules
 
@@ -219,9 +225,12 @@ These are the deliberate departures from category norms. Each gain has a named c
 2. **Fraunces serif for event titles.** Every competitor uses sans.
   - **Gain:** editorial credibility — "someone thought about this." Distinct first impression.
   - **Cost:** slightly slower scan than a sans body. Mitigated by sans body and short titles.
-3. **School-bus yellow for kid-affordances.** No competitor has a dedicated kid-context layer.
-  - **Gain:** the product owns a parent-specific decision layer. Age fit, stroller-friendly, indoor backup, free, walking distance — all visible at a glance.
-  - **Cost:** visual minimalism. Parent planning needs useful density; we accept it.
+3. **Mustard (not school-bus yellow) for kid-affordances.** No competitor has a dedicated kid-context layer.
+  - **Gain:** the product owns a parent-specific decision layer. Age fit, stroller-friendly, indoor backup, free, walking distance — all visible at a glance. Mustard reads more sophisticated than school-bus yellow while preserving the category signal.
+  - **Cost:** slightly lower pop vs. pure yellow. Accepted — the Dusk-Meadow palette is more editorial, mustard fits.
+4. **Sage green anchor instead of neighborhood green.** Lighter, more desaturated sage vs. darker forest green.
+  - **Gain:** works on cream background without screaming "corporate eco brand." Feels local/park-adjacent, not environmental-activist.
+  - **Cost:** lower contrast at small sizes. Mitigated by `--accent-primary-soft` contexts using white text.
 
 ## Anti-slop (hard rules)
 
@@ -240,3 +249,4 @@ These are the deliberate departures from category norms. Each gain has a named c
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-05-16 | Initial design system created | Created by `/design-consultation` after researching family + event-discovery space (Partiful, Eventbrite, Mommy Poppins, Macaroni Kid) and synthesizing three voices (Claude main, Codex `gpt-5.5`, Claude subagent). Locked memorable-thing: "knows my city + neighborhood + kids." Pivoted from dark+pink (current) to warm light editorial. |
+| 2026-05-24 | Dusk-Meadow palette locked (v0.2.0) | `/design-shotgun` generated 5 palette variants × 7 screens × 2 modes. User selected variant B (Dusk-Meadow). Replaced warm-paper light + warm-brown dark with cream-sage light + slate-cool dark. Updated `tokens.json` version 0.1.0 → 0.2.0. All platform files regenerated (web CSS vars, Swift, Kotlin, TS). Phase 3: replaced ~35 raw Tailwind `green-*/blue-*` classes across 22 files with CSS token vars. Phase 4: `AffordancePill` component added (web + iOS) for kid-affordance signals. Dark mode continues to use the `dsToken(light:dark:)` adaptive bridge on iOS. |

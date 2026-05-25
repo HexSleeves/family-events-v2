@@ -8,27 +8,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,30..100&family=DM+Sans:opsz,wght@9..40,300..700&family=Newsreader:opsz,wght,ital@6..72,400..700,0;6..72,400..700,1&family=Geist+Mono:wght@400..700&display=swap" rel="stylesheet" />
 <style>
+  /* Dusk-Meadow palette — locked 2026-05-24 */
   :root {
-    --bg: oklch(97.5% 0.018 88);
-    --surface: #ffffff;
-    --surface-raised: oklch(94.5% 0.025 88);
-    --text-primary: oklch(23% 0.025 78);
-    --text-muted: oklch(50% 0.035 78);
-    --border: oklch(84% 0.035 82);
+    --bg: oklch(97% 0.010 82);         /* #F5F2EC cream-sage */
+    --surface: oklch(99% 0.006 88);    /* #FDFAF5 cards */
+    --surface-raised: oklch(92% 0.018 82); /* #EAE5D8 elevated */
+    --text-primary: oklch(20% 0.025 295);  /* #1E1A28 deep plum */
+    --text-muted: oklch(46% 0.022 305);    /* #6B6275 */
+    --border: oklch(79% 0.018 82);         /* #C5BFB0 */
 
-    --accent-primary: #256F5D;
-    --accent-primary-soft: #DDEEE7;
-    --accent-secondary: #E36B3F;
-    --accent-secondary-soft: #FAE0D2;
-    --accent-tertiary: #3B75AF;
-    --accent-tertiary-soft: #DDE9F4;
-    --accent-kid: #F2C94C;
-    --accent-kid-soft: #FBEBB8;
+    --accent-primary: #4A8070;         /* sage green — brand anchor */
+    --accent-primary-soft: #D8ECE5;
+    --accent-secondary: #E89060;       /* peach — save, plan, this-weekend */
+    --accent-secondary-soft: #F8E3D0;
+    --accent-tertiary: #5A7EA8;        /* muted blue — location, admin */
+    --accent-tertiary-soft: #D2E3F0;
+    --accent-kid: #CCAA35;             /* mustard — kid affordances only */
+    --accent-kid-soft: #EEE4B0;
 
     --success: #2E7D5B;
     --warning: #B7791F;
     --error: #B94A48;
-    --info: #3B75AF;
+    --info: #5A7EA8;
 
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -51,20 +52,21 @@
   }
 
   .dark {
-    --bg: oklch(18% 0.015 60);
-    --surface: oklch(22% 0.018 60);
-    --surface-raised: oklch(26% 0.02 60);
-    --text-primary: oklch(94% 0.012 78);
-    --text-muted: oklch(70% 0.02 78);
-    --border: oklch(34% 0.02 70);
-    --accent-primary: #4DA38D;
-    --accent-primary-soft: #1F4E43;
-    --accent-secondary: #F08A60;
-    --accent-secondary-soft: #5E3325;
-    --accent-tertiary: #6FA0D3;
-    --accent-tertiary-soft: #25425F;
-    --accent-kid: #F2C94C;
-    --accent-kid-soft: #5B4A1A;
+    /* Dusk-Meadow dark — slate-cool, not warm-brown */
+    --bg: oklch(18% 0.018 250);        /* #1A1C22 slate dark */
+    --surface: oklch(22% 0.022 250);   /* #242830 */
+    --surface-raised: oklch(26% 0.025 250); /* #2E333E */
+    --text-primary: oklch(94% 0.012 265);  /* #ECEEF5 cool off-white */
+    --text-muted: oklch(65% 0.020 260);    /* #9098A8 */
+    --border: oklch(30% 0.022 252);        /* #383E4E */
+    --accent-primary: #6AAE9A;         /* lightened sage */
+    --accent-primary-soft: #1A3F38;
+    --accent-secondary: #E8A882;       /* lightened peach */
+    --accent-secondary-soft: #4A2E22;
+    --accent-tertiary: #7899C0;        /* lightened blue */
+    --accent-tertiary-soft: #1E2E44;
+    --accent-kid: #D4B845;             /* mustard holds on slate dark */
+    --accent-kid-soft: #3A3010;
   }
 
   * { box-sizing: border-box; }
@@ -325,16 +327,16 @@
 
   <section class="container">
     <h2 class="section-title">Palette</h2>
-    <p class="section-lede">Warm paper bedrock. Neighborhood green is the brand anchor. Coral is the action color — Save, Plan, This Weekend. Civic blue belongs to location and credibility. School-bus yellow belongs to kids — age fit, free, stroller-friendly, indoor backup.</p>
+    <p class="section-lede">Dusk-Meadow palette (locked 2026-05-24). Cream-sage bedrock. Sage green is the brand anchor. Peach is the action color — Save, Plan, This Weekend. Muted blue belongs to location and credibility. Mustard belongs to kids — age fit, free, stroller-friendly, indoor backup.</p>
     <div class="palette">
-      <div class="swatch"><div class="swatch-color" style="background: var(--bg);"></div><div class="swatch-meta"><strong>Background</strong>oklch(97.5% .018 88)<div class="swatch-role">warm paper, never sterile</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--surface); border-bottom: 1px solid var(--border);"></div><div class="swatch-meta"><strong>Surface</strong>#FFFFFF<div class="swatch-role">cards, sheets, admin</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--surface-raised);"></div><div class="swatch-meta"><strong>Surface raised</strong>oklch(94.5% .025 88)<div class="swatch-role">elevated panels</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--text-primary);"></div><div class="swatch-meta"><strong style="color: white; background: var(--text-primary); display: block; padding: 0;">Text</strong>oklch(23% .025 78)<div class="swatch-role">warm charcoal, never #000</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--accent-primary);"></div><div class="swatch-meta"><strong>Neighborhood green</strong>#256F5D<div class="swatch-role">brand anchor &middot; parks &middot; trust</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--accent-secondary);"></div><div class="swatch-meta"><strong>Flyer coral</strong>#E36B3F<div class="swatch-role">save, plan, this weekend</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--accent-tertiary);"></div><div class="swatch-meta"><strong>Civic blue</strong>#3B75AF<div class="swatch-role">location, admin, source credibility</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background: var(--accent-kid);"></div><div class="swatch-meta"><strong>School-bus yellow</strong>#F2C94C<div class="swatch-role">kid-affordances &middot; age fit &middot; free</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--bg);"></div><div class="swatch-meta"><strong>Background</strong>oklch(97% .010 82)<div class="swatch-role">cream-sage #F5F2EC</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--surface); border-bottom: 1px solid var(--border);"></div><div class="swatch-meta"><strong>Surface</strong>#FDFAF5<div class="swatch-role">cards, sheets, admin</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--surface-raised);"></div><div class="swatch-meta"><strong>Surface raised</strong>oklch(92% .018 82)<div class="swatch-role">elevated panels #EAE5D8</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--text-primary);"></div><div class="swatch-meta"><strong style="color: white; background: var(--text-primary); display: block; padding: 0;">Text</strong>oklch(20% .025 295)<div class="swatch-role">deep plum #1E1A28</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-primary);"></div><div class="swatch-meta"><strong>Sage green</strong>#4A8070<div class="swatch-role">brand anchor &middot; parks &middot; trust</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-secondary);"></div><div class="swatch-meta"><strong>Peach</strong>#E89060<div class="swatch-role">save, plan, this weekend</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-tertiary);"></div><div class="swatch-meta"><strong>Muted blue</strong>#5A7EA8<div class="swatch-role">location, admin, source credibility</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background: var(--accent-kid);"></div><div class="swatch-meta"><strong>Mustard</strong>#CCAA35<div class="swatch-role">kid-affordances &middot; age fit &middot; free</div></div></div>
     </div>
 
     <div class="btn-row">
