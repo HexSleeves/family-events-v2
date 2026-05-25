@@ -80,6 +80,7 @@ Local repeatable verification:
 - `pnpm run docs:test`
 - `pnpm run workspace:test`
 - `pnpm run check`
+- `pnpm run knip`
 - `pnpm run test`
 - `pnpm run build`
 - `pnpm run verify:workflow`

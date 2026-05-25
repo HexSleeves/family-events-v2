@@ -48,9 +48,13 @@
     "sync:url-validation": "node scripts/sync-url-validation.mjs",
     "clean": "turbo run clean && find . -name 'node_modules' -prune -o -name '.turbo' -print | xargs rm -rf",
     "clean:dist": "find apps packages -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'build' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'out' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name '.next' -not -path '*/node_modules/*' -exec rm -rf {} +",
-    "clean:artifacts": "bash scripts/clean-generated-artifacts.sh"
+    "clean:artifacts": "bash scripts/clean-generated-artifacts.sh",
+    "knip": "knip"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "@types/node": "^25.9.1",
+    "knip": "^6.14.2",
     "oxfmt": "^0.51.0",
     "oxlint": "^1.66.0",
     "turbo": "^2.9.14",

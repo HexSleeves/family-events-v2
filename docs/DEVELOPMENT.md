@@ -87,6 +87,7 @@ Guard suites:
 ```bash
 pnpm run docs:test
 pnpm run workspace:test
+pnpm run knip
 ```
 
 Artifact cleanup:
