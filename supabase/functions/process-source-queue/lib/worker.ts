@@ -1,6 +1,4 @@
 import { type SupabaseClient } from "@supabase/supabase-js";
-import { resolveSharedLlmConfig } from "../../_shared/llm-config.ts";
-import { postOpenAiChatCompletion } from "../../_shared/llm-openai.ts";
 import { errorMessage, logEdgeEvent } from "../../_shared/logger.ts";
 import { parsers } from "../../scrape-source/parsers/index.ts";
 import {
@@ -8,8 +6,6 @@ import {
   importParsedSourceEvents,
 } from "../../scrape-source/lib/process-source.ts";
 import {
-  normalizeArtifactForLlm,
-  parseLlmParsedEvents,
   validateParsedEvents,
 } from "../../scrape-source/lib/extraction-pipeline.ts";
 import type {
@@ -20,6 +16,7 @@ import type {
   SourceType,
 } from "../../scrape-source/lib/types.ts";
 import type { SourceParser } from "../../scrape-source/parsers/index.ts";
+import { extractWithLlm, type LlmConfig } from "./llm-extraction.ts";
 
 export interface SourceQueueRow {
   id: number;
@@ -31,14 +28,6 @@ export interface SourceQueueRow {
 export interface ProcessSourceQueueResult {
   outcome: "succeeded" | "retry" | "skipped";
   imported: number;
-}
-
-interface LlmConfig {
-  provider: string;
-  model: string;
-  baseUrl: string;
-  apiKey: string;
-  configured: boolean;
 }
 
 interface SourceQueueWorkerDependencies {
@@ -204,67 +193,6 @@ async function markRunError(
       error_log: errorMessage.slice(0, 1000),
     })
     .eq("id", runId);
-}
-
-function resolveLlmConfig(): LlmConfig {
-  return resolveSharedLlmConfig({
-    allowedOpenAiModels: new Set([
-      "gpt-4o-mini",
-      "gpt-4o",
-      "gpt-4-turbo",
-      "gpt-4.1-nano",
-      "gpt-4.1-mini",
-      "gpt-4.1",
-      "gpt-5-mini",
-      "gpt-5",
-    ]),
-    defaultOpenAiModel: "gpt-4o-mini",
-  });
-}
-
-async function extractWithLlm(
-  source: EventSourceRow,
-  artifact: FetchedArtifact,
-): Promise<{ events: ParsedEvent[]; config: LlmConfig; latencyMs: number }> {
-  const config = resolveLlmConfig();
-  if (!config.configured) {
-    throw new Error("LLM extraction provider is not configured");
-  }
-
-  const completion = await postOpenAiChatCompletion({
-    apiKey: config.apiKey,
-    baseUrl: config.baseUrl,
-    body: {
-      model: config.model,
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            'Extract family events from fetched source content. Respond with JSON only: {"events":[{"title":string,"description":string,"startDatetime":string,"endDatetime":string|null,"venueName":string|null,"address":string|null,"sourceUrl":string|null,"imageUrl":string|null,"images":string[],"price":number|null,"isFree":boolean}]}',
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            source_name: source.name,
-            source_url: source.url,
-            content_type: artifact.contentType,
-            content: normalizeArtifactForLlm(artifact),
-          }),
-        },
-      ],
-    },
-    failureMessagePrefix: "LLM extraction failed",
-    providerName: "LLM extraction",
-    timeoutMs: 45_000,
-  });
-
-  return {
-    events: parseLlmParsedEvents(completion.content),
-    config,
-    latencyMs: completion.latencyMs,
-  };
 }
 
 const defaultWorkerDependencies: SourceQueueWorkerDependencies = {
