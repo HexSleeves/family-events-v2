@@ -172,7 +172,7 @@ export function CronRunDetailSheet({
                   </Button>
                 </div>
                 <pre className="max-h-72 overflow-auto rounded-md border border-border/60 bg-muted/20 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                  {responseText}
+                  {JSON.stringify(responseText, null, 2)}
                 </pre>
               </div>
             )}
