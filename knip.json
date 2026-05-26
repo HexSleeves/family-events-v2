@@ -22,8 +22,6 @@
         "src/main.tsx!",
         "src/env.d.ts",
         "vite.config.ts!",
-        "vitest.config.ts",
-        "playwright.config.ts",
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
         "e2e/**/*.ts"
