@@ -19,6 +19,15 @@ Deno.test("readString trims and enforces required", () => {
   );
 });
 
+Deno.test("readString enforces maxLength including zero", () => {
+  assertEquals(readString({ name: "" }, "name", { maxLength: 0 }), "");
+  assertThrows(
+    () => readString({ name: "x" }, "name", { maxLength: 0 }),
+    Error,
+    "invalid name",
+  );
+});
+
 Deno.test("readEmail lowercases valid email and rejects invalid", () => {
   assertEquals(
     readEmail({ email: "USER@example.COM" }, "email"),
