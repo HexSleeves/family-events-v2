@@ -2,7 +2,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requireServiceRole } from "../_shared/auth.ts";
 import { captureEdgeException } from "../_shared/sentry.ts";
 import { errorContext, errorMessage, logEdgeEvent } from "../_shared/logger.ts";
-import { resolveSharedLlmConfig } from "../_shared/llm-config.ts";
 import {
   parseJsonContent,
   postOpenAiChatCompletion,
@@ -15,8 +14,16 @@ import {
   extractVenueFromText,
 } from "../_shared/classification.ts";
 import { buildGeocodeQuery, geocodeViaNominatim } from "../_shared/geocode.ts";
-
-const TAG_EVENT_PROMPT_VERSION = "v2";
+import {
+  AI_TIMEOUT_MS,
+  type LlmTagProvider,
+  MAX_DESCRIPTION_CHARS,
+  MAX_TITLE_CHARS,
+  resolveTagEventAiConfig,
+  resolveTagEventOpenAiModel,
+  TAG_EVENT_PROMPT_VERSION,
+  type TagEventLlmConfig,
+} from "./config.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,44 +32,11 @@ const corsHeaders = {
     "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Prompt-injection / cost / latency caps. Scraped feeds are untrusted input;
-// limit how much of them we forward to the model.
-const MAX_TITLE_CHARS = 500;
-const MAX_DESCRIPTION_CHARS = 2000;
-const AI_TIMEOUT_MS = 30_000;
-
-// Allowlist hosted OpenAI models. Unknown OpenAI values fall back to the
-// default and log loudly so an operator typo doesn't silently bill against a
-// wrong model. Self-hosted providers intentionally allow arbitrary local model
-// names because Ollama/LocalAI tags vary by deployment.
-const ALLOWED_OPENAI_MODELS = new Set([
-  "gpt-4o-mini",
-  "gpt-4o",
-  "gpt-4-turbo",
-  "gpt-4.1-nano",
-  "gpt-4.1-mini",
-  "gpt-4.1",
-  "gpt-5-mini",
-  "gpt-5",
-]);
-const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
-const DEFAULT_AI_BASE_URL = "https://api.openai.com/v1";
-const DEFAULT_OLLAMA_API_KEY = "ollama";
-const SUPPORTED_AI_PROVIDERS = new Set(["openai", "ollama", "localai"]);
-const DEFAULT_OLLAMA_MODEL = "qwen3:1.7b";
-
 type TagEventSupabaseClient = SupabaseClient;
-type LlmTagProvider = "openai" | "ollama" | "localai";
 type ClassificationStatus = "success" | "fallback" | "error";
 type TriggerType = "import" | "reclassify" | "manual-review";
 
-interface LlmConfig {
-  provider: LlmTagProvider;
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  configured: boolean;
-}
+type LlmConfig = TagEventLlmConfig;
 
 interface ClassificationTag {
   slug: string;
@@ -130,38 +104,10 @@ function buildKeywordFallbackSummary(aiConfigured: boolean): string {
     : "Keyword fallback classified this event because no AI provider was configured. Matching keywords were used to assign tags.";
 }
 
-function normalizeAiBaseUrl(value: string): string {
-  return value.replace(/\/+$/, "");
-}
-
-function resolveAiProvider(value: string | undefined): LlmTagProvider {
-  if (value && SUPPORTED_AI_PROVIDERS.has(value)) {
-    return value as LlmTagProvider;
-  }
-  return "openai";
-}
-
 function resolveAiConfig(
   dbConfig?: { modelId: string; provider: string; enabled: boolean } | null,
 ): LlmConfig {
-  const config = resolveSharedLlmConfig({
-    allowedOpenAiModels: ALLOWED_OPENAI_MODELS,
-    dbOverride: dbConfig == null ? null : {
-      enabled: dbConfig.enabled,
-      modelId: dbConfig.modelId,
-      provider: dbConfig.provider,
-    },
-    defaultOpenAiBaseUrl: DEFAULT_AI_BASE_URL,
-    defaultOpenAiModel: DEFAULT_OPENAI_MODEL,
-    selfHostedDefaultModel: DEFAULT_OLLAMA_MODEL,
-  });
-  return {
-    apiKey: config.apiKey,
-    baseUrl: config.baseUrl,
-    configured: config.configured,
-    model: config.model,
-    provider: config.provider,
-  };
+  return resolveTagEventAiConfig(dbConfig);
 }
 
 async function loadTagFeatureConfig(
@@ -190,9 +136,7 @@ async function loadTagFeatureConfig(
 }
 
 function resolveOpenAiModel(configuredModel: string): string {
-  return ALLOWED_OPENAI_MODELS.has(configuredModel)
-    ? configuredModel
-    : DEFAULT_OPENAI_MODEL;
+  return resolveTagEventOpenAiModel(configuredModel);
 }
 
 interface LlmUsage {
