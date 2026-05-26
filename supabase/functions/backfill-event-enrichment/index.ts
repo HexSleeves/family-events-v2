@@ -7,8 +7,13 @@ import {
 } from "../_shared/cron-run-log.ts";
 import { captureEdgeException } from "../_shared/sentry.ts";
 import { errorContext, errorMessage } from "../_shared/logger.ts";
+import { invokeFunction } from "../_shared/function-invoke.ts";
 import { buildGeocodeQuery, geocodeViaNominatim } from "../_shared/geocode.ts";
-import { findFallbackImage, lookupUnsplashPhotoFromUrl, trackUnsplashDownload } from "../_shared/unsplash.ts";
+import {
+  findFallbackImage,
+  lookupUnsplashPhotoFromUrl,
+  trackUnsplashDownload,
+} from "../_shared/unsplash.ts";
 import { sanitizeImagesForIngest } from "../scrape-source/lib/enrichment.ts";
 import type { ParsedEvent } from "../scrape-source/lib/types.ts";
 
@@ -281,11 +286,15 @@ async function enrichOne(
         p_images: images,
         p_image_url: unsplashResult.url,
         p_unsplash_photo_id: unsplashResult.attribution.photoId,
-        p_unsplash_photographer_name: unsplashResult.attribution.photographerName,
-        p_unsplash_photographer_username: unsplashResult.attribution.photographerUsername,
-        p_unsplash_photographer_profile_url: unsplashResult.attribution.photographerProfileUrl,
+        p_unsplash_photographer_name:
+          unsplashResult.attribution.photographerName,
+        p_unsplash_photographer_username:
+          unsplashResult.attribution.photographerUsername,
+        p_unsplash_photographer_profile_url:
+          unsplashResult.attribution.photographerProfileUrl,
         p_unsplash_photo_url: unsplashResult.attribution.photoUrl,
-        p_unsplash_download_location: unsplashResult.attribution.downloadLocation,
+        p_unsplash_download_location:
+          unsplashResult.attribution.downloadLocation,
         p_matched_tag: unsplashResult.matchedTag,
       },
     );
@@ -331,21 +340,30 @@ async function runPendingUnsplashTrackingPass(
 
   if (!unsplashAccessKey) return summary;
 
-  const { data, error } = await supabase.rpc("list_pending_unsplash_download_tracking", {
-    p_limit: 25,
-  });
+  const { data, error } = await supabase.rpc(
+    "list_pending_unsplash_download_tracking",
+    {
+      p_limit: 25,
+    },
+  );
   if (error) throw error;
 
   const rows = (data ?? []) as PendingUnsplashTrackingRow[];
   summary.pending_claimed = rows.length;
 
   for (const row of rows) {
-    const result = await trackUnsplashDownload(row.download_location, unsplashAccessKey);
-    const { error: markError } = await supabase.rpc("mark_unsplash_download_tracking_result", {
-      p_attribution_id: row.attribution_id,
-      p_success: result.ok,
-      p_error: result.error,
-    });
+    const result = await trackUnsplashDownload(
+      row.download_location,
+      unsplashAccessKey,
+    );
+    const { error: markError } = await supabase.rpc(
+      "mark_unsplash_download_tracking_result",
+      {
+        p_attribution_id: row.attribution_id,
+        p_success: result.ok,
+        p_error: result.error,
+      },
+    );
     if (markError) throw markError;
     if (result.ok) summary.tracked += 1;
     else summary.failed += 1;
@@ -413,7 +431,8 @@ async function runUnsplashAttributionBackfillPass(
             unsplash_photo_id: attribution.photoId,
             unsplash_photographer_name: attribution.photographerName,
             unsplash_photographer_username: attribution.photographerUsername,
-            unsplash_photographer_profile_url: attribution.photographerProfileUrl,
+            unsplash_photographer_profile_url:
+              attribution.photographerProfileUrl,
             unsplash_photo_url: attribution.photoUrl,
             unsplash_download_location: attribution.downloadLocation,
             download_tracking_status: "pending",
@@ -496,15 +515,12 @@ async function runParentTipsPass(
 
   for (const row of rows) {
     try {
-      const response = await fetch(
-        `${deps.supabaseUrl}/functions/v1/generate-parent-tips`,
+      const response = await invokeFunction(
+        "generate-parent-tips",
+        { event_id: row.event_id },
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${deps.serviceRoleKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ event_id: row.event_id }),
+          serviceRoleKey: deps.serviceRoleKey,
+          supabaseUrl: deps.supabaseUrl,
         },
       );
 

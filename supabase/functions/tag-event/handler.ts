@@ -2,6 +2,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { requireServiceRole } from "../_shared/auth.ts";
 import { captureEdgeException } from "../_shared/sentry.ts";
 import { errorContext, errorMessage, logEdgeEvent } from "../_shared/logger.ts";
+import { resolveSharedLlmConfig } from "../_shared/llm-config.ts";
+import {
+  parseJsonContent,
+  postOpenAiChatCompletion,
+} from "../_shared/llm-openai.ts";
 import {
   clampConfidence,
   computeTags,
@@ -139,41 +144,23 @@ function resolveAiProvider(value: string | undefined): LlmTagProvider {
 function resolveAiConfig(
   dbConfig?: { modelId: string; provider: string; enabled: boolean } | null,
 ): LlmConfig {
-  if (dbConfig != null && !dbConfig.enabled) {
-    return {
-      provider: resolveAiProvider(dbConfig.provider),
-      baseUrl: "",
-      apiKey: "",
-      model: dbConfig.modelId,
-      configured: false,
-    };
-  }
-  const provider = dbConfig
-    ? resolveAiProvider(dbConfig.provider)
-    : resolveAiProvider(Deno.env.get("AI_PROVIDER"));
-
-  const rawBaseUrl = Deno.env.get("AI_BASE_URL") ??
-    (provider === "openai" ? DEFAULT_AI_BASE_URL : "");
-  const baseUrl = normalizeAiBaseUrl(rawBaseUrl);
-
-  const rawModel = dbConfig?.modelId ??
-    Deno.env.get("AI_MODEL") ??
-    Deno.env.get("OPENAI_MODEL");
-  const model = provider === "openai"
-    ? (rawModel ?? DEFAULT_OPENAI_MODEL)
-    : (rawModel ?? DEFAULT_OLLAMA_MODEL);
-
-  const apiKey = Deno.env.get("AI_API_KEY") ??
-    Deno.env.get("OPENAI_API_KEY") ??
-    (provider === "localai" ? Deno.env.get("LOCALAI_API_KEY") : undefined) ??
-    (provider === "ollama" ? DEFAULT_OLLAMA_API_KEY : "");
-
+  const config = resolveSharedLlmConfig({
+    allowedOpenAiModels: ALLOWED_OPENAI_MODELS,
+    dbOverride: dbConfig == null ? null : {
+      enabled: dbConfig.enabled,
+      modelId: dbConfig.modelId,
+      provider: dbConfig.provider,
+    },
+    defaultOpenAiBaseUrl: DEFAULT_AI_BASE_URL,
+    defaultOpenAiModel: DEFAULT_OPENAI_MODEL,
+    selfHostedDefaultModel: DEFAULT_OLLAMA_MODEL,
+  });
   return {
-    provider,
-    baseUrl,
-    apiKey,
-    model,
-    configured: Boolean(baseUrl && (apiKey || provider === "ollama")),
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    configured: config.configured,
+    model: config.model,
+    provider: config.provider,
   };
 }
 
@@ -267,97 +254,75 @@ async function classifyWithLlm(
     `available_tags: ${JSON.stringify(availableTags)}`,
   ].join("\n");
 
-  const llmStart = Date.now();
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const completion = await postOpenAiChatCompletion({
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    body: {
       model: config.model,
       temperature: 0.1,
       response_format: config.provider === "openai"
         ? {
-            type: "json_schema" as const,
-            json_schema: {
-              name: "event_classification",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: {
-                  tags: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        slug: { type: "string" },
-                        confidence: { type: "number" },
-                        reason: { type: ["string", "null"] },
-                      },
-                      required: ["slug", "confidence", "reason"],
-                      additionalProperties: false,
+          type: "json_schema" as const,
+          json_schema: {
+            name: "event_classification",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                tags: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      slug: { type: "string" },
+                      confidence: { type: "number" },
+                      reason: { type: ["string", "null"] },
                     },
+                    required: ["slug", "confidence", "reason"],
+                    additionalProperties: false,
                   },
-                  age_min: { type: ["number", "null"] },
-                  age_max: { type: ["number", "null"] },
-                  price: { type: ["number", "null"] },
-                  is_free: { type: "boolean" },
-                  venue_name: { type: ["string", "null"] },
-                  reasoning_summary: { type: ["string", "null"] },
                 },
-                required: [
-                  "tags", "age_min", "age_max", "price",
-                  "is_free", "venue_name", "reasoning_summary",
-                ],
-                additionalProperties: false,
+                age_min: { type: ["number", "null"] },
+                age_max: { type: ["number", "null"] },
+                price: { type: ["number", "null"] },
+                is_free: { type: "boolean" },
+                venue_name: { type: ["string", "null"] },
+                reasoning_summary: { type: ["string", "null"] },
               },
+              required: [
+                "tags",
+                "age_min",
+                "age_max",
+                "price",
+                "is_free",
+                "venue_name",
+                "reasoning_summary",
+              ],
+              additionalProperties: false,
             },
-          }
+          },
+        }
         : { type: "json_object" as const },
       ...(config.provider === "ollama" ? { reasoning_effort: "none" } : {}),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-    }),
-    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
+    },
+    failureMessagePrefix: `${config.provider} classification failed`,
+    providerName: config.provider,
+    timeoutMs: AI_TIMEOUT_MS,
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => "");
-    throw new Error(
-      `${config.provider} classification failed (${response.status}): ${
-        errorBody.slice(0, 200)
-      }`,
-    );
-  }
-
-  const completion = await response.json();
-  const llmLatencyMs = Date.now() - llmStart;
-  const rawContent = completion?.choices?.[0]?.message?.content;
-  if (!rawContent) {
-    throw new Error(`${config.provider} returned an empty response`);
-  }
-
-  const usageRaw = completion?.usage ?? {};
   const usage: LlmUsage = {
-    promptTokens: Number.isFinite(usageRaw.prompt_tokens)
-      ? Number(usageRaw.prompt_tokens)
-      : null,
-    completionTokens: Number.isFinite(usageRaw.completion_tokens)
-      ? Number(usageRaw.completion_tokens)
-      : null,
-    totalTokens: Number.isFinite(usageRaw.total_tokens)
-      ? Number(usageRaw.total_tokens)
-      : null,
-    llmLatencyMs,
-    finishReason: typeof completion?.choices?.[0]?.finish_reason === "string"
-      ? completion.choices[0].finish_reason
-      : null,
+    completionTokens: completion.usage.completionTokens,
+    finishReason: completion.usage.finishReason,
+    llmLatencyMs: completion.latencyMs,
+    promptTokens: completion.usage.promptTokens,
+    totalTokens: completion.usage.totalTokens,
   };
 
-  const parsed = JSON.parse(rawContent);
+  const parsed = parseJsonContent(completion.content);
   const tags = Array.isArray(parsed?.tags)
     ? parsed.tags
       .map((

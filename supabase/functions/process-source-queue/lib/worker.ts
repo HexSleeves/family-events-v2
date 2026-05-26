@@ -1,4 +1,6 @@
 import { type SupabaseClient } from "@supabase/supabase-js";
+import { resolveSharedLlmConfig } from "../../_shared/llm-config.ts";
+import { postOpenAiChatCompletion } from "../../_shared/llm-openai.ts";
 import { errorMessage, logEdgeEvent } from "../../_shared/logger.ts";
 import { parsers } from "../../scrape-source/parsers/index.ts";
 import {
@@ -205,23 +207,19 @@ async function markRunError(
 }
 
 function resolveLlmConfig(): LlmConfig {
-  const provider = Deno.env.get("AI_PROVIDER") ?? "openai";
-  const baseUrl = (Deno.env.get("AI_BASE_URL") ??
-    (provider === "openai" ? "https://api.openai.com/v1" : "")).replace(
-      /\/+$/,
-      "",
-    );
-  const model = Deno.env.get("AI_MODEL") ?? Deno.env.get("OPENAI_MODEL") ??
-    (provider === "openai" ? "gpt-4o-mini" : "qwen3:1.7b");
-  const apiKey = Deno.env.get("AI_API_KEY") ?? Deno.env.get("OPENAI_API_KEY") ??
-    (provider === "ollama" ? "ollama" : "");
-  return {
-    provider,
-    baseUrl,
-    model,
-    apiKey,
-    configured: Boolean(baseUrl && (apiKey || provider === "ollama")),
-  };
+  return resolveSharedLlmConfig({
+    allowedOpenAiModels: new Set([
+      "gpt-4o-mini",
+      "gpt-4o",
+      "gpt-4-turbo",
+      "gpt-4.1-nano",
+      "gpt-4.1-mini",
+      "gpt-4.1",
+      "gpt-5-mini",
+      "gpt-5",
+    ]),
+    defaultOpenAiModel: "gpt-4o-mini",
+  });
 }
 
 async function extractWithLlm(
@@ -233,14 +231,10 @@ async function extractWithLlm(
     throw new Error("LLM extraction provider is not configured");
   }
 
-  const startedAt = Date.now();
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const completion = await postOpenAiChatCompletion({
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    body: {
       model: config.model,
       temperature: 0.1,
       response_format: { type: "json_object" },
@@ -260,27 +254,16 @@ async function extractWithLlm(
           }),
         },
       ],
-    }),
-    signal: AbortSignal.timeout(45_000),
+    },
+    failureMessagePrefix: "LLM extraction failed",
+    providerName: "LLM extraction",
+    timeoutMs: 45_000,
   });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(
-      `LLM extraction failed (${response.status}): ${body.slice(0, 200)}`,
-    );
-  }
-
-  const payload = await response.json();
-  const content = payload?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    throw new Error("LLM extraction returned an empty response");
-  }
-
   return {
-    events: parseLlmParsedEvents(content),
+    events: parseLlmParsedEvents(completion.content),
     config,
-    latencyMs: Date.now() - startedAt,
+    latencyMs: completion.latencyMs,
   };
 }
 
