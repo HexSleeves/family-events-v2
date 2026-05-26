@@ -88,3 +88,59 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/
+
+# ── GSD baseline (auto-generated) ──
+.gsd-id
+
+# ── GSD runtime / ephemeral (never commit) ──
+# These are machine-managed, session-local, or may contain secrets in captured stdout.
+.gsd/exec/
+.gsd/activity/
+.gsd/audit/
+.gsd/journal/
+.gsd/runtime/
+.gsd/worktrees/
+.gsd/notifications.jsonl
+.gsd/CODEBASE.md
+.gsd/QUEUE.md
+.gsd/graphs/
+
+# GSD machine-managed task-state files (regenerated each run)
+.gsd/**/anchors/
+.gsd/**/*-VERIFY.json
+.gsd/**/*-PRE-EXEC-VERIFY.json
+.mcp.json
+.bg-shell/
+Thumbs.db
+nul
+nul.*
+con
+con.*
+prn
+prn.*
+aux
+aux.*
+com[1-9]
+com[1-9].*
+lpt[1-9]
+lpt[1-9].*
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env.*
+!.env.example
+.next/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+vendor/
+coverage/
+.cache/
+tmp/
