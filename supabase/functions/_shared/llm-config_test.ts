@@ -35,6 +35,22 @@ Deno.test("resolveSharedLlmConfig keeps self-hosted model names", () => {
   assertEquals(config.apiKey, "ollama");
 });
 
+Deno.test("resolveSharedLlmConfig does not send OpenAI keys to ollama", () => {
+  const config = resolveSharedLlmConfig(
+    {
+      allowedOpenAiModels: allowed,
+      defaultOpenAiModel: "gpt-4o-mini",
+    },
+    env({
+      AI_PROVIDER: "ollama",
+      AI_BASE_URL: "http://localhost:11434/v1/",
+      AI_MODEL: "qwen3:1.7b",
+      OPENAI_API_KEY: "sk-secret",
+    }),
+  );
+  assertEquals(config.apiKey, "ollama");
+});
+
 Deno.test("resolveSharedLlmConfig honors disabled db override", () => {
   const config = resolveSharedLlmConfig({
     allowedOpenAiModels: allowed,

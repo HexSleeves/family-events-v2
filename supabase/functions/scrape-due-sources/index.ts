@@ -4,7 +4,6 @@ import {
   logCronRunEvent,
 } from "../_shared/cron-run-log.ts";
 import { errorContext } from "../_shared/logger.ts";
-import { captureEdgeException } from "../_shared/sentry.ts";
 import { serveServiceRoleJson } from "../_shared/service-role-handler.ts";
 import { kickProcessSourceQueue } from "../scrape-source/lib/source-queue.ts";
 
@@ -65,10 +64,6 @@ serveServiceRoleJson(
         cronContext,
         "error",
         "scrape-due-sources failed",
-        errorContext(err, { function: "scrape-due-sources", stage: "rpc" }),
-      );
-      await captureEdgeException(
-        err,
         errorContext(err, { function: "scrape-due-sources", stage: "rpc" }),
       );
       throw err;

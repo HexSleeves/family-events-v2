@@ -31,7 +31,7 @@ export function readString(
 
   const trimmed = raw.trim();
   if (options.required && !trimmed) throw new Error(`missing ${key}`);
-  if (options.maxLength && trimmed.length > options.maxLength) {
+  if (options.maxLength !== undefined && trimmed.length > options.maxLength) {
     throw new Error(`invalid ${key}`);
   }
 
@@ -44,7 +44,7 @@ export function readEmail(
 ): string | null {
   const email = readString(value, key, { maxLength: 320 });
   if (email == null) return null;
-  if (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error(`invalid ${key}`);
   }
   return email.toLowerCase();

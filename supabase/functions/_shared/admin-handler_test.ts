@@ -61,6 +61,37 @@ Deno.test("createAdminJsonHandler delegates auth and returns handler JSON", asyn
   assertEquals(await response.json(), { source: "service_role" });
 });
 
+Deno.test("createAdminJsonHandler merges CORS headers into handler Response returns", async () => {
+  const handler = createAdminJsonHandler(
+    { functionName: "admin-test" },
+    async () =>
+      new Response(JSON.stringify({ ok: true }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }),
+    {
+      createServiceClient: () => ({}) as SupabaseClient,
+      env: env({
+        SUPABASE_ANON_KEY: "anon",
+        SUPABASE_SERVICE_ROLE_KEY: "service",
+        SUPABASE_URL: "https://project.supabase.co",
+      }),
+      requireAdminOrService: (async () => ({
+        ok: true,
+        source: "service_role",
+        userId: null,
+      })) as never,
+    },
+  );
+  const response = await handler(request());
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Methods"),
+    "POST, OPTIONS",
+  );
+  assertEquals(await response.json(), { ok: true });
+});
+
 Deno.test("createAdminJsonHandler returns auth failures", async () => {
   const handler = createAdminJsonHandler(
     { functionName: "admin-test" },

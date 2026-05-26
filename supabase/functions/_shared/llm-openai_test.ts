@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "jsr:@std/assert";
 import { parseJsonContent, postOpenAiChatCompletion } from "./llm-openai.ts";
 
 Deno.test("postOpenAiChatCompletion posts to chat completions", async () => {
@@ -39,10 +39,10 @@ Deno.test("postOpenAiChatCompletion reports non-2xx body", async () => {
   );
 });
 
-Deno.test("parseJsonContent returns objects and rejects arrays", () => {
+Deno.test("parseJsonContent returns objects and throws on arrays", () => {
   assertEquals(parseJsonContent('{"ok":true}'), { ok: true });
-  assertRejects(
-    async () => parseJsonContent("[1]"),
+  assertThrows(
+    () => parseJsonContent("[1]"),
     Error,
     "provider_json_content_not_object",
   );

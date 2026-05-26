@@ -79,16 +79,19 @@ export function resolveSharedLlmConfig(
     envFirst(descriptor.modelEnvNames ?? ["AI_MODEL", "OPENAI_MODEL"], env);
   const model = provider === "openai"
     ? descriptor.allowedOpenAiModels.has(rawModel ?? "")
-      ? rawModel!
+      ? rawModel ?? descriptor.defaultOpenAiModel
       : descriptor.defaultOpenAiModel
     : rawModel ?? descriptor.selfHostedDefaultModel ?? "qwen3:1.7b";
 
-  const apiKey = envFirst(
+  const openAiApiKey = envFirst(
     descriptor.apiKeyEnvNames ?? ["AI_API_KEY", "OPENAI_API_KEY"],
     env,
-  ) ??
-    (provider === "localai" ? env.get("LOCALAI_API_KEY") ?? "" : undefined) ??
-    (provider === "ollama" ? "ollama" : "");
+  );
+  const apiKey = provider === "openai"
+    ? (openAiApiKey ?? "")
+    : provider === "localai"
+    ? (env.get("LOCALAI_API_KEY")?.trim() ?? "")
+    : "ollama";
 
   return {
     apiKey,

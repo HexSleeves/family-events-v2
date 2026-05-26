@@ -71,6 +71,8 @@ export async function runParentTipsPass(
         {
           serviceRoleKey: deps.serviceRoleKey,
           supabaseUrl: deps.supabaseUrl,
+          timeoutMs: 30_000,
+          truncateBodyAt: 200,
         },
       );
 
@@ -80,9 +82,26 @@ export async function runParentTipsPass(
           break;
         }
         summary.errors += 1;
-        await deps.supabase.rpc("mark_event_enrichment_attempt", {
-          p_event_id: row.event_id,
-        });
+        const { error: markErr } = await deps.supabase.rpc(
+          "mark_event_enrichment_attempt",
+          {
+            p_event_id: row.event_id,
+          },
+        );
+        if (markErr) {
+          await logCronRunEvent(
+            deps.supabase,
+            deps.cronContext,
+            "warn",
+            "parent-tips mark attempt failed",
+            {
+              function: "backfill-event-enrichment",
+              stage: "parent-tips",
+              event_id: row.event_id,
+              error: errorMessage(markErr),
+            },
+          );
+        }
         continue;
       }
 

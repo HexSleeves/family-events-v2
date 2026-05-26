@@ -115,9 +115,18 @@ export function createAdminJsonHandler(
         supabase,
         supabaseUrl,
       });
-      return result instanceof Response
-        ? result
-        : jsonResponse(result, { headers: corsHeaders });
+      if (result instanceof Response) {
+        const headers = new Headers(result.headers);
+        for (const [key, value] of Object.entries(corsHeaders)) {
+          if (!headers.has(key)) headers.set(key, value);
+        }
+        return new Response(result.body, {
+          status: result.status,
+          statusText: result.statusText,
+          headers,
+        });
+      }
+      return jsonResponse(result, { headers: corsHeaders });
     } catch (err) {
       if (err instanceof AdminJsonError) {
         return errorJson(err.message, err.status, corsHeaders);

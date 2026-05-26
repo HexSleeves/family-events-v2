@@ -61,6 +61,7 @@ export async function kickProcessSourceQueue(
   const response = await invokeFunction("process-source-queue", {}, {
     serviceRoleKey,
     supabaseUrl,
+    timeoutMs: 5_000,
     truncateBodyAt: 200,
   });
 
