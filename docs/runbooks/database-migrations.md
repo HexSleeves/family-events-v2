@@ -25,7 +25,7 @@ Verify the exact `supabase migration` split mechanism in Supabase CLI docs befor
 
 ## NOT VALID constraints
 
-All integrity constraints added in `20260601006800_security_performance_hardening.sql` are `NOT VALID`. They enforce on new/updated rows but do not validate existing data.
+All integrity constraints added in `20260601001000_reference_security_and_cron.sql` are `NOT VALID`. They enforce on new/updated rows but do not validate existing data.
 
 Before running `VALIDATE CONSTRAINT` migrations, run the pre-validation queries in `scripts/db/collect-db-evidence.sql` (constraint pre-validation section). Each must return 0 violations.
 
@@ -57,18 +57,16 @@ All new RPCs with elevated privileges must follow the pattern in CLAUDE.md:
 2. `public.<name>` — SECURITY INVOKER wrapper
 3. Explicit REVOKE/GRANT on both
 
-Reference: `supabase/migrations/20260601002100_wrap_security_definer_rpcs.sql`
+Reference the existing RPCs in `supabase/migrations/20260601002000_event_ingestion_admin_foundation.sql` and `supabase/migrations/20260601003000_maintenance_and_admin_queues.sql`.
 
 ## Migration ordering
 
-Migrations are applied in timestamp order. The current sequence:
+Migrations are applied in timestamp order. The current prelaunch sequence:
 
-- `20260601000000` — consolidated schema (baseline)
-- `20260601006800` — security/performance hardening
-- `20260601006900` — railway cron toggle
-- `20260601007000` — cursor events RPCs (v2)
-- `20260601007100` — admin events enriched RPC
-- `20260601007200` — revoke default public function grants
-- `20260601007300` — tighten private schema usage
-- `20260601007400` — admin db health snapshot RPC
-- `20260601007500` — trace retention (run_daily_maintenance extension)
+- `20260601000000_schema_baseline` — baseline schema and guarded pre-baseline cleanup
+- `20260601001000_reference_security_and_cron` — reference data, security/performance hardening, cron toggles
+- `20260601002000_event_ingestion_admin_foundation` — scrape import, cursor event RPCs, admin event RPCs, trace retention
+- `20260601003000_maintenance_and_admin_queues` — maintenance fixes, queue admin RPCs, mutation audit RPCs
+- `20260601004000_llm_review_and_enrichment` — LLM review pipeline, enrichment scope, API hardening
+- `20260601005000_ai_models_and_cron_drilldown` — AI model configuration and cron run drilldown
+- `20260601006000_enrichment_images_and_rpc_cleanup` — geocoding heuristics, parent tips, image attribution, RPC cleanup

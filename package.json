@@ -54,7 +54,7 @@
     "knip:exports": "knip --exports --no-progress --max-show-issues 200"
   },
   "devDependencies": {
-    "@supabase/supabase-js": "^2.106.1",
+    "@supabase/supabase-js": "^2.106.2",
     "@types/node": "^25.9.1",
     "knip": "^6.14.2",
     "oxfmt": "^0.51.0",
