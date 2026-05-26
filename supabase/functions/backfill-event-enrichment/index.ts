@@ -173,6 +173,29 @@ async function enrichOne(
         }
       }
     }
+
+    // Third-tier fallback: venue name without any city context. Some venues
+    // embed a different city in their name (e.g. "Broussard Sports Complex"
+    // when the event's city_id points to Lafayette). Nominatim rejects the
+    // query when the appended city contradicts the venue's actual location.
+    // Retrying with the raw venue_name alone lets Nominatim resolve the
+    // place using its own geographic context.
+    if (latitude === null && row.venue_name) {
+      const venueOnlyQuery = buildGeocodeQuery({
+        address: null,
+        venueName: row.venue_name,
+        cityName: null,
+        cityState: null,
+      });
+      if (venueOnlyQuery && venueOnlyQuery !== query) {
+        const venueGeo = await geocodeViaNominatim(venueOnlyQuery);
+        if (venueGeo) {
+          latitude = venueGeo.latitude;
+          longitude = venueGeo.longitude;
+        }
+      }
+    }
+
     // Intentionally no city-centroid fallback here. Writing the centroid back
     // re-flags the row as needs_coords (centroid match) and the claim queue
     // re-served the same rows every tick, starving the rest of the backlog.
