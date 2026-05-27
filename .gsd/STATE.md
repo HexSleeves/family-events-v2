@@ -2,7 +2,7 @@
 
 **Active Milestone:** M002: Image Generation Fallback Flow - Two-Pass Search
 **Active Slice:** S01: Two-Pass Unsplash Search with Test Coverage
-**Phase:** evaluating-gates
+**Phase:** summarizing
 **Requirements Status:** 0 active · 0 validated · 0 deferred · 0 out of scope
 
 ## Milestone Registry
@@ -20,4 +20,4 @@
 - None
 
 ## Next Action
-Evaluate 2 quality gate(s) for S01 before execution.
+All tasks done in S01. Write slice summary and complete slice.
