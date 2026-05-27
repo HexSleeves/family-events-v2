@@ -1,4 +1,4 @@
-# GSD context snapshot (2026-05-27T18:04:13.980Z)
+# GSD context snapshot (2026-05-27T18:15:01.048Z)
 
 ## Top project memories
 - [MEM002] (convention) Generated TypeScript type definitions (like database.types.ts) may contain unused function signatures without indicating live usage. Verify no imports or calls exist before marking cleanup complete. A type definition alone is acceptable residue.
