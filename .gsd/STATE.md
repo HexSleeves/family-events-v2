@@ -1,8 +1,8 @@
 # GSD State
 
 **Active Milestone:** M002: Image Generation Fallback Flow - Two-Pass Search
-**Active Slice:** S01: Two-Pass Unsplash Search with Test Coverage
-**Phase:** summarizing
+**Active Slice:** None
+**Phase:** validating-milestone
 **Requirements Status:** 0 active · 0 validated · 0 deferred · 0 out of scope
 
 ## Milestone Registry
@@ -20,4 +20,4 @@
 - None
 
 ## Next Action
-All tasks done in S01. Write slice summary and complete slice.
+Validate milestone M002 before completion.

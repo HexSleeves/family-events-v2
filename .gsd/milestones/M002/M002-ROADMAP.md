@@ -13,7 +13,7 @@
 
 ## Slices
 
-- [ ] **S01: Two-Pass Unsplash Search with Test Coverage** `risk:medium` `depends:[]`
+- [x] **S01: Two-Pass Unsplash Search with Test Coverage** `risk:medium` `depends:[]`
   > After this: Manual verification shows "Yoga in the Park" events get yoga/outdoor images, "Splash Park" events get water-play images; all vitest tests pass including new two-pass scenarios; no rate-limit warnings in logs
 
 ## Boundary Map
