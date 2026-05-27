@@ -1,50 +1,34 @@
 ---
-estimated_steps: 18
-estimated_files: 4
+estimated_steps: 10
+estimated_files: 3
 skills_used: []
 ---
 
-# T03: Created ExploreCategoryChipRow (4 category chips), added Age/Category sections to ExploreFilterSheet, added ageFilter/activeCategory dismissible chips to ExploreActiveFiltersBar, and wired ExploreCategoryChipRow into ExploreScreen between search bar and active filters bar.
+# T03: Verify Geocoding Migration and Web Cleanup
 
-**Why**: With the model (T01) and filter logic (T02) in place, this task closes R001/R002/R003 by wiring three visual surfaces: the inline category chip row (quick one-tap filter), the Age and Category sections in the filter sheet (full filter controls), and the dismissible chips in ExploreActiveFiltersBar (active filter state). All changes are additive — no existing sections are modified.
+**Why:** Confirm geocoding migration was documented correctly and web cleanup (search_events removal) was completed.
 
-**Do**:
-1. Create `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreCategoryChipRow.swift`:
-   - `import SwiftUI; import FEDesignSystem`
-   - `public struct ExploreCategoryChipRow: View` with `@Binding public var activeCategory: String?`
-   - `public init(activeCategory: Binding<String?>) { _activeCategory = activeCategory }`
-   - Private constant: `let categories: [(label: String, slug: String)] = [("Playgroups","playgroup"),("Music & Movement","music"),("Outdoor Fun","outdoor"),("Indoor Storytime","storytime")]`
-   - Body: `ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { ForEach(categories, id: \.slug) { cat in Button { activeCategory = (activeCategory == cat.slug) ? nil : cat.slug } label: { Text(cat.label).font(.subheadline).padding(.horizontal, 12).padding(.vertical, 6).background(activeCategory == cat.slug ? Color.dsAccentPrimarySoft : Color.secondary.opacity(0.1)).foregroundStyle(activeCategory == cat.slug ? Color.dsAccentPrimary : Color.primary).clipShape(Capsule()) } .buttonStyle(.plain) } }.padding(.horizontal, 16).padding(.vertical, 8) }`
-   - Note: Use Color.dsAccentPrimarySoft and Color.dsAccentPrimary if they exist in FEDesignSystem; otherwise use Color.accentColor.opacity(0.15) and Color.accentColor for selected state.
+**Do:**
+1. Check if migration file 20260601009800_enrichment_geocodable_address_expand_2.sql exists
+2. If missing, note in validation report that S02 summary references migration but file not found (acceptable for retrospective doc)
+3. Search web codebase for search_events references: `grep -r search_events apps/web/src`
+4. Verify count is zero (requirement R008 validation)
+5. Check database.types.ts does not reference search_events
+6. Run web type check: `cd apps/web && pnpm check` to confirm no type errors
+7. Complete validation report with geocoding and cleanup findings
 
-2. In ExploreFilterSheet.swift: After the Price Section, append two new sections:
-   - Age: `Section("Age") { Picker("Age", selection: $filters.ageFilter) { Text("Any age").tag(Optional<ExploreFilters.AgeFilter>.none); ForEach(ExploreFilters.AgeFilter.allCases, id: \.self) { af in Text(af.rawValue).tag(Optional(af)) } }.pickerStyle(.inline).labelsHidden() }`
-   - Category: `Section("Category") { ForEach([("Playgroups","playgroup"),("Music & Movement","music"),("Outdoor Fun","outdoor"),("Indoor Storytime","storytime")], id: \.1) { label, slug in Button { filters.activeCategory = (filters.activeCategory == slug) ? nil : slug } label: { HStack { Text(label).foregroundStyle(.primary); Spacer(); if filters.activeCategory == slug { Image(systemName: "checkmark").foregroundStyle(Color.accentColor) } } } .buttonStyle(.plain) } }`
-
-3. In ExploreActiveFiltersBar.swift: After the `onlyFree` chip block (still inside the HStack), add:
-   - `if let af = filters.ageFilter { chip(label: af.rawValue) { filters.ageFilter = nil } }`
-   - `if let slug = filters.activeCategory { chip(label: categoryLabel(for: slug)) { filters.activeCategory = nil } }`
-   - Add private helper at bottom of the struct: `private func categoryLabel(for slug: String) -> String { switch slug { case "playgroup": return "Playgroups"; case "music": return "Music & Movement"; case "outdoor": return "Outdoor Fun"; case "storytime": return "Indoor Storytime"; default: return slug } }`
-
-4. In ExploreScreen.swift: In the top `VStack(spacing: 0)`, insert `ExploreCategoryChipRow(activeCategory: $viewModel.filters.activeCategory)` between `ExploreSearchBar` and `ExploreActiveFiltersBar`. The VStack order becomes: ExploreSearchBar → ExploreCategoryChipRow → ExploreActiveFiltersBar.
-
-**Done when**: ExploreCategoryChipRow.swift file exists with 4 category chips; ExploreScreen.swift references ExploreCategoryChipRow; ExploreFilterSheet.swift has Age and Category sections; ExploreActiveFiltersBar.swift emits chips for ageFilter and activeCategory.
+**Done when:** Web type check exits 0, search_events references confirmed at 0, geocoding migration status documented, validation report complete
 
 ## Inputs
 
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/ViewModels/ExploreFilters.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreFilterSheet.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreActiveFiltersBar.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Screens/ExploreScreen.swift`
-- `apps/web/src/features/explore/constants/categories.ts`
+- `apps/web/src`
+- `packages/contracts/src/database.types.ts`
+- `.gsd/milestones/M001/slices/S01/validation-report.md`
 
 ## Expected Output
 
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreCategoryChipRow.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreFilterSheet.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreActiveFiltersBar.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/Screens/ExploreScreen.swift`
+- `.gsd/milestones/M001/slices/S01/validation-report.md`
 
 ## Verification
 
-test -f apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreCategoryChipRow.swift && grep -q "ExploreCategoryChipRow" apps/ios/Packages/FEExplore/Sources/FEExplore/Screens/ExploreScreen.swift && grep -q "ageFilter" apps/ios/Packages/FEExplore/Sources/FEExplore/Components/ExploreActiveFiltersBar.swift
+test -f .gsd/milestones/M001/slices/S01/validation-report.md && grep -q complete .gsd/milestones/M001/slices/S01/validation-report.md

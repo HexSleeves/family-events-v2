@@ -1,0 +1,1 @@
+{"v":2,"cmd":"plan-slice","params":{"milestoneId":"M001","sliceId":"S01"},"ts":"2026-05-27T14:52:03.293Z","actor":"agent","actor_name":"executor-planning","trigger_reason":"auto-mode planning for M001/S01","hash":"b4e65a48e7b42f57","session_id":"ea5200fa-567b-4cbc-b829-2cba6a7d2045"}

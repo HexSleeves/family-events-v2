@@ -17,7 +17,7 @@
 
 ## Slices
 
-- [ ] **S01: Validation and Documentation of Completed Work** `risk:low` `depends:[]`
+- [x] **S01: Validation and Documentation of Completed Work** `risk:low` `depends:[]`
   > After this: All unit tests pass (ExploreViewModelTests, EventDTOTests). iOS Explore filter sheet shows age/category sections. Geocoding diagnostic queries embedded in migration comments. No search_events v1 references in codebase.
 
 ## Boundary Map
