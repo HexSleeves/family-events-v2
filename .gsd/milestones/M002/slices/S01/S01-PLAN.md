@@ -30,7 +30,7 @@ Upstream: `supabase/functions/backfill-event-enrichment/index.ts` passes `{ titl
   - Files: `supabase/functions/_shared/unsplash.ts`
   - Verify: pnpm --filter @family-events/supabase test -- unsplash.test.ts
 
-- [ ] **T02: Add test coverage for two-pass scenarios** `est:30m`
+- [x] **T02: Added comprehensive test coverage for two-pass Unsplash search: 4 new test cases verify bare-first fallback behavior, 5 existing tests updated to expect new query patterns** `est:30m`
   Why: The two-pass logic introduces new code paths that existing tests do not cover: bare term hits immediately, bare term misses but suffix succeeds, both passes miss.
   - Files: `supabase/functions/_shared/unsplash.test.ts`
   - Verify: pnpm --filter @family-events/supabase test -- unsplash.test.ts

@@ -4,7 +4,7 @@ estimated_files: 1
 skills_used: []
 ---
 
-# T02: Add test coverage for two-pass scenarios
+# T02: Added comprehensive test coverage for two-pass Unsplash search: 4 new test cases verify bare-first fallback behavior, 5 existing tests updated to expect new query patterns
 
 Why: The two-pass logic introduces new code paths that existing tests do not cover: bare term hits immediately, bare term misses but suffix succeeds, both passes miss.
 
