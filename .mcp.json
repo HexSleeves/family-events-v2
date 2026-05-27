@@ -7,10 +7,16 @@
     "task-master-ai": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "task-master-ai"],
+      "args": [
+        "-y",
+        "task-master-ai"
+      ],
       "env": {
         "TASK_MASTER_TOOLS": "core"
       }
+    },
+    "forge_extension": {
+      "url": "http://localhost:45071/mcp"
     }
   }
 }
