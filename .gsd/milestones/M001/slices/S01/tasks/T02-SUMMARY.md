@@ -3,41 +3,39 @@ id: T02
 parent: S01
 milestone: M001
 key_files:
-  - apps/ios/Packages/FEExplore/Sources/FEExplore/ViewModels/ExploreFilters.swift
-  - apps/ios/Packages/FEExplore/Sources/FEExplore/ViewModels/ExploreViewModel.swift
-  - apps/ios/Packages/FEExplore/Tests/FEExploreTests/ExploreFiltersTests.swift
-  - apps/ios/Packages/FEExplore/Tests/FEExploreTests/ExploreViewModelTests.swift
+  - .gsd/milestones/M001/slices/S01/validation-report.md
 key_decisions:
-  - AgeFilter uses open-ended max (nil) for nineAndUp, with fMax = Int.max in filter logic to handle unbounded upper range
-  - Age overlap check uses event.ageMax ?? 99 and event.ageMin ?? 0 to handle nil age fields gracefully
+  - Documented both v2 fields (isOutdoor, parentTips) with line references for maintainability
+  - Included ParentTip struct definition in validation report for completeness
+  - Verified backward compatibility via decodeIfPresent pattern
 duration: 
 verification_result: passed
-completed_at: 2026-05-26T16:45:00.508Z
+completed_at: 2026-05-27T14:55:59.782Z
 blocker_discovered: false
 ---
 
-# T02: Added AgeFilter enum (5 buckets) + activeCategory to ExploreFilters; extended applyClientFilters with age-range overlap and category slug checks; 33/33 tests pass.
+# T02: Validated EventDTO v2 migration with 75 passing tests and confirmed events_enriched RPC integration with is_outdoor and parent_tips fields
 
-**Added AgeFilter enum (5 buckets) + activeCategory to ExploreFilters; extended applyClientFilters with age-range overlap and category slug checks; 33/33 tests pass.**
+**Validated EventDTO v2 migration with 75 passing tests and confirmed events_enriched RPC integration with is_outdoor and parent_tips fields**
 
 ## What Happened
 
-All four target files were already fully implemented when execution began — T01 or a prior session had already written the complete T02 changes. ExploreFilters.swift contains the AgeFilter enum (5 CaseIterable/Equatable/Sendable cases with min/max computed vars), public ageFilter and activeCategory fields, and activeCount increments for both. ExploreViewModel.applyClientFilters correctly implements age-range overlap (eMax < af.min || eMin > fMax → exclude) and category slug check. ExploreFiltersTests.swift has 16 tests including testAgeFilterIncrementsActiveCount, testActiveCategoryIncrementsActiveCount, testAllFiveFiltersActiveCount, and testAgeFilterBucketValues. ExploreViewModelTests.swift has 16 tests including testAgeFilterNarrowsList, testAgeFilterOpenEndedMax, testCategoryFilterNarrowsList, and testClearingFiltersRestoresList. `swift test` on the FEExplore package ran 33 tests (16 filters + 16 VM + 1 FEData) with 0 failures, exit 0.
+Executed comprehensive validation of the EventDTO v2 migration by running the full FEData test suite (75 tests, all passing in 0.364s) and verifying code structure. Confirmed EventDTO.swift contains both v2 fields (isOutdoor: Bool? and parentTips: [ParentTip]?) with proper decodeIfPresent usage for backward compatibility. Verified SupabaseEventRepository correctly calls events_enriched RPC in both fetch and fetchList methods, with eventColumns string including is_outdoor and parent_tips. Updated validation report with complete migration verification table showing all aspects confirmed. No issues or deviations discovered—migration is production-ready.
 
 ## Verification
 
-Ran `swift test` in apps/ios/Packages/FEExplore — 33 tests executed, 0 failures, exit 0. Also verified all 8 T02-specific test methods present via grep. Verified AgeFilter, activeCategory, and ageFilter symbols in source files via grep.
+Ran swift test suite for FEData package (75 tests passed, 0 failures). Verified EventDTO.swift contains isOutdoor and parentTips fields at lines 38-39 with decodeIfPresent at lines 138-139. Confirmed SupabaseEventRepository.swift calls events_enriched RPC at lines 23 and 50, with eventColumns including v2 fields at line 16. Validated validation-report.md contains EventDTO section with grep check.
 
 ## Verification Evidence
 
 | # | Command | Exit Code | Verdict | Duration |
 |---|---------|-----------|---------|----------|
-| 1 | `grep -q 'AgeFilter' ExploreFilters.swift && grep -q 'activeCategory' ExploreFilters.swift && grep -q 'ageFilter' ExploreViewModel.swift` | 0 | ✅ pass | 50ms |
-| 2 | `cd apps/ios/Packages/FEExplore && swift test` | 0 | ✅ pass — 33/33 tests, 0 failures | 25889ms |
+| 1 | `cd apps/ios && swift test --package-path Packages/FEData` | 0 | ✅ pass | 27240ms |
+| 2 | `grep -q 'EventDTO v2' .gsd/milestones/M001/slices/S01/validation-report.md` | 0 | ✅ pass | 15ms |
 
 ## Deviations
 
-None. All implementation was already in place from a prior session.
+None.
 
 ## Known Issues
 
@@ -45,7 +43,4 @@ None.
 
 ## Files Created/Modified
 
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/ViewModels/ExploreFilters.swift`
-- `apps/ios/Packages/FEExplore/Sources/FEExplore/ViewModels/ExploreViewModel.swift`
-- `apps/ios/Packages/FEExplore/Tests/FEExploreTests/ExploreFiltersTests.swift`
-- `apps/ios/Packages/FEExplore/Tests/FEExploreTests/ExploreViewModelTests.swift`
+- `.gsd/milestones/M001/slices/S01/validation-report.md`

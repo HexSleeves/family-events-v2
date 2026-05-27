@@ -1,0 +1,108 @@
+{
+  "$schema": "../packages/deploy-cli/src/config.schema.json",
+  "environments": {
+    "production": {
+      "supabase": {
+        "projectRefFile": "supabase/.temp/project-ref",
+        "projectRefEnv": "SUPABASE_PROJECT_REF"
+      }
+    }
+  },
+  "supabase": {
+    "functions": [
+      "admin-run-cron",
+      "backfill-event-enrichment",
+      "cleanup-stale-runs",
+      "db-maintenance",
+      "generate-parent-tips",
+      "log-cron-run",
+      "notify-email",
+      "process-source-queue",
+      "process-event-review-queue",
+      "process-tag-queue",
+      "scrape-due-sources",
+      "scrape-source",
+      "send-auth-email",
+      "share-og",
+      "tag-event"
+    ],
+    "noVerifyJwtFunctions": [
+      "backfill-event-enrichment",
+      "cleanup-stale-runs",
+      "db-maintenance",
+      "generate-parent-tips",
+      "log-cron-run",
+      "notify-email",
+      "process-source-queue",
+      "process-event-review-queue",
+      "process-tag-queue",
+      "scrape-due-sources",
+      "scrape-source",
+      "send-auth-email",
+      "tag-event"
+    ]
+  },
+  "railway": {
+    "allOrder": [
+      "web",
+      "cron-scrape-sources",
+      "cron-db-maintenance",
+      "cron-tag-queue",
+      "cron-review-events",
+      "cron-cleanup-stale",
+      "cron-enrich-events"
+    ],
+    "services": [
+      {
+        "name": "web",
+        "rootDirectory": null,
+        "pollTimeoutSeconds": 600,
+        "allowAutoCreate": false
+      },
+      {
+        "name": "cron-scrape-sources",
+        "rootDirectory": "apps/cron-scrape-sources",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-db-maintenance",
+        "rootDirectory": "apps/cron-db-maintenance",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-tag-queue",
+        "rootDirectory": "apps/cron-tag-queue",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-enrich-events",
+        "rootDirectory": "apps/cron-enrich-events",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-review-events",
+        "rootDirectory": "apps/cron-review-events",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true,
+        "bootstrapFromService": "cron-enrich-events"
+      },
+      {
+        "name": "cron-cleanup-stale",
+        "rootDirectory": "apps/cron-cleanup-stale",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      }
+    ]
+  },
+  "smoke": {
+    "functionDrift": true,
+    "cronEnabledProbe": {
+      "enabledWhenEnvPresent": true,
+      "label": "cron-tag-queue"
+    }
+  }
+}

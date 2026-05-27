@@ -144,3 +144,4 @@ vendor/
 coverage/
 .cache/
 tmp/
+.deploy/runs/
