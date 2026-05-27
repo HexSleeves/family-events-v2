@@ -6,8 +6,6 @@ remediation_round: 0
 # Milestone Validation: M001
 
 ## Success Criteria Checklist
-## Success Criteria Checklist
-
 | Criterion | Status | Evidence |
 |---|---|---|
 | iOS Explore filter sheet includes age buckets and tag/category selection matching web's filter vocabulary | ✅ PASS | S01-ASSESSMENT TC1/TC2/TC4 — ExploreFilterSheet has Age + Category sections; 5-bucket AgeFilter enum; dismissible chips; 33/33 unit tests pass |
@@ -17,8 +15,6 @@ remediation_round: 0
 | pnpm --filter @family-events/web check and iOS swift test both pass | ✅ PASS | pnpm check exits 0 (368 files, 0 errors); swift test 33/33 ExploreViewModel + 75/75 FEData pass |
 
 ## Slice Delivery Audit
-## Slice Delivery Audit
-
 | Slice | SUMMARY.md | Assessment | Notes | Status |
 |---|---|---|---|---|
 | S01: iOS Explore Filter Parity | ✅ Present | ✅ PASS | Cosmetic doc comment cleanup + XCUITest coverage deferred to future slice | ✅ DELIVERED |
@@ -26,8 +22,6 @@ remediation_round: 0
 | S03: Dead Code Removal | ✅ Present | ✅ PASS | Decision recorded as D005 (not D004 — prior task consumed D004, cosmetic deviation) | ✅ DELIVERED |
 
 ## Cross-Slice Integration
-## Cross-Slice Integration
-
 | Boundary | Status |
 |---|---|
 | S01 → S03 (ordering only, no shared artifact) | ✅ PASS — dependency ordering honored; no-contract boundary correctly declared and acknowledged on both sides |
@@ -36,24 +30,9 @@ remediation_round: 0
 All boundary contracts honored. Cross-slice composition is sound.
 
 ## Requirement Coverage
-## Requirement Coverage
-
 All 8 active M001 requirements validated. 3 deferred requirements (R009–R011) correctly out of scope.
 
-| Requirement | Status |
-|---|---|
-| R001 — iOS age filter (5 buckets) | COVERED |
-| R002 — iOS tag/category filter sheet | COVERED |
-| R003 — iOS inline category chip row | COVERED |
-| R004 — Geocoding enrichment expansion | COVERED |
-| R005 — Map shows more pins after geocoding | COVERED |
-| R006 — Diagnostic for centroid-stuck count | COVERED |
-| R007 — Dead useEvents/search_events removed | COVERED |
-| R008 — iOS uses events_enriched_v2 + v2 fields | COVERED |
-
 ## Verification Class Compliance
-## Verification Classes
-
 | Class | Planned Check | Evidence | Verdict |
 |-------|--------------|----------|---------|
 | Contract | iOS unit tests for applyClientFilters — age bucket boundaries + tag slug matching | S01-ASSESSMENT TC1/TC2 PASS — 33/33 swift tests pass | ✅ PASS |

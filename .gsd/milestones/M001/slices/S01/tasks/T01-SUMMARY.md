@@ -3,35 +3,42 @@ id: T01
 parent: S01
 milestone: M001
 key_files:
-  - apps/ios/Packages/FEData/Sources/FEData/DTOs/EventDTO.swift
-  - apps/ios/Packages/FEData/Sources/FEData/Repositories/EventRepository.swift
-  - apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/EventDTOTests.swift
+  - .gsd/milestones/M001/slices/S01/validation-report.md
 key_decisions:
-  - Used decodeIfPresent (not decode) for both isOutdoor and parentTips matching the pattern for non-critical optional fields in EventDTO
-  - Both SupabaseEventRepository RPC calls migrated to events_enriched_v2 (fetch(ids:) and fetchList(query:for:))
+  - Validation report format follows test results, code validation, requirements mapping structure
+  - Confirmed all 5 source files contain documented features without modification
 duration: 
 verification_result: passed
-completed_at: 2026-05-26T16:43:09.546Z
+completed_at: 2026-05-27T14:54:09.035Z
 blocker_discovered: false
 ---
 
-# T01: Added ParentTip struct + isOutdoor/parentTips fields to EventDTO (decodeIfPresent), migrated both SupabaseEventRepository RPC calls to events_enriched_v2, and added two unit tests covering v2 fields present and absent.
+# T01: Validated iOS Explore filter implementation with 33 passing tests and confirmed all documented features present
 
-**Added ParentTip struct + isOutdoor/parentTips fields to EventDTO (decodeIfPresent), migrated both SupabaseEventRepository RPC calls to events_enriched_v2, and added two unit tests covering v2 fields present and absent.**
+**Validated iOS Explore filter implementation with 33 passing tests and confirmed all documented features present**
 
 ## What Happened
 
-All three target files already contained the required changes when inspected. EventDTO.swift has `public struct ParentTip: Codable, Equatable, Sendable` declared before EventDTO, with `isOutdoor: Bool?` and `parentTips: [ParentTip]?` properties, CodingKeys cases `isOutdoor = "is_outdoor"` and `parentTips = "parent_tips"`, and both decoded via `decodeIfPresent` in `init(from:)`. The memberwise `init` also carries both optional parameters with nil defaults. EventRepository.swift has `is_outdoor,parent_tips` appended to `eventColumns` and both RPC calls targeting `events_enriched_v2`. EventDTOTests.swift contains `testDecodesV2FieldsWhenPresent` (asserts isOutdoor == true, parentTips category/text) and `testDecodesV2FieldsWhenAbsent` (asserts both nil, no throw). No code changes were needed — all task plan requirements were pre-satisfied.
+Executed comprehensive validation of the iOS Explore filter parity work completed outside GSD workflow. Ran the FEExplore test suite which passed all 33 tests (16 ExploreViewModelTests + 17 ExploreFiltersTests) in 0.115 seconds. Verified all documented code features exist:
+
+1. **ExploreFilters.swift**: Confirmed AgeFilter enum with 5 cases (zeroToOne, oneToThree, twoToFour, fiveToEight, nineAndUp) and activeCategory field, plus age range computation logic
+2. **ExploreViewModel.swift**: Verified applyClientFilters() contains age overlap logic and category slug filtering
+3. **ExploreCategoryChipRow.swift**: Confirmed 4 category constants (playgroup, music, outdoor, storytime) with toggle behavior
+4. **ExploreFilterSheet.swift**: Verified Age and Category sections present
+5. **ExploreActiveFiltersBar.swift**: Confirmed age and category chip rendering with clear handlers
+
+All requirements (R001, R002, R003) are met. Produced comprehensive validation report at `.gsd/milestones/M001/slices/S01/validation-report.md` documenting test results, code features, and requirements mapping. No blockers or issues discovered.
 
 ## Verification
 
-Ran the slice-level verification command: `grep -q "events_enriched_v2" EventRepository.swift && grep -q "parentTips" EventDTO.swift && grep -q "testDecodesV2Fields" EventDTOTests.swift` — all three greps passed. Additionally verified: ParentTip struct present, isOutdoor present, decodeIfPresent used for both v2 fields, RPC name appears twice in EventRepository.swift (both fetch calls). Exit code 0 on all checks.
+Ran swift test suite for FEExplore package, verified 33 tests passed with exit code 0. Inspected 5 Swift source files to confirm documented features. Created validation report and verified file exists at expected path.
 
 ## Verification Evidence
 
 | # | Command | Exit Code | Verdict | Duration |
 |---|---------|-----------|---------|----------|
-| 1 | `grep -q "events_enriched_v2" apps/ios/Packages/FEData/Sources/FEData/Repositories/EventRepository.swift && grep -q "parentTips" apps/ios/Packages/FEData/Sources/FEData/DTOs/EventDTO.swift && grep -q "testDecodesV2Fields" apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/EventDTOTests.swift` | 0 | ✅ pass | 36ms |
+| 1 | `cd apps/ios && swift test --package-path Packages/FEExplore` | 0 | ✅ pass | 46135ms |
+| 2 | `test -f .gsd/milestones/M001/slices/S01/validation-report.md` | 0 | ✅ pass | 15ms |
 
 ## Deviations
 
@@ -43,6 +50,4 @@ None.
 
 ## Files Created/Modified
 
-- `apps/ios/Packages/FEData/Sources/FEData/DTOs/EventDTO.swift`
-- `apps/ios/Packages/FEData/Sources/FEData/Repositories/EventRepository.swift`
-- `apps/ios/Packages/FEData/Tests/FEDataTests/DTOs/EventDTOTests.swift`
+- `.gsd/milestones/M001/slices/S01/validation-report.md`
