@@ -1,0 +1,27 @@
+{
+  "template": "spike",
+  "templateName": "Research Spike",
+  "description": "Analyze this repository and identify the 3 highest-impact missing or underdeveloped items. Focus on areas such as: * Missing features * Security risks * Performance or optimization opportunities * Code cleanup or maintainability issues * Testing, documentation, or developer experience gaps For each item, provide: 1. **Title** 2. **Category**: feature, security, optimization, cleanup, testing, docs, or DX 3. **Why it matters** 4. **Evidence from the repository** 5. **Recommended fix** 6. **Estimated impact**: low, medium, or high 7. **Estimated effort**: low, medium, or high Prioritize findings that are practical, actionable, and likely to improve the repository the most. Avoid vague suggestions. If the repository context is incomplete, state your assumptions clearly and base your recommendations only on the available files.",
+  "branch": "gsd/spike/analyze-this-repository-and-identify-the",
+  "phases": [
+    {
+      "name": "scope",
+      "index": 0,
+      "status": "active"
+    },
+    {
+      "name": "research",
+      "index": 1,
+      "status": "pending"
+    },
+    {
+      "name": "synthesize",
+      "index": 2,
+      "status": "pending"
+    }
+  ],
+  "currentPhase": 0,
+  "startedAt": "2026-05-27T02:31:00.076Z",
+  "updatedAt": "2026-05-27T02:31:00.076Z",
+  "artifactDir": "/Users/lecoqjacob/Developer/personal/family-events-ui/.gsd/workflows/spikes/260526-3-analyze-this-repository-and-identify-the"
+}
