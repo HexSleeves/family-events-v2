@@ -1,13 +1,13 @@
 # GSD State
 
-**Active Milestone:** M002: M002
-**Active Slice:** None
-**Phase:** pre-planning
+**Active Milestone:** M002: Image Generation Fallback Flow - Two-Pass Search
+**Active Slice:** S01: Two-Pass Unsplash Search with Test Coverage
+**Phase:** evaluating-gates
 **Requirements Status:** 0 active · 0 validated · 0 deferred · 0 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** iOS Parity + Geocoding Hardening
-- 🔄 **M002:** M002
+- 🔄 **M002:** Image Generation Fallback Flow - Two-Pass Search
 
 ## Recent Decisions
 - D001 (M001 planning): Where iOS Explore tag and age filtering executes -> Client-side in ExploreViewModel.applyClientFilters, post-fetch
@@ -20,4 +20,4 @@
 - None
 
 ## Next Action
-Plan milestone M002.
+Evaluate 2 quality gate(s) for S01 before execution.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-05-27T15:19:39.380Z",
+  "exported_at": "2026-05-27T15:25:03.879Z",
   "milestones": [
     {
       "id": "M001",
@@ -43,22 +43,65 @@
     },
     {
       "id": "M002",
-      "title": "",
-      "status": "queued",
+      "title": "Image Generation Fallback Flow - Two-Pass Search",
+      "status": "active",
       "depends_on": [],
       "created_at": "2026-05-27T03:20:45.543Z",
       "completed_at": null,
-      "vision": "",
-      "success_criteria": [],
-      "key_risks": [],
-      "proof_strategy": [],
-      "verification_contract": "",
-      "verification_integration": "",
-      "verification_operational": "",
-      "verification_uat": "",
-      "definition_of_done": [],
-      "requirement_coverage": "",
-      "boundary_map_markdown": "",
+      "vision": "Improve relevance of Unsplash fallback images for activity-specific events by trying narrow searches first (without \" family\" suffix), then falling back to broader searches only when the narrow query returns empty. Current implementation dilutes activity-specific queries by always appending \" family\" to every search term.",
+      "success_criteria": [
+        "\"Yoga in the Park\" events get yoga/outdoor activity images (not family portraits)",
+        "\"Mom Walks\" events get walking/trail images (not generic family photos)",
+        "\"Splash Park\" events get water-play images (not generic park landscapes)",
+        "Events with obscure terms still get images via \" family\" suffix fallback",
+        "No rate-limit warnings in production logs after deploy",
+        "All existing unit tests continue to pass"
+      ],
+      "key_risks": [
+        {
+          "risk": "Two-pass logic could fire both queries even when first pass hits",
+          "whyItMatters": "Would waste API calls and increase rate-limit pressure unnecessarily"
+        },
+        {
+          "risk": "Existing random selection or attribution extraction could break",
+          "whyItMatters": "Would cause photo duplication across events or lose photographer credit tracking"
+        },
+        {
+          "risk": "Test execution path unclear (vitest imports but no config at supabase/functions level)",
+          "whyItMatters": "Tests may not run at all currently; changes could ship untested"
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Two-pass logic correctness",
+          "retireIn": "S01 vitest tests",
+          "whatWillBeProven": "First pass with bare term, second pass with suffix only on empty, both passes miss → next term"
+        },
+        {
+          "riskOrUnknown": "No behavior regression in existing search flow",
+          "retireIn": "S01 vitest tests",
+          "whatWillBeProven": "All 20+ existing test cases pass without modification"
+        },
+        {
+          "riskOrUnknown": "Activity-specific events get more relevant images",
+          "retireIn": "S01 manual verification",
+          "whatWillBeProven": "Sample events (Yoga, Splash Park, Mom Walks) show activity-appropriate images in staging"
+        }
+      ],
+      "verification_contract": "Two-pass search must attempt bare term first for each search term in queue (title-derived, then tags in confidence DESC order). If `results.length > 0`, pick randomly and return. If `results.length === 0`, retry with `${searchTerm} family`. Only after second miss should next term be tried. Attribution and random selection must survive across both passes.",
+      "verification_integration": "Backfill cron calls `findFallbackImage()` with `{ title: row.title }` - no changes needed at call site. Two-pass logic is internal to the search function. Deploy to staging, trigger cron manually, query enriched events to verify image URLs reflect activity specificity.",
+      "verification_operational": "Monitor edge function logs for HTTP 429 responses from Unsplash after deploy. Current usage ~2400 req/day; two-pass worst case ~4800 req/day vs 5000/hr limit (120,000/day). No rate-limit warnings expected. If warnings appear, can throttle cron frequency or add per-event delay.",
+      "verification_uat": "After deploy to production, spot-check 10-15 events with activity-specific titles via SQL: `SELECT id, title, images FROM events WHERE title ILIKE '%yoga%' OR title ILIKE '%splash park%' OR title ILIKE '%mom walks%' LIMIT 15`. Visually inspect image URLs - activity-specific photos (not generic family portraits) indicate two-pass logic is working.",
+      "definition_of_done": [
+        "Two-pass search logic implemented in findFallbackImage()",
+        "New test cases cover no-suffix hit, suffix fallback, and both-miss scenarios",
+        "All existing vitest tests pass without regression",
+        "Manual verification shows activity-specific events have relevant images",
+        "No rate-limit warnings in production logs after deploy",
+        "Code reviewed and merged to main"
+      ],
+      "requirement_coverage": "No requirements tracking system in place for this project. This milestone addresses image relevance quality without formal requirement mappings.",
+      "boundary_map_markdown": "```\n┌─────────────────────────────────────────────────────────────┐\n│ supabase/functions/backfill-event-enrichment/index.ts      │\n│ (caller - no changes needed)                                 │\n└──────────────────────┬──────────────────────────────────────┘\n                       │ passes { title: row.title }\n                       ▼\n┌─────────────────────────────────────────────────────────────┐\n│ supabase/functions/_shared/unsplash.ts                      │\n│                                                               │\n│  findFallbackImage(options)  ← CHANGE TARGET                │\n│    ├─ deriveTitleSearchTerm() (existing, unchanged)         │\n│    ├─ searchQueue: [titleTerm, ...tagSlugs]                 │\n│    └─ For each term:                                         │\n│         1. Try bare search (NEW)                             │\n│         2. If empty → try with \" family\" suffix (NEW)       │\n│         3. If hit → pick random + extract attribution       │\n│                                                               │\n└──────────────────────┬──────────────────────────────────────┘\n                       │ returns { url, matchedTag, attribution }\n                       ▼\n┌─────────────────────────────────────────────────────────────┐\n│ Unsplash API (external)                                     │\n│ Rate limit: 5000 req/hr                                      │\n│ Current usage: ~2400 req/day (well under limit)             │\n└─────────────────────────────────────────────────────────────┘\n\nTest Coverage:\nsupabase/functions/_shared/unsplash.test.ts\n  ├─ Existing: 20+ cases (search ordering, random selection, \n  │            attribution, errors, empty results)\n  └─ New: Two-pass scenarios (first hit, suffix fallback, both miss)\n```",
       "sequence": 0
     }
   ],
@@ -83,6 +126,29 @@
       "target_repositories": [
         "project"
       ],
+      "sequence": 1,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M002",
+      "id": "S01",
+      "title": "Two-Pass Unsplash Search with Test Coverage",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [],
+      "demo": "Manual verification shows \"Yoga in the Park\" events get yoga/outdoor images, \"Splash Park\" events get water-play images; all vitest tests pass including new two-pass scenarios; no rate-limit warnings in logs",
+      "created_at": "2026-05-27T15:25:03.875Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Refactor findFallbackImage() to try narrow search first, fall back to \" family\" suffix only when needed, with comprehensive test coverage proving correctness and no regression",
+      "success_criteria": "1. New vitest tests cover: (a) first pass hits → no second query fired, (b) first pass misses → second query with suffix fired, (c) both passes miss → next term tried\n2. All 20+ existing vitest tests pass without modification\n3. Test command `pnpm run test` from root executes tests successfully\n4. Manual spot-check of 10-15 activity-specific events in staging shows relevant images\n5. Production logs show no HTTP 429 responses from Unsplash after deploy",
+      "proof_level": "Unit tests prove two-pass sequencing (first hit, suffix fallback, both miss). Manual QA on sample events proves image relevance improved. Production log monitoring proves no rate-limit issues.",
+      "integration_closure": "Backfill cron at `supabase/functions/backfill-event-enrichment/index.ts` calls `findFallbackImage()` with no changes needed. Two-pass logic is internal to the search function. Deploy to staging, trigger cron via service role key POST request, verify enriched events have activity-appropriate images.",
+      "observability_impact": "No new observability - existing edge function logs already capture Unsplash API responses. Monitor for HTTP 429 (rate limit) responses after deploy. Success metric: zero 429s in first 48 hours post-deploy.",
+      "target_repositories": [],
       "sequence": 1,
       "replan_triggered_at": null,
       "is_sketch": 0,
