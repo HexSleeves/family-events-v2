@@ -1,0 +1,32 @@
+{
+  "template": "refactor",
+  "templateName": "Refactor / Migration",
+  "description": "We need to refactor the image generation / fallback flow. /Users/lecoqjacob/Library/Containers/com.sw33tlie.macshot.macshot/Data/tmp/macshot-clipboard/Screenshot\\ 2026-05-26\\ at\\ 22-12-01.png We aare getting images that have no relevance to the activity / event",
+  "branch": "gsd/refactor/we-need-to-refactor-the-image-generation",
+  "phases": [
+    {
+      "name": "inventory",
+      "index": 0,
+      "status": "active"
+    },
+    {
+      "name": "plan",
+      "index": 1,
+      "status": "pending"
+    },
+    {
+      "name": "migrate",
+      "index": 2,
+      "status": "pending"
+    },
+    {
+      "name": "verify",
+      "index": 3,
+      "status": "pending"
+    }
+  ],
+  "currentPhase": 0,
+  "startedAt": "2026-05-27T03:12:13.961Z",
+  "updatedAt": "2026-05-27T03:12:13.961Z",
+  "artifactDir": "/Users/lecoqjacob/Developer/personal/family-events-ui/.gsd/workflows/refactors/260526-1-we-need-to-refactor-the-image-generation"
+}
