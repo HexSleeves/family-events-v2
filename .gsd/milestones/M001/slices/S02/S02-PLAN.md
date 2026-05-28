@@ -38,7 +38,7 @@ Upstream consumed: `useInvitesRequired()` hook and `resolveInviteRequirement()` 
   - Files: `apps/web/src/features/marketing/pages/marketing.tsx`
   - Verify: pnpm --filter @family-events/web check && pnpm --filter @family-events/web test
 
-- [ ] **T03: Add gate status banner to admin invites page** `est:20m`
+- [x] **T03: Add gate status banner to admin invites page** `est:20m`
   **Why:** The admin invites page manages invite codes and requests but provides no visibility into whether the invite gate is currently enabled or disabled. Admins need to know the current gate state to understand whether the codes they manage are actively required. Satisfies R005.
   - Files: `apps/web/src/features/admin/pages/admin-invites.tsx`
   - Verify: pnpm --filter @family-events/web check && pnpm --filter @family-events/web test && pnpm --filter @family-events/web build

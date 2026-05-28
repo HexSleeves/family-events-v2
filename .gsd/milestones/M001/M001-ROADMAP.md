@@ -15,10 +15,10 @@
 - [x] **S01: CI Green Baseline and Audit Cleanup** `risk:low` `depends:[]`
   > After this: After this: all six CI check commands (web:check, web:test, web:build, packages:check, packages:test, workspace:test) pass with zero failures. Stale files removed, Deno test naming fixed.
 
-- [ ] **S02: Reactive Invite Gate UI** `risk:medium` `depends:[S01]`
+- [x] **S02: Reactive Invite Gate UI** `risk:medium` `depends:[S01]`
   > After this: After this: sign-up, sign-in, marketing page, and admin invites all respond to invites_required() RPC. Gate disabled shows open-registration UI everywhere; gate enabled shows full invite UI.
 
-- [ ] **S03: Disable Invite Gate and Production Runbook** `risk:low` `depends:[S02]`
+- [x] **S03: Disable Invite Gate and Production Runbook** `risk:low` `depends:[S02]`
   > After this: After this: local dev starts with the invite gate disabled (open registration). A production runbook in supabase/docs/ documents the Dashboard steps to flip the gate in production.
 
 - [ ] **S04: Bundle Optimization and Final Verification** `risk:medium` `depends:[S01]`
