@@ -1,7 +1,8 @@
 {
   "pid": 14330,
-  "startedAt": "2026-05-28T03:53:49.384Z",
-  "unitType": "starting",
-  "unitId": "bootstrap",
-  "unitStartedAt": "2026-05-28T03:53:49.384Z"
+  "startedAt": "2026-05-28T06:25:53.086Z",
+  "unitType": "complete-slice",
+  "unitId": "M001/S01",
+  "unitStartedAt": "2026-05-28T06:25:53.087Z",
+  "sessionFile": "/Users/lecoqjacob/.gsd/sessions/--Users-lecoqjacob-Developer-personal-family-events-ui--/2026-05-28T04-22-22-120Z_ab1e9d95-382f-4a18-9ab6-c9a4d83dcac2.jsonl"
 }

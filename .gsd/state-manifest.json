@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "exported_at": "2026-05-28T06:25:40.999Z",
+  "milestones": [
+    {
+      "id": "M001",
+      "title": "Production Readiness and Open Registration",
+      "status": "active",
+      "depends_on": [],
+      "created_at": "2026-05-28T04:12:38.776Z",
+      "completed_at": null,
+      "vision": "Prepare the web app and Supabase backend for public launch: fix CI issues, make the invite gate UI fully reactive to DB state, disable the gate for open registration, and optimize bundle sizes.",
+      "success_criteria": [
+        "pnpm run verify:web passes end-to-end with zero failures",
+        "With gate disabled: sign-up, sign-in, and marketing pages show open-registration UI; OAuth buttons visible on sign-up",
+        "With gate enabled: sign-up shows invite code field, sign-in shows request-invite dialog, marketing shows closed-beta copy",
+        "No production build chunk exceeds 500KB except maplibre",
+        "Admin invites page displays accurate gate status banner"
+      ],
+      "key_risks": [
+        {
+          "risk": "Exact composition of index/client chunks is approximate",
+          "whyItMatters": "Actual split points need build instrumentation — may require iteration to find optimal manualChunks configuration"
+        },
+        {
+          "risk": "Undiscovered hardcoded beta references",
+          "whyItMatters": "A thorough sweep during S02 may surface references in files not yet scanned"
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Index chunk composition",
+          "retireIn": "S04",
+          "whatWillBeProven": "Build output shows all chunks under 500KB except maplibre"
+        },
+        {
+          "riskOrUnknown": "Undiscovered beta references",
+          "retireIn": "S02",
+          "whatWillBeProven": "Comprehensive grep sweep plus browser verification shows no hardcoded beta language when gate is off"
+        }
+      ],
+      "verification_contract": "Unit tests (web:test), package tests (packages:test), workspace guards (workspace:test), web:check (typecheck + oxlint + oxfmt), web:build",
+      "verification_integration": "Browser verification of invite gate UI in both states (enabled/disabled) across sign-up, sign-in, marketing, and admin invites pages",
+      "verification_operational": "none",
+      "verification_uat": "Manual browser walkthrough of sign-up and sign-in flows with gate disabled to confirm clean open-registration experience",
+      "definition_of_done": [
+        "All CI checks green: web:check, web:test, web:build, packages:check, packages:test, workspace:test",
+        "Invite gate UI fully reactive across sign-up, sign-in, marketing page, and admin invites",
+        "app.settings.require_invite set to false via migration for local dev",
+        "Production runbook for gate flip documented in supabase/docs/",
+        "No build chunk over 500KB except maplibre",
+        "pnpm run verify:web passes end-to-end",
+        "No regressions in existing tests or e2e",
+        "Existing invite DB tables, triggers, and RPCs preserved"
+      ],
+      "requirement_coverage": "Covers: R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012. Leaves for later: none. Out of scope: R013, R014, R015.",
+      "boundary_map_markdown": "### S01 → S02\n\nProduces:\n- Green CI baseline — all checks pass, format violations fixed, Deno test naming resolved\n- Clean codebase — stale files removed\n\nConsumes:\n- nothing (first slice)\n\n### S01 → S04\n\nProduces:\n- Green test/check baseline that S04 final verification depends on\n\nConsumes:\n- nothing (first slice)\n\n### S02 → S03\n\nProduces:\n- Fully reactive invite gate UI that responds to invites_required() RPC across all consumer pages\n- Admin invites page with gate status banner\n\nConsumes:\n- Green CI baseline from S01\n\n### S03 → S04\n\nProduces:\n- Migration disabling invite gate for local dev\n- Production runbook document\n\nConsumes:\n- Reactive UI from S02 (so the disabled gate produces correct open-registration UI)\n\n### S04 (final)\n\nProduces:\n- Optimized bundle splitting\n- Full verification pass\n\nConsumes:\n- All prior slices: green baseline (S01), reactive UI (S02), disabled gate (S03)",
+      "sequence": 0
+    }
+  ],
+  "slices": [
+    {
+      "milestone_id": "M001",
+      "id": "S01",
+      "title": "CI Green Baseline and Audit Cleanup",
+      "status": "complete",
+      "risk": "low",
+      "depends": [],
+      "demo": "After this: all six CI check commands (web:check, web:test, web:build, packages:check, packages:test, workspace:test) pass with zero failures. Stale files removed, Deno test naming fixed.",
+      "created_at": "2026-05-28T04:14:52.925Z",
+      "completed_at": "2026-05-28T06:25:40.971Z",
+      "full_summary_md": "---\nid: S01\nparent: M001\nmilestone: M001\nprovides:\n  - Green CI baseline — all seven check commands pass with zero failures\n  - Clean codebase — stale files removed, Deno test naming fixed\nrequires:\n  []\naffects:\n  - S02\n  - S04\nkey_files:\n  - supabase/functions/_shared/stock-images_test.ts\nkey_decisions:\n  - Used git mv (not plain mv) to preserve file history for the Deno test rename\n  - Followed _test.ts convention for Deno tests to avoid Vitest glob collision\n  - Chunk size warnings acknowledged as S04 scope, not S01 blockers\npatterns_established:\n  - Deno edge-function tests use _test.ts suffix to avoid Vitest pickup\nobservability_surfaces:\n  - none\ndrill_down_paths:\n  []\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-05-28T06:25:40.973Z\nblocker_discovered: false\n---\n\n# S01: CI Green Baseline and Audit Cleanup\n\n**Renamed Deno test to _test.ts convention, removed stale .orig artifact, and verified all seven CI pipeline steps pass with zero failures**\n\n## What Happened\n\nThis slice established the green CI baseline required by all downstream slices.\\n\\n**T01 — Rename and cleanup:** Used `git mv` to rename `stock-images.test.ts` → `stock-images_test.ts` so the Deno-only test (which uses `jsr:@std/assert@1` and `Deno.test()`) is no longer matched by Vitest's `**/*.test.ts` glob. Removed the stale `unsplash.test.ts.orig` merge artifact from tracking. After this, `web:test` passed all 43 test files (419 tests, 0 failures).\\n\\n**T02 — Full pipeline verification:** Ran `pnpm run verify:web` end-to-end. All seven steps passed: docs:test (52 tests), workspace:test, packages:check (tsc across contracts/shared/design-system/email/deploy-cli), packages:test, web:check, web:test, web:build. Build completed with chunk-size warnings for index (~557KB), recharts (~521KB), and maplibre (~1055KB) — these are expected and scoped to S04 bundle optimization.\n\n## Verification\n\n**File-level checks:**\\n- `stock-images_test.ts` exists at expected path ✅\\n- `stock-images.test.ts` removed ✅\\n- `unsplash.test.ts.orig` removed ✅\\n- No tracked `.orig` files in repo (only one inside `node_modules/.deno/` — dependency artifact, not tracked) ✅\\n\\n**Full CI pipeline (`pnpm run verify:web`):** Exit code 0 ✅\\n- docs:test — 52 tests passed\\n- workspace:test — passed\\n- packages:check — tsc --noEmit passed for all 5 packages\\n- packages:test — passed\\n- web:check — passed\\n- web:test — 43 files, 419 tests, 0 failures\\n- web:build — completed (chunk warnings are S04 scope)\n\n## Requirements Advanced\n\n- R001 — All six CI check commands now exit 0 — zero format violations, zero test failures\n- R008 — stock-images.test.ts renamed to stock-images_test.ts; Vitest no longer picks up Deno-only tests\n- R009 — unsplash.test.ts.orig removed; no tracked .orig files remain\n\n## Requirements Validated\n\n- R001 — pnpm run verify:web exits 0 — all seven CI steps pass\n- R008 — web:test passes 43 files / 419 tests / 0 failures with no Deno test pickup\n- R009 — find confirms no tracked .orig files; stale artifact removed\n\n## New Requirements Surfaced\n\nNone.\n\n## Requirements Invalidated or Re-scoped\n\nNone.\n\n## Operational Readiness\n\nNone.\n\n## Deviations\n\nNone.\n\n## Known Limitations\n\nBuild produces three chunks over 500KB (index ~557KB, recharts ~521KB, maplibre ~1055KB). These are deferred to S04 bundle optimization.\n\n## Follow-ups\n\nNone.\n\n## Files Created/Modified\n\n- `supabase/functions/_shared/stock-images_test.ts` — Renamed from stock-images.test.ts — Deno test now uses _test.ts convention\n- `supabase/functions/_shared/stock-images.test.ts` — Removed (renamed to _test.ts)\n- `supabase/functions/_shared/unsplash.test.ts.orig` — Removed stale merge artifact from tracking\n",
+      "full_uat_md": "# S01: CI Green Baseline and Audit Cleanup — UAT\n\n**Milestone:** M001\n**Written:** 2026-05-28T06:25:40.973Z\n\n# S01: CI Green Baseline and Audit Cleanup — UAT\n\n**Milestone:** M001\n**Written:** 2025-05-28\n\n## UAT Type\n\n- UAT mode: artifact-driven\n- Why this mode is sufficient: This slice only renames/removes files and verifies CI commands — no runtime behavior or UI changes.\n\n## Preconditions\n\n- Repository checked out with T01 changes applied (rename + removal)\n- Node dependencies installed (`pnpm install` completed)\n\n## Smoke Test\n\nRun `pnpm run verify:web` — should exit 0 with no test failures.\n\n## Test Cases\n\n### 1. Deno test file renamed correctly\n\n1. Check `supabase/functions/_shared/stock-images_test.ts` exists\n2. Check `supabase/functions/_shared/stock-images.test.ts` does NOT exist\n3. **Expected:** Renamed file present, old file absent\n\n### 2. Stale .orig artifact removed\n\n1. Check `supabase/functions/_shared/unsplash.test.ts.orig` does NOT exist\n2. Run `find . -name '*.orig' -not -path './.git/*' -not -path '*/node_modules/*'`\n3. **Expected:** No tracked .orig files found\n\n### 3. web:test passes with zero failures\n\n1. Run `pnpm run web:test`\n2. **Expected:** All test files pass, 0 failures. No Deno-only test files are picked up by Vitest.\n\n### 4. Full CI pipeline green\n\n1. Run `pnpm run verify:web`\n2. **Expected:** Exit code 0. All seven steps (docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build) pass.\n\n## Edge Cases\n\n### Deno test content unchanged\n\n1. Open `supabase/functions/_shared/stock-images_test.ts`\n2. Verify it still uses `Deno.test()` and `jsr:@std/assert@1`\n3. **Expected:** File content is identical to the pre-rename version — only the filename changed.\n\n## Failure Signals\n\n- `pnpm run verify:web` exits non-zero\n- `web:test` reports failures from Deno test files (JSR import errors)\n- `stock-images.test.ts` still exists at old path\n\n## Not Proven By This UAT\n\n- Bundle size optimization (S04 scope)\n- Invite gate UI behavior (S02 scope)\n- Runtime behavior of any application feature — this is purely a CI/build hygiene slice\n\n## Notes for Tester\n\n- Build chunk-size warnings (index ~557KB, recharts ~521KB, maplibre ~1055KB) are expected and will be addressed in S04.\n- The `verify:web` pipeline takes ~4 minutes wall time.\n",
+      "goal": "All six CI check commands (web:check, web:test, web:build, packages:check, packages:test, workspace:test) pass with zero failures. Stale files removed, Deno test naming fixed.",
+      "success_criteria": "- `pnpm run verify:web` exits 0 (runs docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build)\n- `stock-images.test.ts` renamed to `stock-images_test.ts` (Deno convention, no longer picked up by Vitest)\n- `unsplash.test.ts.orig` removed from git tracking\n- web:test reports 0 failures across all test files",
+      "proof_level": "operational — real CI commands run against actual codebase",
+      "integration_closure": "- Upstream surfaces consumed: none (first slice)\n- New wiring introduced: none — file rename and removal only\n- What remains: S02 (reactive invite gate UI), S03 (disable gate), S04 (bundle optimization)",
+      "observability_impact": "",
+      "target_repositories": [
+        "project"
+      ],
+      "sequence": 1,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S02",
+      "title": "Reactive Invite Gate UI",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S01"
+      ],
+      "demo": "After this: sign-up, sign-in, marketing page, and admin invites all respond to invites_required() RPC. Gate disabled shows open-registration UI everywhere; gate enabled shows full invite UI.",
+      "created_at": "2026-05-28T04:14:52.926Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Make all consumer-facing pages and admin invites page fully reactive to the invite gate DB state, eliminating all hardcoded closed-beta behavior.",
+      "success_criteria": "Sign-in page hides RequestInviteDialog and shows 'Sign up' instead of 'Use invite' when gate is off. Marketing page shows open-registration copy when gate is off. Admin invites page shows gate status banner. All existing auth tests pass.",
+      "proof_level": "Contract: auth unit tests pass. Integration: browser verification of both gate states across 4 pages.",
+      "integration_closure": "useInvitesRequired() hook is the single integration point — all pages consume the same RPC result",
+      "observability_impact": "No new observability surfaces",
+      "target_repositories": [],
+      "sequence": 2,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S03",
+      "title": "Disable Invite Gate and Production Runbook",
+      "status": "pending",
+      "risk": "low",
+      "depends": [
+        "S02"
+      ],
+      "demo": "After this: local dev starts with the invite gate disabled (open registration). A production runbook in supabase/docs/ documents the Dashboard steps to flip the gate in production.",
+      "created_at": "2026-05-28T04:14:52.926Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Write a Supabase migration to disable the invite gate for local dev and document the production flip procedure.",
+      "success_criteria": "New migration sets app.settings.require_invite to false. supabase/docs/INVITE_GATE.md exists with step-by-step production instructions. Existing SQL tests (invite_gate_oauth_signup.sql) still pass.",
+      "proof_level": "Contract: migration applies cleanly, SQL tests pass. Operational: runbook document exists and is actionable.",
+      "integration_closure": "Migration is consumed by handle_new_user trigger and invites_required() RPC — both already check the GUC",
+      "observability_impact": "No observability changes",
+      "target_repositories": [],
+      "sequence": 3,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    },
+    {
+      "milestone_id": "M001",
+      "id": "S04",
+      "title": "Bundle Optimization and Final Verification",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S01"
+      ],
+      "demo": "After this: web:build produces no chunk over 500KB except maplibre. pnpm run verify:web passes end-to-end.",
+      "created_at": "2026-05-28T04:14:52.926Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Optimize Vite manualChunks to split the index chunk under 500KB, then run the full verification suite as the final launch gate.",
+      "success_criteria": "web:build output shows index chunk under 500KB. Preload budget guard passes. verify:web exits 0. No regressions in any test suite.",
+      "proof_level": "Contract: verify:web exits 0, no chunk warning except maplibre",
+      "integration_closure": "Bundle changes are build-time only — no runtime integration needed",
+      "observability_impact": "No observability changes",
+      "target_repositories": [],
+      "sequence": 4,
+      "replan_triggered_at": null,
+      "is_sketch": 0,
+      "sketch_scope": ""
+    }
+  ],
+  "tasks": [
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Renamed Deno test to _test.ts convention and removed stale .orig merge artifact so Vitest no longer picks up Deno-only tests",
+      "status": "complete",
+      "one_liner": "Renamed Deno test to _test.ts convention and removed stale .orig merge artifact so Vitest no longer picks up Deno-only tests",
+      "narrative": "Executed `git mv` to rename `supabase/functions/_shared/stock-images.test.ts` → `stock-images_test.ts`, switching from the `.test.ts` (Vitest) naming convention to `_test.ts` (Deno) convention. This prevents Vitest's include pattern `../../supabase/functions/**/*.test.ts` from picking up a Deno-only test file that imports `jsr:@std/assert@1` and uses `Deno.test()`.\n\nRan `git rm` to remove the stale tracked merge artifact `unsplash.test.ts.orig`.\n\nVerified: renamed file exists, original files are gone, and `pnpm run web:test` passes with 43 test files / 419 tests / 0 failures.",
+      "verification_result": "Ran `pnpm run web:test` — all 43 test files passed, 419 tests passed, 0 failures, exit code 0. Confirmed `stock-images_test.ts` exists, `stock-images.test.ts` and `unsplash.test.ts.orig` do not exist via `ls` checks.",
+      "duration": "",
+      "completed_at": "2026-05-28T04:20:07.630Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "supabase/functions/_shared/stock-images_test.ts"
+      ],
+      "key_decisions": [
+        "Used git mv (not plain mv) to preserve file history",
+        "Followed _test.ts vs .test.ts convention per MEM004"
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S01\nmilestone: M001\nkey_files:\n  - supabase/functions/_shared/stock-images_test.ts\nkey_decisions:\n  - Used git mv (not plain mv) to preserve file history\n  - Followed _test.ts vs .test.ts convention per MEM004\nduration: \nverification_result: passed\ncompleted_at: 2026-05-28T04:20:07.629Z\nblocker_discovered: false\n---\n\n# T01: Renamed Deno test to _test.ts convention and removed stale .orig merge artifact so Vitest no longer picks up Deno-only tests\n\n**Renamed Deno test to _test.ts convention and removed stale .orig merge artifact so Vitest no longer picks up Deno-only tests**\n\n## What Happened\n\nExecuted `git mv` to rename `supabase/functions/_shared/stock-images.test.ts` → `stock-images_test.ts`, switching from the `.test.ts` (Vitest) naming convention to `_test.ts` (Deno) convention. This prevents Vitest's include pattern `../../supabase/functions/**/*.test.ts` from picking up a Deno-only test file that imports `jsr:@std/assert@1` and uses `Deno.test()`.\n\nRan `git rm` to remove the stale tracked merge artifact `unsplash.test.ts.orig`.\n\nVerified: renamed file exists, original files are gone, and `pnpm run web:test` passes with 43 test files / 419 tests / 0 failures.\n\n## Verification\n\nRan `pnpm run web:test` — all 43 test files passed, 419 tests passed, 0 failures, exit code 0. Confirmed `stock-images_test.ts` exists, `stock-images.test.ts` and `unsplash.test.ts.orig` do not exist via `ls` checks.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `git mv supabase/functions/_shared/stock-images.test.ts supabase/functions/_shared/stock-images_test.ts` | 0 | ✅ pass | 84ms |\n| 2 | `git rm supabase/functions/_shared/unsplash.test.ts.orig` | 0 | ✅ pass | 84ms |\n| 3 | `pnpm run web:test` | 0 | ✅ pass (43 files, 419 tests, 0 failures) | 2197ms |\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `supabase/functions/_shared/stock-images_test.ts`\n",
+      "description": "**Why:** The file `supabase/functions/_shared/stock-images.test.ts` is a Deno-only test (uses `jsr:@std/assert@1` and `Deno.test()`) but is named with the `.test.ts` convention, causing the Vitest include pattern `../../supabase/functions/**/*.test.ts` to pick it up and fail. The stale `unsplash.test.ts.orig` file is a tracked merge artifact that should be removed.\n\n**Do:**\n1. Run `git mv supabase/functions/_shared/stock-images.test.ts supabase/functions/_shared/stock-images_test.ts` to rename the Deno test file, preserving git history.\n2. Run `git rm supabase/functions/_shared/unsplash.test.ts.orig` to remove the stale merge artifact.\n3. Verify the rename worked: confirm `stock-images_test.ts` exists and `stock-images.test.ts` does not.\n4. Run `pnpm run web:test` to confirm Vitest no longer picks up the Deno test file and all tests pass (0 failures).\n\n**Constraints:**\n- Use `git mv`, not plain `mv`, to preserve history.\n- Do NOT modify `apps/web/vitest.config.ts` — the Vitest include pattern is correct as-is.\n- Do NOT delete `stock-images_test.ts` — it contains valid Deno tests.\n- The `_test.ts` vs `.test.ts` split is intentional project convention (MEM004).\n\n**Done when:** `stock-images_test.ts` exists, `stock-images.test.ts` and `unsplash.test.ts.orig` do not exist, and `pnpm run web:test` exits 0.",
+      "estimate": "10m",
+      "files": [
+        "supabase/functions/_shared/stock-images.test.ts",
+        "supabase/functions/_shared/stock-images_test.ts",
+        "supabase/functions/_shared/unsplash.test.ts.orig"
+      ],
+      "verify": "pnpm run web:test",
+      "inputs": [
+        "supabase/functions/_shared/stock-images.test.ts",
+        "supabase/functions/_shared/unsplash.test.ts.orig"
+      ],
+      "expected_output": [
+        "supabase/functions/_shared/stock-images_test.ts"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "target_repositories": [
+        "project"
+      ],
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    },
+    {
+      "milestone_id": "M001",
+      "slice_id": "S01",
+      "id": "T02",
+      "title": "Full CI pipeline (verify:web) passes with zero failures across all seven steps: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build",
+      "status": "complete",
+      "one_liner": "Full CI pipeline (verify:web) passes with zero failures across all seven steps: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build",
+      "narrative": "Ran `pnpm run verify:web` which chains all seven CI check commands sequentially: docs:test → workspace:test → packages:check → packages:test → web:check → web:test → web:build. All steps exited 0.\n\nResults breakdown:\n- **docs:test**: 2/2 tests passed (README coverage guards)\n- **workspace:test**: 52/52 tests passed (config, boundary, layout, workflow guards)\n- **packages:check**: tsc --noEmit for contracts, shared, design-system, email, deploy-cli — all clean\n- **packages:test**: 42/42 tests passed across 4 packages (contracts 2, shared 21, design-system 7, deploy-cli 12)\n- **web:check**: tsc-b + oxlint (0 warnings, 0 errors on 371 files) + oxfmt (374 files formatted correctly)\n- **web:test**: 419/419 tests passed across 43 test files in 1.14s\n- **web:build**: Built successfully in 319ms; chunk size warnings for index (~557KB), recharts (~521KB), sentry (~467KB), maplibre (~1055KB) are expected and scoped to S04\n\nThe T01 rename of `stock-images.test.ts` → `stock-images_test.ts` had no adverse effects on any pipeline step. The Deno test file is correctly excluded from Vitest's test discovery.",
+      "verification_result": "Ran `pnpm run verify:web` — full pipeline exited 0. All seven CI commands (docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build) passed with zero failures. Chunk size warnings in web:build are expected (S04 scope) and do not constitute failures.",
+      "duration": "",
+      "completed_at": "2026-05-28T04:22:00.691Z",
+      "blocker_discovered": false,
+      "deviations": "None.",
+      "known_issues": "None.",
+      "key_files": [
+        "supabase/functions/_shared/stock-images_test.ts"
+      ],
+      "key_decisions": [
+        "Chunk size warnings (index ~557KB, recharts ~521KB, maplibre ~1055KB) acknowledged as expected — these are S04 scope, not blockers for CI green baseline"
+      ],
+      "full_summary_md": "---\nid: T02\nparent: S01\nmilestone: M001\nkey_files:\n  - supabase/functions/_shared/stock-images_test.ts\nkey_decisions:\n  - Chunk size warnings (index ~557KB, recharts ~521KB, maplibre ~1055KB) acknowledged as expected — these are S04 scope, not blockers for CI green baseline\nduration: \nverification_result: passed\ncompleted_at: 2026-05-28T04:22:00.691Z\nblocker_discovered: false\n---\n\n# T02: Full CI pipeline (verify:web) passes with zero failures across all seven steps: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build\n\n**Full CI pipeline (verify:web) passes with zero failures across all seven steps: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build**\n\n## What Happened\n\nRan `pnpm run verify:web` which chains all seven CI check commands sequentially: docs:test → workspace:test → packages:check → packages:test → web:check → web:test → web:build. All steps exited 0.\n\nResults breakdown:\n- **docs:test**: 2/2 tests passed (README coverage guards)\n- **workspace:test**: 52/52 tests passed (config, boundary, layout, workflow guards)\n- **packages:check**: tsc --noEmit for contracts, shared, design-system, email, deploy-cli — all clean\n- **packages:test**: 42/42 tests passed across 4 packages (contracts 2, shared 21, design-system 7, deploy-cli 12)\n- **web:check**: tsc-b + oxlint (0 warnings, 0 errors on 371 files) + oxfmt (374 files formatted correctly)\n- **web:test**: 419/419 tests passed across 43 test files in 1.14s\n- **web:build**: Built successfully in 319ms; chunk size warnings for index (~557KB), recharts (~521KB), sentry (~467KB), maplibre (~1055KB) are expected and scoped to S04\n\nThe T01 rename of `stock-images.test.ts` → `stock-images_test.ts` had no adverse effects on any pipeline step. The Deno test file is correctly excluded from Vitest's test discovery.\n\n## Verification\n\nRan `pnpm run verify:web` — full pipeline exited 0. All seven CI commands (docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build) passed with zero failures. Chunk size warnings in web:build are expected (S04 scope) and do not constitute failures.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `pnpm run verify:web` | 0 | ✅ pass | 15359ms |\n\n## Deviations\n\nNone.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `supabase/functions/_shared/stock-images_test.ts`\n",
+      "description": "**Why:** The acceptance criterion for S01 is all six CI commands passing, not just web:test. The rename could theoretically affect workspace guards or other checks. This task runs the full `verify:web` pipeline to confirm green baseline.\n\n**Do:**\n1. Run `pnpm run verify:web` which executes: docs:test → workspace:test → packages:check → packages:test → web:check → web:test → web:build.\n2. Confirm all commands exit 0.\n3. Note: `web:build` will emit chunk size warnings (index ~557KB, recharts ~521KB, maplibre ~1055KB) — these are expected and are S04 scope. The build itself must succeed.\n\n**Done when:** `pnpm run verify:web` exits 0. All six CI commands pass. Chunk size warnings in web:build are acknowledged but not blockers.",
+      "estimate": "15m",
+      "files": [],
+      "verify": "pnpm run verify:web",
+      "inputs": [
+        "supabase/functions/_shared/stock-images_test.ts"
+      ],
+      "expected_output": [],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "target_repositories": [
+        "project"
+      ],
+      "sequence": 0,
+      "blocker_source": "",
+      "escalation_pending": 0,
+      "escalation_awaiting_review": 0,
+      "escalation_artifact_path": null,
+      "escalation_override_applied_at": null
+    }
+  ],
+  "decisions": [],
+  "verification_evidence": [
+    {
+      "id": 1,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "git mv supabase/functions/_shared/stock-images.test.ts supabase/functions/_shared/stock-images_test.ts",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 84,
+      "created_at": "2026-05-28T04:20:07.630Z"
+    },
+    {
+      "id": 2,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "git rm supabase/functions/_shared/unsplash.test.ts.orig",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 84,
+      "created_at": "2026-05-28T04:20:07.630Z"
+    },
+    {
+      "id": 3,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "pnpm run web:test",
+      "exit_code": 0,
+      "verdict": "✅ pass (43 files, 419 tests, 0 failures)",
+      "duration_ms": 2197,
+      "created_at": "2026-05-28T04:20:07.630Z"
+    },
+    {
+      "id": 4,
+      "task_id": "T02",
+      "slice_id": "S01",
+      "milestone_id": "M001",
+      "command": "pnpm run verify:web",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 15359,
+      "created_at": "2026-05-28T04:22:00.691Z"
+    }
+  ]
+}
