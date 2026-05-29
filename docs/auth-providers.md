@@ -82,10 +82,8 @@ left at the default, Google can show the Supabase project host
 - **User support email:** an address monitored by the project owner.
 - **App logo:** Family Events production logo.
 - **Application home page:** `https://family-events.org`
-- **Privacy Policy:** a published URL under `family-events.org`
-  (for example, `https://family-events.org/privacy` once that page exists).
-- **Terms of Service:** a published URL under `family-events.org`
-  (for example, `https://family-events.org/terms` once that page exists).
+- **Privacy Policy:** `https://family-events.org/privacy`
+- **Terms of Service:** `https://family-events.org/terms`
 - **Authorized domains:** `family-events.org`
 
 Google brand verification can take a few business days. Until a Supabase
