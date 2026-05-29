@@ -24,7 +24,8 @@
       "scrape-source",
       "send-auth-email",
       "share-og",
-      "tag-event"
+      "tag-event",
+      "weather"
     ],
     "noVerifyJwtFunctions": [
       "backfill-event-enrichment",
