@@ -1,6 +1,6 @@
 # GSD State
 
-**Last Completed Milestone:** M001: Production Readiness and Open Registration
+**Active Milestone:** None
 **Active Slice:** None
 **Phase:** complete
 **Requirements Status:** 0 active · 12 validated · 0 deferred · 3 out of scope
