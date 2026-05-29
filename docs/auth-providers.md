@@ -85,6 +85,9 @@ left at the default, Google can show the Supabase project host
 - **Privacy Policy:** `https://family-events.org/privacy`
 - **Terms of Service:** `https://family-events.org/terms`
 - **Authorized domains:** `family-events.org`
+- **Search Console verification:** set Railway build variable
+  `VITE_GOOGLE_SITE_VERIFICATION` to the token from
+  `<meta name="google-site-verification" content="...">` and redeploy.
 
 Google brand verification can take a few business days. Until a Supabase
 custom auth domain is active, the OAuth callback still uses the Supabase
