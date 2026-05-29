@@ -80,7 +80,7 @@ left at the default, Google can show the Supabase project host
 
 - **App name:** `Family Events`
 - **User support email:** an address monitored by the project owner.
-- **App logo:** Family Events production logo.
+- **App logo:** use `apps/web/public/brand/family-events-icon.png`.
 - **Application home page:** `https://family-events.org`
 - **Privacy Policy:** `https://family-events.org/privacy`
 - **Terms of Service:** `https://family-events.org/terms`

@@ -11,6 +11,7 @@
   "supabase": {
     "functions": [
       "admin-run-cron",
+      "backfill-embeddings",
       "backfill-event-enrichment",
       "cleanup-stale-runs",
       "db-maintenance",
@@ -29,6 +30,7 @@
       "weather"
     ],
     "noVerifyJwtFunctions": [
+      "backfill-embeddings",
       "backfill-event-enrichment",
       "cleanup-stale-runs",
       "db-maintenance",
