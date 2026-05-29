@@ -85,6 +85,9 @@ left at the default, Google can show the Supabase project host
 - **Privacy Policy:** `https://family-events.org/privacy`
 - **Terms of Service:** `https://family-events.org/terms`
 - **Authorized domains:** `family-events.org`
+- **Production app URL:** set Railway build variable
+  `VITE_SITE_URL=https://family-events.org` so Supabase OAuth, magic-link, and
+  password-reset redirects do not fall back to localhost.
 - **Search Console verification:** set Railway build variable
   `VITE_GOOGLE_SITE_VERIFICATION` to the token from
   `<meta name="google-site-verification" content="...">` and redeploy.

@@ -44,6 +44,8 @@ In Railway dashboard → Variables tab → add:
 |----------|-------|------------|
 | `VITE_SUPABASE_URL` | `https://YOUR_REF.supabase.co` | Supabase Dashboard → Settings → API |
 | `VITE_SUPABASE_ANON_KEY` | `eyJhb...` | Supabase Dashboard → Settings → API → anon/public |
+| `VITE_SITE_URL` | `https://family-events.org` | Production app origin for auth redirects |
+| `VITE_GOOGLE_SITE_VERIFICATION` | Search Console token only | Google Search Console ownership verification |
 
 **Why these matter at build time:** Vite replaces `import.meta.env.VITE_*` at
 build, not runtime. Railway passes build-time env vars to Railpack, which
