@@ -46,6 +46,8 @@ supabase/*backup*.sql
 supabase/*dump*.sql
 *.dump
 *.sql.gz
+*.bak
+*.backup
 
 .claude/
 .augment/
