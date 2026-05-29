@@ -96,6 +96,7 @@ node_modules/
 
 # ── GSD runtime / ephemeral (never commit) ──
 # These are machine-managed, session-local, or may contain secrets in captured stdout.
+.gsd/
 .gsd/exec/
 .gsd/activity/
 .gsd/audit/
