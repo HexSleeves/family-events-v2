@@ -1,7 +1,6 @@
 {
   "mcpServers": {
     "supabase": {
-      "type": "stdio",
       "url": "https://mcp.supabase.com/mcp?project_ref=ufrjcnozcapskjtoakvf"
     },
     "task-master-ai": {
