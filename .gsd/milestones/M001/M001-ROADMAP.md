@@ -21,7 +21,7 @@
 - [x] **S03: Disable Invite Gate and Production Runbook** `risk:low` `depends:[S02]`
   > After this: After this: local dev starts with the invite gate disabled (open registration). A production runbook in supabase/docs/ documents the Dashboard steps to flip the gate in production.
 
-- [ ] **S04: Bundle Optimization and Final Verification** `risk:medium` `depends:[S01]`
+- [x] **S04: Bundle Optimization and Final Verification** `risk:medium` `depends:[S01]`
   > After this: After this: web:build produces no chunk over 500KB except maplibre. pnpm run verify:web passes end-to-end.
 
 ## Boundary Map

@@ -4,42 +4,6 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Active
 
-### R007 — Production deployment runbook documents the steps to disable the invite gate in Supabase Dashboard, including vault/GUC setting path and verification steps.
-- Class: operability
-- Status: active
-- Description: Production deployment runbook documents the steps to disable the invite gate in Supabase Dashboard, including vault/GUC setting path and verification steps.
-- Why it matters: Production gate flip cannot be automated via migration. A clear runbook prevents deployment mistakes.
-- Source: user
-- Primary owning slice: M001/S03
-- Validation: Runbook document exists with step-by-step instructions
-
-### R010 — Vite manualChunks configuration splits the index chunk (currently 557KB) and client chunk (283KB) so no production chunk exceeds 500KB except maplibre (inherently large, already isolated).
-- Class: quality-attribute
-- Status: active
-- Description: Vite manualChunks configuration splits the index chunk (currently 557KB) and client chunk (283KB) so no production chunk exceeds 500KB except maplibre (inherently large, already isolated).
-- Why it matters: Large initial JS payloads hurt first-paint performance and mobile experience. The build already warns about chunks over 500KB.
-- Source: user
-- Primary owning slice: M001/S04
-- Validation: pnpm run web:build produces no chunk warnings except maplibre; preload budget guard passes
-
-### R011 — All existing unit tests (web:test), e2e tests (test:e2e), package tests (packages:test), and workspace guards (workspace:test) continue to pass after all changes.
-- Class: quality-attribute
-- Status: active
-- Description: All existing unit tests (web:test), e2e tests (test:e2e), package tests (packages:test), and workspace guards (workspace:test) continue to pass after all changes.
-- Why it matters: No regressions from audit cleanup or invite gate changes.
-- Source: inferred
-- Primary owning slice: M001/S04
-- Validation: All test suites exit 0
-
-### R012 — pnpm run verify:web passes end-to-end as the final gate before launch.
-- Class: launchability
-- Status: active
-- Description: pnpm run verify:web passes end-to-end as the final gate before launch.
-- Why it matters: verify:web is the canonical pre-push verification that covers docs, workspace guards, checks, tests, and build. It must be green for production confidence.
-- Source: user
-- Primary owning slice: M001/S04
-- Validation: verify:web exits 0
-
 ## Validated
 
 ### R001 — All CI checks pass: web:check (typecheck + oxlint + oxfmt), web:test, web:build, packages:check, packages:test, workspace:test. Zero format violations, zero test failures.
@@ -97,6 +61,15 @@ This file is the explicit capability and coverage contract for the project.
 - Primary owning slice: M001/S03
 - Validation: Migration 20260601012000_disable_invite_gate.sql sets app.settings.require_invite='false' at database level. Verified via grep and migration ordering checks. Production runbook documented in supabase/docs/INVITE_GATE.md. Web tests (419 passing) unaffected.
 
+### R007 — Production deployment runbook documents the steps to disable the invite gate in Supabase Dashboard, including vault/GUC setting path and verification steps.
+- Class: operability
+- Status: validated
+- Description: Production deployment runbook documents the steps to disable the invite gate in Supabase Dashboard, including vault/GUC setting path and verification steps.
+- Why it matters: Production gate flip cannot be automated via migration. A clear runbook prevents deployment mistakes.
+- Source: user
+- Primary owning slice: M001/S03
+- Validation: supabase/docs/INVITE_GATE.md (87 lines) contains all required sections: Disable, Re-enable, Verification, Affected Functions, Local Development, See Also. Uses same style as PRODUCTION_SETUP.md. Includes reconnection caveat for pooled connections.
+
 ### R008 — Deno edge function tests use consistent _test.ts naming convention. The stock-images.test.ts file is either renamed or converted so Vitest does not pick it up.
 - Class: quality-attribute
 - Status: validated
@@ -114,6 +87,33 @@ This file is the explicit capability and coverage contract for the project.
 - Source: inferred
 - Primary owning slice: M001/S01
 - Validation: unsplash.test.ts.orig removed; find confirms no tracked .orig files remain outside node_modules
+
+### R010 — Vite manualChunks configuration splits the index chunk (currently 557KB) and client chunk (283KB) so no production chunk exceeds 500KB except maplibre (inherently large, already isolated).
+- Class: quality-attribute
+- Status: validated
+- Description: Vite manualChunks configuration splits the index chunk (currently 557KB) and client chunk (283KB) so no production chunk exceeds 500KB except maplibre (inherently large, already isolated).
+- Why it matters: Large initial JS payloads hurt first-paint performance and mobile experience. The build already warns about chunks over 500KB.
+- Source: user
+- Primary owning slice: M001/S04
+- Validation: Build output confirms: index 476KB, recharts 458KB, sentry 467KB — all <500KB. Only maplibre (1055KB) exceeds limit (exempt). New vendor chunks: date-fns 23KB, d3 63KB, radix-ui 123KB, supabase 199KB. Preload budget guard passes.
+
+### R011 — All existing unit tests (web:test), e2e tests (test:e2e), package tests (packages:test), and workspace guards (workspace:test) continue to pass after all changes.
+- Class: quality-attribute
+- Status: validated
+- Description: All existing unit tests (web:test), e2e tests (test:e2e), package tests (packages:test), and workspace guards (workspace:test) continue to pass after all changes.
+- Why it matters: No regressions from audit cleanup or invite gate changes.
+- Source: inferred
+- Primary owning slice: M001/S04
+- Validation: verify:web exits 0 — all 7 steps pass: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build. 515 tests, 0 failures.
+
+### R012 — pnpm run verify:web passes end-to-end as the final gate before launch.
+- Class: launchability
+- Status: validated
+- Description: pnpm run verify:web passes end-to-end as the final gate before launch.
+- Why it matters: verify:web is the canonical pre-push verification that covers docs, workspace guards, checks, tests, and build. It must be green for production confidence.
+- Source: user
+- Primary owning slice: M001/S04
+- Validation: pnpm run verify:web exits 0 end-to-end in 59s. All 7 pipeline steps pass. Bundle budget guard passes. Only warning is maplibre chunk size (expected/exempt).
 
 ## Deferred
 
@@ -150,19 +150,19 @@ This file is the explicit capability and coverage contract for the project.
 | R004 | core-capability | validated | M001/S02 | none | Sign-in page wraps RequestInviteDialog in {requiresInvite && ...} and uses ternary for link text. When gate off: "Sign up" text, no dialog. Verified via TypeScript and 419 passing tests. |
 | R005 | operability | validated | M001/S02 | none | Admin invites page shows gate status banner with ShieldCheck/ShieldOff icons and Badge variants for enabled/disabled states, plus loading and error states. Verified via TypeScript, 419 tests, and production build. |
 | R006 | core-capability | validated | M001/S03 | none | Migration 20260601012000_disable_invite_gate.sql sets app.settings.require_invite='false' at database level. Verified via grep and migration ordering checks. Production runbook documented in supabase/docs/INVITE_GATE.md. Web tests (419 passing) unaffected. |
-| R007 | operability | active | M001/S03 | none | Runbook document exists with step-by-step instructions |
+| R007 | operability | validated | M001/S03 | none | supabase/docs/INVITE_GATE.md (87 lines) contains all required sections: Disable, Re-enable, Verification, Affected Functions, Local Development, See Also. Uses same style as PRODUCTION_SETUP.md. Includes reconnection caveat for pooled connections. |
 | R008 | quality-attribute | validated | M001/S01 | none | stock-images.test.ts renamed to stock-images_test.ts; web:test passes 43 files / 419 tests / 0 failures with no Deno test pickup |
 | R009 | quality-attribute | validated | M001/S01 | none | unsplash.test.ts.orig removed; find confirms no tracked .orig files remain outside node_modules |
-| R010 | quality-attribute | active | M001/S04 | none | pnpm run web:build produces no chunk warnings except maplibre; preload budget guard passes |
-| R011 | quality-attribute | active | M001/S04 | none | All test suites exit 0 |
-| R012 | launchability | active | M001/S04 | none | verify:web exits 0 |
+| R010 | quality-attribute | validated | M001/S04 | none | Build output confirms: index 476KB, recharts 458KB, sentry 467KB — all <500KB. Only maplibre (1055KB) exceeds limit (exempt). New vendor chunks: date-fns 23KB, d3 63KB, radix-ui 123KB, supabase 199KB. Preload budget guard passes. |
+| R011 | quality-attribute | validated | M001/S04 | none | verify:web exits 0 — all 7 steps pass: docs:test, workspace:test, packages:check, packages:test, web:check, web:test, web:build. 515 tests, 0 failures. |
+| R012 | launchability | validated | M001/S04 | none | pnpm run verify:web exits 0 end-to-end in 59s. All 7 pipeline steps pass. Bundle budget guard passes. Only warning is maplibre chunk size (expected/exempt). |
 | R013 | constraint | out-of-scope | none | none | unmapped |
 | R014 | constraint | out-of-scope | none | none | unmapped |
 | R015 | constraint | out-of-scope | none | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 4
-- Mapped to slices: 4
-- Validated: 8 (R001, R002, R003, R004, R005, R006, R008, R009)
+- Active requirements: 0
+- Mapped to slices: 0
+- Validated: 12 (R001, R002, R003, R004, R005, R006, R007, R008, R009, R010, R011, R012)
 - Unmapped active requirements: 0
