@@ -187,10 +187,6 @@ importers:
   packages/config-typescript: {}
 
   packages/contracts:
-    dependencies:
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@family-events/config-quality':
         specifier: workspace:*

@@ -135,3 +135,22 @@ pnpm run ios:test
 # Pre-push (runs all of the above)
 pnpm run verify:workflow
 ```
+
+## Local agent push gate
+
+AI agents must install and honor the tracked pre-push hook before pushing from
+this checkout:
+
+```bash
+pnpm run agents:install-hooks
+```
+
+The hook runs:
+
+```bash
+pnpm run agents:pre-push
+```
+
+which delegates to `pnpm run verify:workflow`. Do not bypass it unless the user
+explicitly asks for an emergency push; the escape hatch is
+`FAMILY_EVENTS_SKIP_AGENT_PRE_PUSH=1`.

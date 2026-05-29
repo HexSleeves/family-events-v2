@@ -11,15 +11,11 @@
       "entry": [".agents/**/*.ts", "scripts/*.mjs", "tests/**/*.mjs", "tests/**/*.ts"],
       "project": [".agents/**/*.ts", "scripts/*.mjs", "tests/**/*.mjs", "tests/**/*.ts"]
     },
-    "apps/android": {
-      "ignoreBinaries": ["scripts/with-android-env.sh"]
-    },
     "apps/ios": {
       "ignoreBinaries": ["awk", "swift", "xcode-select", "xcodegen", "xcrun"]
     },
     "apps/web": {
       "entry": [
-        "src/main.tsx!",
         "src/env.d.ts",
         "vite.config.ts!",
         "src/**/*.test.ts",
@@ -50,7 +46,7 @@
       "ignoreFiles": ["src/generated/**"]
     },
     "packages/email": {
-      "entry": ["src/index.ts!", "scripts/deploy-templates.tsx!", "emails/**/*.tsx!"],
+      "entry": ["emails/**/*.tsx!"],
       "project": ["src/**/*.ts!", "emails/**/*.tsx!", "scripts/**/*.tsx!"],
       "react-email": false,
       "ignoreDependencies": ["@family-events/config-typescript"]

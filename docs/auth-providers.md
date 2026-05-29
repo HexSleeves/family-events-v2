@@ -72,6 +72,26 @@ returning `invalid_client`.
 
 ## 2. Google — Sign in with Google
 
+### Google Auth Platform → Branding
+
+This is production-critical, not cosmetic. If the OAuth client branding is
+left at the default, Google can show the Supabase project host
+(`ufrjcnozcapskjtoakvf.supabase.co`) as the app the user is signing in to.
+
+- **App name:** `Family Events`
+- **User support email:** an address monitored by the project owner.
+- **App logo:** Family Events production logo.
+- **Application home page:** `https://family-events.org`
+- **Privacy Policy:** a published URL under `family-events.org`
+  (for example, `https://family-events.org/privacy` once that page exists).
+- **Terms of Service:** a published URL under `family-events.org`
+  (for example, `https://family-events.org/terms` once that page exists).
+- **Authorized domains:** `family-events.org`
+
+Google brand verification can take a few business days. Until a Supabase
+custom auth domain is active, the OAuth callback still uses the Supabase
+project host, so the branding screen may retain some Supabase-host context.
+
 ### Google Cloud Console → APIs & Services → Credentials
 
 You need **three** OAuth 2.0 client IDs.
@@ -80,10 +100,12 @@ You need **three** OAuth 2.0 client IDs.
 
 - **Application type:** Web application
 - **Authorized JavaScript origins:**
+  - `https://family-events.org`
   - `https://family-events.up.railway.app`
   - `http://localhost:5173` (dev)
 - **Authorized redirect URIs:**
-  - `https://<project>.supabase.co/auth/v1/callback`
+  - `https://ufrjcnozcapskjtoakvf.supabase.co/auth/v1/callback`
+  - `http://127.0.0.1:54321/auth/v1/callback` (local Supabase)
 - Record **Client ID** and **Client Secret**.
 
 #### iOS client (used by GoogleSignIn SDK on iOS)
@@ -108,6 +130,27 @@ You need **three** OAuth 2.0 client IDs.
 - **Client Secret (for OAuth):** the web client secret.
 - **Skip nonce checks:** off (default).
 
+### Optional: Supabase custom auth domain
+
+The cleanest production consent screen uses an owned auth host such as
+`auth.family-events.org` instead of the generated Supabase project host.
+This requires the Supabase Custom Domain add-on and a DNS change.
+
+```bash
+supabase domains create --custom-hostname auth.family-events.org --project-ref ufrjcnozcapskjtoakvf
+supabase domains get --project-ref ufrjcnozcapskjtoakvf
+supabase domains activate --project-ref ufrjcnozcapskjtoakvf
+```
+
+After activation:
+
+1. Add `https://auth.family-events.org/auth/v1/callback` to the Google web
+   client's **Authorized redirect URIs**.
+2. Update production `VITE_SUPABASE_URL` to `https://auth.family-events.org`.
+3. Redeploy web and mobile clients that still point at the generated Supabase
+   host. After activation, Supabase Auth no longer serves OAuth callbacks on
+   the generated host.
+
 ### Local development
 
 Set in `supabase/.env`:
@@ -122,7 +165,7 @@ SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<web client secret>
 ### Web
 
 1. Start `supabase start` (or use hosted).
-2. `pnpm --filter family-events-web dev`
+2. `pnpm --filter @family-events/web dev`
 3. Visit `/sign-in` → click "Continue with Apple" / "Continue with Google".
 4. Provider consent screen should appear. After approval the browser bounces
    to `/auth/callback` then to `/`.

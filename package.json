@@ -34,6 +34,8 @@
     "verify:ios": "pnpm run ios:test",
     "verify:android": "bash -c 'pnpm run android:check && pnpm run android:test && pnpm run android:build'",
     "verify:full": "bash -c 'pnpm run verify:web && pnpm run verify:ios && pnpm run verify:android'",
+    "agents:pre-push": "bash scripts/agent-pre-push.sh",
+    "agents:install-hooks": "git config core.hooksPath .githooks",
     "test:e2e": "pnpm --filter @family-events/web test:e2e",
     "ios:generate": "pnpm --filter @family-events/ios generate",
     "ios:test": "pnpm --filter @family-events/ios test",
