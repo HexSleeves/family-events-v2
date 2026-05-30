@@ -1,4 +1,4 @@
-import { DOMParser } from "@b-fuze/deno-dom";
+import { DOMParser, type Element } from "@b-fuze/deno-dom";
 import {
   cleanDescription,
   extractPrice,
@@ -7,12 +7,39 @@ import {
   stripHtml,
 } from "../../_shared/parsing.ts";
 import { validateExternalUrl } from "../../_shared/url-validation.ts";
-import { dateStampToWallClockIso } from "../lib/date.ts";
+import { dateStampToWallClockIso, wallClockToIso } from "../lib/date.ts";
 import type { ParsedEvent } from "../lib/types.ts";
 import type { SourceParser } from "./_lib/types.ts";
 
 type StructuredEvent = ParsedEvent & {
   sourceUrl: string | null;
+};
+
+const MONTHS: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
 };
 
 function toArray(value: unknown): unknown[] {
@@ -155,6 +182,151 @@ function normalizeUrl(value: string | null, baseUrl: string): string | null {
   } catch {
     return null;
   }
+}
+
+function validImageUrl(value: string | null, baseUrl: string): string | null {
+  const normalized = normalizeUrl(value, baseUrl);
+  return normalized && validateExternalUrl(normalized).ok ? normalized : null;
+}
+
+function textFromFirst(root: Element, selectors: string[]): string | null {
+  for (const selector of selectors) {
+    const text = pickText(root.querySelector(selector)?.textContent);
+    if (text) {
+      return text;
+    }
+  }
+  return null;
+}
+
+function attrFromFirst(
+  root: Element,
+  selectors: string[],
+  attrs: string[],
+): string | null {
+  for (const selector of selectors) {
+    const node = root.querySelector(selector);
+    if (!node) {
+      continue;
+    }
+    for (const attr of attrs) {
+      const value = node.getAttribute(attr);
+      if (value?.trim()) {
+        return value.trim();
+      }
+    }
+  }
+  return null;
+}
+
+function parseDateParts(
+  monthText: string | null,
+  dayText: string | null,
+  yearText: string | null,
+): { year: number; month: number; day: number } | null {
+  if (!monthText || !dayText || !yearText) {
+    return null;
+  }
+  const month = MONTHS[monthText.trim().toLowerCase()];
+  const day = Number(dayText.trim());
+  const year = Number(yearText.trim());
+  if (!month || !Number.isFinite(day) || !Number.isFinite(year)) {
+    return null;
+  }
+  return { year, month, day };
+}
+
+function parseDateFromTextParts(
+  rawDate: string,
+): { year: number; month: number; day: number } | null {
+  const match = normalizeExtractedText(rawDate).match(
+    /\b([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(20\d{2}))?\b/,
+  );
+  if (!match?.[3]) {
+    return null;
+  }
+  return parseDateParts(match[1], match[2], match[3]);
+}
+
+function parseIsoDateStamp(value: string | null): {
+  year: number;
+  month: number;
+  day: number;
+} | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+function toIsoForDateClock(
+  date: { year: number; month: number; day: number },
+  clock: { hour: number; minute: number },
+  timeZone: string,
+): string {
+  return wallClockToIso(
+    { ...date, hour: clock.hour, minute: clock.minute },
+    timeZone,
+  );
+}
+
+function parseTimeRangeForDate(
+  date: { year: number; month: number; day: number },
+  rawTime: string,
+  timeZone: string,
+): { startDatetime: string; endDatetime: string | null } | null {
+  const normalized = normalizeExtractedText(rawTime);
+  const [rawStart, rawEnd] = normalized.split(/\s*(?:-|to)\s*/i);
+  const startClock = parseClock(rawStart ?? "");
+  if (!startClock) {
+    return null;
+  }
+
+  const startDatetime = toIsoForDateClock(date, startClock, timeZone);
+  const endClock = parseClock(rawEnd ?? "");
+  let endDatetime = endClock
+    ? toIsoForDateClock(date, endClock, timeZone)
+    : null;
+  if (
+    endDatetime &&
+    new Date(endDatetime).getTime() <= new Date(startDatetime).getTime()
+  ) {
+    endDatetime = new Date(
+      new Date(endDatetime).getTime() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+  }
+
+  return { startDatetime, endDatetime };
+}
+
+function parseHumanDateTimeRange(
+  raw: string,
+  fallbackYear: number | null,
+  timeZone: string,
+): { startDatetime: string; endDatetime: string | null } | null {
+  const normalized = normalizeExtractedText(raw);
+  const match = normalized.match(
+    /\b([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(20\d{2}))?\s*@\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m?\.?)(?:\s*(?:-|to)\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m?\.?))?/i,
+  );
+  if (!match) {
+    return null;
+  }
+  const date = parseDateParts(
+    match[1],
+    match[2],
+    match[3] ?? (fallbackYear ? String(fallbackYear) : null),
+  );
+  if (!date) {
+    return null;
+  }
+  return parseTimeRangeForDate(date, [match[4], match[5]].filter(Boolean).join(
+    " - ",
+  ), timeZone);
 }
 
 function offerPrice(value: unknown): number | null {
@@ -352,6 +524,211 @@ function parseMecCalendarEvents(
   return events;
 }
 
+function parseBatonRougeZooCards(
+  doc: ReturnType<DOMParser["parseFromString"]>,
+  sourceUrl: string,
+  timeZone: string,
+): ParsedEvent[] {
+  if (!doc) {
+    return [];
+  }
+
+  const events: ParsedEvent[] = [];
+  const seenKeys = new Set<string>();
+  for (const item of doc.querySelectorAll(".repeater-list-item")) {
+    const element = item as Element;
+    const title = textFromFirst(element, [
+      ".repeater-list-card-img-lg-item-header",
+      "h3",
+    ]);
+    const linkHref = attrFromFirst(element, ["a[href]"], ["href"]);
+    const eventUrl = normalizeUrl(linkHref, sourceUrl);
+    const urlDate = eventUrl ? new URL(eventUrl).searchParams.get("occdate") : null;
+    const date = parseIsoDateStamp(urlDate) ?? parseDateParts(
+      textFromFirst(element, [".event-month"]),
+      textFromFirst(element, [".event-day"]),
+      new Date().getUTCFullYear().toString(),
+    );
+    const timeText = textFromFirst(element, [".item-time"]);
+    if (!title || !date || !timeText) {
+      continue;
+    }
+    const parsedTime = parseTimeRangeForDate(date, timeText, timeZone);
+    if (!parsedTime) {
+      continue;
+    }
+
+    const imageUrl = validImageUrl(
+      attrFromFirst(element, ["img", "source"], [
+        "data-src",
+        "src",
+        "data-image",
+      ]),
+      sourceUrl,
+    );
+    const description = cleanDescription(
+      [title, timeText].filter(Boolean).join(" — "),
+    );
+    const priceInfo = extractPrice(description);
+    const key = `${eventUrl ?? title}::${parsedTime.startDatetime}`;
+    if (seenKeys.has(key)) {
+      continue;
+    }
+    seenKeys.add(key);
+    events.push({
+      title,
+      description: description.slice(0, 500),
+      startDatetime: parsedTime.startDatetime,
+      endDatetime: parsedTime.endDatetime,
+      venueName: "BREC's Baton Rouge Zoo",
+      address: "3601 Thomas Rd, Baton Rouge, LA 70807",
+      sourceUrl: eventUrl,
+      imageUrl,
+      images: imageUrl ? [imageUrl] : [],
+      price: priceInfo.price,
+      isFree: priceInfo.isFree,
+    });
+  }
+
+  return events;
+}
+
+function firstYearFromDocument(
+  doc: ReturnType<DOMParser["parseFromString"]>,
+): number | null {
+  if (!doc) {
+    return null;
+  }
+  const match = doc.body?.textContent?.match(/\b(20\d{2})\b/);
+  return match ? Number(match[1]) : null;
+}
+
+function parseAllInOneCalendarEvents(
+  doc: ReturnType<DOMParser["parseFromString"]>,
+  sourceUrl: string,
+  timeZone: string,
+): ParsedEvent[] {
+  if (!doc) {
+    return [];
+  }
+
+  const fallbackYear = firstYearFromDocument(doc);
+  const events: ParsedEvent[] = [];
+  const seenKeys = new Set<string>();
+  for (const popover of doc.querySelectorAll(".ai1ec-popover")) {
+    const element = popover as Element;
+    const title = textFromFirst(element, [
+      ".ai1ec-popup-title a",
+      ".ai1ec-event-title",
+    ]);
+    const eventUrl = normalizeUrl(
+      attrFromFirst(element, [".ai1ec-popup-title a[href]", "a[href]"], [
+        "href",
+      ]),
+      sourceUrl,
+    );
+    const timeText = textFromFirst(element, [".ai1ec-event-time"]);
+    const parsedTime = timeText
+      ? parseHumanDateTimeRange(timeText, fallbackYear, timeZone)
+      : null;
+    if (!title || !parsedTime) {
+      continue;
+    }
+
+    const rawLocation = textFromFirst(element, [".ai1ec-event-location"]);
+    const venueName = rawLocation?.replace(/^@\s*/, "") || null;
+    const description = cleanDescription(
+      textFromFirst(element, [".ai1ec-event-description"]) ?? title,
+    );
+    const priceInfo = extractPrice(description);
+    const key = `${eventUrl ?? title}::${parsedTime.startDatetime}`;
+    if (seenKeys.has(key)) {
+      continue;
+    }
+    seenKeys.add(key);
+    events.push({
+      title,
+      description: description.slice(0, 500),
+      startDatetime: parsedTime.startDatetime,
+      endDatetime: parsedTime.endDatetime,
+      venueName,
+      address: venueName,
+      sourceUrl: eventUrl,
+      imageUrl: null,
+      images: [],
+      price: priceInfo.price,
+      isFree: priceInfo.isFree,
+    });
+  }
+
+  return events;
+}
+
+function parseSquarespaceSummaryEvents(
+  doc: ReturnType<DOMParser["parseFromString"]>,
+  sourceUrl: string,
+  timeZone: string,
+): ParsedEvent[] {
+  if (!doc) {
+    return [];
+  }
+
+  const events: ParsedEvent[] = [];
+  const seenKeys = new Set<string>();
+  for (const item of doc.querySelectorAll(".summary-item-record-type-event")) {
+    const element = item as Element;
+    const title = textFromFirst(element, [".summary-title-link"]) ??
+      attrFromFirst(element, ["a[data-title]"], ["data-title"]);
+    const rawDate = textFromFirst(element, [
+      ".summary-metadata-item--date",
+      "time",
+    ]);
+    const date = rawDate ? parseDateFromTextParts(rawDate) : null;
+    if (!title || !date) {
+      continue;
+    }
+
+    const startDatetime = wallClockToIso(
+      { ...date, hour: 0, minute: 0 },
+      timeZone,
+    );
+    const eventUrl = normalizeUrl(
+      attrFromFirst(element, [".summary-title-link[href]", "a[href]"], [
+        "href",
+      ]),
+      sourceUrl,
+    );
+    const imageUrl = validImageUrl(
+      attrFromFirst(element, ["img"], ["data-src", "src", "data-image"]),
+      sourceUrl,
+    );
+    const description = cleanDescription(
+      textFromFirst(element, [".summary-excerpt"]) ?? title,
+    );
+    const priceInfo = extractPrice(description);
+    const key = `${eventUrl ?? title}::${startDatetime}`;
+    if (seenKeys.has(key)) {
+      continue;
+    }
+    seenKeys.add(key);
+    events.push({
+      title,
+      description: description.slice(0, 500),
+      startDatetime,
+      endDatetime: null,
+      venueName: null,
+      address: null,
+      sourceUrl: eventUrl,
+      imageUrl,
+      images: imageUrl ? [imageUrl] : [],
+      price: priceInfo.price,
+      isFree: priceInfo.isFree,
+    });
+  }
+
+  return events;
+}
+
 export function parseWebsite(
   html: string,
   sourceUrl: string,
@@ -372,6 +749,33 @@ export function parseWebsite(
   );
   if (mecEvents.length > 0) {
     return mecEvents;
+  }
+
+  const batonRougeZooEvents = parseBatonRougeZooCards(
+    doc,
+    sourceUrl,
+    timeZone,
+  );
+  if (batonRougeZooEvents.length > 0) {
+    return batonRougeZooEvents;
+  }
+
+  const allInOneCalendarEvents = parseAllInOneCalendarEvents(
+    doc,
+    sourceUrl,
+    timeZone,
+  );
+  if (allInOneCalendarEvents.length > 0) {
+    return allInOneCalendarEvents;
+  }
+
+  const squarespaceSummaryEvents = parseSquarespaceSummaryEvents(
+    doc,
+    sourceUrl,
+    timeZone,
+  );
+  if (squarespaceSummaryEvents.length > 0) {
+    return squarespaceSummaryEvents;
   }
 
   const seenKeys = new Set<string>();
