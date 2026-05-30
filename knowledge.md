@@ -23,6 +23,7 @@ Turborepo monorepo for **family-events**: a consumer-facing web + iOS app for br
 ## Commands
 
 Root (turbo):
+
 - `pnpm run check` — typecheck + lint + format check across workspaces
 - `pnpm run test` — unit tests across workspaces
 - `pnpm run build`
@@ -32,14 +33,17 @@ Root (turbo):
 - `pnpm run verify:workflow` — full local pre-CI verification (`scripts/check-monorepo.sh`)
 
 Web (`apps/web`):
+
 - `pnpm --filter @family-events/web dev | build | typecheck | lint | test | test:e2e`
 - Linter is **oxlint**, formatter is **oxfmt** (not ESLint/Prettier).
 
 iOS (`apps/ios`):
+
 - `pnpm run ios:generate` — regenerate `FamilyEvents.xcodeproj` from `project.yml` (commit both)
 - `pnpm run ios:test` — `swift test` for every package + `xcodebuild test` for the app
 
 Supabase:
+
 - `pnpm run db:start` / `db:stop`
 - `pnpm run db:migrate` — applies migrations to local
 - `pnpm run db:types` — regenerates `packages/contracts/src/database.types.ts` from local schema
@@ -72,6 +76,7 @@ Supabase:
 When the user's request matches an available skill, invoke it via `/skill:<name>` instead of answering ad-hoc.
 
 Key routing rules:
+
 - Product ideas, brainstorming → `/skill:office-hours`
 - Bugs, errors, 500s → `/skill:investigate`
 - Ship, deploy, create PR → `/skill:ship`
