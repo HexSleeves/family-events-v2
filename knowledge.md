@@ -1,6 +1,6 @@
 # Project knowledge
 
-Turborepo monorepo for **family-events**: a consumer-facing web + iOS app for browsing/saving family-friendly events, backed by Supabase.
+Turborepo monorepo for **family-events**: a consumer-facing web + iOS app for browsing/saving family-friendly events, backed by Supabase. Follow `AGENTS.md` first, then scoped files such as `apps/web/AGENTS.md` and `apps/ios/AGENTS.md`.
 
 ## Layout
 
@@ -15,7 +15,7 @@ Turborepo monorepo for **family-events**: a consumer-facing web + iOS app for br
 
 ## Quickstart
 
-- Toolchain: `mise.toml` pins Node 24. Package manager: **pnpm 11.2.2**.
+- Toolchain: `mise.toml` pins Node 24. Package manager: **pnpm 11.5.0**.
 - Install: `pnpm install`
 - Dev (all workspaces): `pnpm run dev` (uses `turbo run dev`)
 - Web only: `pnpm --filter @family-events/web dev`
@@ -54,10 +54,29 @@ Supabase:
 - **Linting/formatting:** oxlint + oxfmt only. Configs in `packages/config-quality`. Do not introduce ESLint/Prettier.
 - **TypeScript:** ~6.0.3 across workspaces; extend from `@family-events/config-typescript`.
 - **Imports across packages:** apps depend on `@family-events/{contracts,shared,design-system}` via `workspace:*`. `packages/shared` must remain framework-agnostic (enforced by `tests/guards/shared-boundary.test.mjs`).
-- **Design system:** ALWAYS read `docs/DESIGN.md` before any UI/visual change. Never hand-edit generated files (`tokens.generated.css`, `Tokens.swift`, `packages/design-system/src/generated/*`); change `tokens/tokens.json` and run `pnpm --filter @family-events/design-system build`. `verify:drift` enforces this.
+- **Design system:** ALWAYS read `docs/DESIGN.md` before any UI/visual change. Never hand-edit generated files (`apps/web/src/styles/tokens.generated.css`, `apps/ios/Packages/FEDesignSystem/Sources/.../Generated/Tokens.swift`, `packages/design-system/src/generated/*`); change `packages/design-system/tokens/tokens.json` and run `pnpm --filter @family-events/design-system build`.
 - **Mobile-first v2 primitives:** New web UI uses primitives in `apps/web/src/components/v2/` (`page.tsx`, `stack.tsx`, `toolbar.tsx`, `responsive-card.tsx`, `filter-bar.tsx`, `touch-target.tsx`).
 - **iOS scope:** Consumer-only. Admin features and routes are blocked at the test layer — don't try to add them to iOS.
 - **State/data on web:** TanStack Query for server state, Zustand for client state, React Hook Form + Zod for forms, Sonner for toasts.
+- **Generated files:** Do not hand-edit generated outputs. If a generated output needs to change, edit the source file and run the documented generator.
+- **Dirty worktrees:** Preserve user or other-agent changes. Never revert unrelated files unless the user explicitly asks.
+
+## Codebuff agents
+
+Project-local custom agents live in `.agents/*.ts` and reusable global skills live in `~/.agents/skills/`.
+
+- `design-system` — UI, visual, token, Tailwind 4, and design-system work. Reads `docs/DESIGN.md` and token source first.
+- `supabase-migration` — Supabase migrations, RLS, RPCs, edge functions, and database type generation.
+- `web-feature` — React/Vite web feature work under `apps/web`.
+- `ios-feature` — SwiftUI consumer iOS work under `apps/ios`.
+- `monorepo-reviewer` — review current changes for bugs, security issues, boundary violations, generated-file edits, missing tests, and verification gaps.
+- `quality-runner` — select and run the smallest applicable verification command set.
+
+Global skills available from `~/.agents/skills/`:
+
+- `/skill:family-events-workflow`
+- `/skill:pragmatic-code-review`
+- `/skill:verification-selection`
 
 ## Supabase gotchas (from CLAUDE.md)
 

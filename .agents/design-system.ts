@@ -1,31 +1,31 @@
-import { AgentDefinition } from './types/agent-definition'
+import { AgentDefinition } from "./types/agent-definition"
 
 const definition: AgentDefinition = {
-  id: 'design-system',
-  version: '1.0.0',
-  displayName: 'Design System Specialist',
+  id: "design-system",
+  version: "1.0.0",
+  displayName: "Design System Specialist",
   spawnerPrompt:
-    'Spawn this agent for any UI, visual, or design token work. ' +
-    'Handles token changes, component styling, Tailwind 4 theme, and design-to-code alignment. ' +
-    'Always reads docs/DESIGN.md before making any visual decision.',
-  model: 'anthropic/claude-sonnet-4-6',
-  outputMode: 'last_message',
+    "Spawn this agent for any UI, visual, or design token work. " +
+    "Handles token changes, component styling, Tailwind 4 theme, and design-to-code alignment. " +
+    "Always reads docs/DESIGN.md before making any visual decision.",
+  model: "anthropic/claude-sonnet-4.6",
+  outputMode: "last_message",
   includeMessageHistory: true,
 
   toolNames: [
-    'read_files',
-    'write_file',
-    'code_search',
-    'run_terminal_command',
-    'spawn_agents',
-    'end_turn',
+    "read_files",
+    "write_file",
+    "code_search",
+    "run_terminal_command",
+    "spawn_agents",
+    "end_turn",
   ],
-  spawnableAgents: ['codebuff/reviewer@0.0.1'],
+  spawnableAgents: ["codebuff/reviewer@0.0.1"],
 
   inputSchema: {
     prompt: {
-      type: 'string',
-      description: 'UI change, design token update, or visual decision to make',
+      type: "string",
+      description: "UI change, design token update, or visual decision to make",
     },
   },
 
@@ -52,32 +52,32 @@ DESIGN SYSTEM RULES (never deviate):
 5. Safe-area and viewport-fit=cover are wired — use env(safe-area-inset-*) for mobile edges`,
 
   instructionsPrompt:
-    'First read docs/DESIGN.md to understand the design direction. ' +
-    'Then read the relevant token files or component files. ' +
-    'Make changes that align with the design spec. ' +
-    'If tokens change, remind the user to run: pnpm --filter @family-events/design-system build',
+    "First read docs/DESIGN.md to understand the design direction. " +
+    "Then read the relevant token files or component files. " +
+    "Make changes that align with the design spec. " +
+    "If tokens change, remind the user to run: pnpm --filter @family-events/design-system build",
 
-  stepPrompt: 'Continue the design task. Use end_turn when complete.',
+  stepPrompt: "Continue the design task. Use end_turn when complete.",
 
   handleSteps: function* () {
     // Always read the design spec first
     yield {
-      toolName: 'read_files',
+      toolName: "read_files",
       input: {
-        paths: ['docs/DESIGN.md'],
+        paths: ["docs/DESIGN.md"],
       },
     }
 
     // Also load the token source
     yield {
-      toolName: 'read_files',
+      toolName: "read_files",
       input: {
-        paths: ['packages/design-system/tokens/tokens.json'],
+        paths: ["packages/design-system/tokens/tokens.json"],
       },
     }
 
     // Let the LLM handle the design task
-    yield 'STEP_ALL'
+    yield "STEP_ALL"
   },
 }
 
