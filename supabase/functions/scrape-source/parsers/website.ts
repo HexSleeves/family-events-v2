@@ -58,12 +58,8 @@ function eventNodes(value: unknown): Record<string, unknown>[] {
   }
 
   const node = value as Record<string, unknown>;
-  const typeValues = toArray(node["@type"]).map((entry) =>
-    String(entry).toLowerCase()
-  );
-  const isEvent = typeValues.some((entry) =>
-    entry === "event" || entry.endsWith(":event")
-  );
+  const typeValues = toArray(node["@type"]).map((entry) => String(entry).toLowerCase());
+  const isEvent = typeValues.some((entry) => entry === "event" || entry.endsWith(":event"));
   // Descend into common JSON-LD wrappers that nest Event objects:
   // @graph, ItemList.itemListElement[].item, mainEntity, hasPart.
   // Eventbrite uses ItemList → ListItem.item where item is @type:Event.
@@ -104,9 +100,7 @@ function extractImageUrls(value: unknown): string[] {
 }
 
 function parseClock(value: string): { hour: number; minute: number } | null {
-  const match = value.trim().match(
-    /^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?$/i,
-  );
+  const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?$/i);
   if (!match) {
     return null;
   }
@@ -154,20 +148,10 @@ function parseMecTimeRange(
 
   const endClock = parseClock(rawEnd ?? "");
   let endDatetime = endClock
-    ? dateStampToWallClockIso(
-      dateStamp,
-      endClock.hour,
-      endClock.minute,
-      timeZone,
-    )
+    ? dateStampToWallClockIso(dateStamp, endClock.hour, endClock.minute, timeZone)
     : null;
-  if (
-    endDatetime &&
-    new Date(endDatetime).getTime() <= new Date(startDatetime).getTime()
-  ) {
-    endDatetime = new Date(
-      new Date(endDatetime).getTime() + 24 * 60 * 60 * 1000,
-    ).toISOString();
+  if (endDatetime && new Date(endDatetime).getTime() <= new Date(startDatetime).getTime()) {
+    endDatetime = new Date(new Date(endDatetime).getTime() + 24 * 60 * 60 * 1000).toISOString();
   }
 
   return { startDatetime, endDatetime };
@@ -199,11 +183,7 @@ function textFromFirst(root: Element, selectors: string[]): string | null {
   return null;
 }
 
-function attrFromFirst(
-  root: Element,
-  selectors: string[],
-  attrs: string[],
-): string | null {
+function attrFromFirst(root: Element, selectors: string[], attrs: string[]): string | null {
   for (const selector of selectors) {
     const node = root.querySelector(selector);
     if (!node) {
@@ -242,10 +222,11 @@ function parseDateFromTextParts(
   const match = normalizeExtractedText(rawDate).match(
     /\b([A-Za-z]{3,9})\s+(\d{1,2})(?:,\s*(20\d{2}))?\b/,
   );
-  if (!match?.[3]) {
+  if (!match) {
     return null;
   }
-  return parseDateParts(match[1], match[2], match[3]);
+  const year = match[3] ?? String(new Date().getFullYear());
+  return parseDateParts(match[1], match[2], year);
 }
 
 function parseIsoDateStamp(value: string | null): {
@@ -269,10 +250,7 @@ function toIsoForDateClock(
   clock: { hour: number; minute: number },
   timeZone: string,
 ): string {
-  return wallClockToIso(
-    { ...date, hour: clock.hour, minute: clock.minute },
-    timeZone,
-  );
+  return wallClockToIso({ ...date, hour: clock.hour, minute: clock.minute }, timeZone);
 }
 
 function parseTimeRangeForDate(
@@ -281,7 +259,7 @@ function parseTimeRangeForDate(
   timeZone: string,
 ): { startDatetime: string; endDatetime: string | null } | null {
   const normalized = normalizeExtractedText(rawTime);
-  const [rawStart, rawEnd] = normalized.split(/\s*(?:-|to)\s*/i);
+  const [rawStart, rawEnd] = normalized.split(/\s*(?:-|–|—|to)\s*/i);
   const startClock = parseClock(rawStart ?? "");
   if (!startClock) {
     return null;
@@ -289,16 +267,9 @@ function parseTimeRangeForDate(
 
   const startDatetime = toIsoForDateClock(date, startClock, timeZone);
   const endClock = parseClock(rawEnd ?? "");
-  let endDatetime = endClock
-    ? toIsoForDateClock(date, endClock, timeZone)
-    : null;
-  if (
-    endDatetime &&
-    new Date(endDatetime).getTime() <= new Date(startDatetime).getTime()
-  ) {
-    endDatetime = new Date(
-      new Date(endDatetime).getTime() + 24 * 60 * 60 * 1000,
-    ).toISOString();
+  let endDatetime = endClock ? toIsoForDateClock(date, endClock, timeZone) : null;
+  if (endDatetime && new Date(endDatetime).getTime() <= new Date(startDatetime).getTime()) {
+    endDatetime = new Date(new Date(endDatetime).getTime() + 24 * 60 * 60 * 1000).toISOString();
   }
 
   return { startDatetime, endDatetime };
@@ -324,9 +295,7 @@ function parseHumanDateTimeRange(
   if (!date) {
     return null;
   }
-  return parseTimeRangeForDate(date, [match[4], match[5]].filter(Boolean).join(
-    " - ",
-  ), timeZone);
+  return parseTimeRangeForDate(date, [match[4], match[5]].filter(Boolean).join(" - "), timeZone);
 }
 
 function offerPrice(value: unknown): number | null {
@@ -349,9 +318,7 @@ function parseStructuredEvents(
   }
 
   const eventCandidates: Record<string, unknown>[] = [];
-  for (
-    const script of doc.querySelectorAll('script[type="application/ld+json"]')
-  ) {
+  for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
     const rawJson = script.textContent?.trim() ?? "";
     if (!rawJson) {
       continue;
@@ -378,32 +345,27 @@ function parseStructuredEvents(
     }
 
     const endDatetime = parseIsoDate(pickText(candidate.endDate));
-    const description = cleanDescription(pickText(candidate.description)) ||
-      title;
-    const eventUrl = normalizeUrl(pickText(candidate.url), sourceUrl) ??
-      sourceUrl;
+    const description = cleanDescription(pickText(candidate.description)) || title;
+    const eventUrl = normalizeUrl(pickText(candidate.url), sourceUrl) ?? sourceUrl;
     const locationObj = candidate.location as Record<string, unknown> | undefined;
     const venueName = pickText(locationObj?.name) ?? pickText(candidate.location);
     const rawAddr = locationObj?.address;
-    const address = (
-      rawAddr && typeof rawAddr === "object" && !Array.isArray(rawAddr)
+    const address =
+      (rawAddr && typeof rawAddr === "object" && !Array.isArray(rawAddr)
         ? [
             pickText((rawAddr as Record<string, unknown>).streetAddress),
             pickText((rawAddr as Record<string, unknown>).addressLocality),
             pickText((rawAddr as Record<string, unknown>).addressRegion),
             pickText((rawAddr as Record<string, unknown>).postalCode),
-          ].filter(Boolean).join(", ") || null
-        : pickText(rawAddr) ??
-            pickText(locationObj?.["streetAddress"])
-    ) ?? venueName;
+          ]
+            .filter(Boolean)
+            .join(", ") || null
+        : (pickText(rawAddr) ?? pickText(locationObj?.["streetAddress"]))) ?? venueName;
 
     const webImages: string[] = [];
     for (const image of extractImageUrls(candidate.image)) {
       const normalized = normalizeUrl(image, sourceUrl);
-      if (
-        normalized && validateExternalUrl(normalized).ok &&
-        !webImages.includes(normalized)
-      ) {
+      if (normalized && validateExternalUrl(normalized).ok && !webImages.includes(normalized)) {
         webImages.push(normalized);
       }
       if (webImages.length >= 5) {
@@ -452,26 +414,18 @@ function parseMecCalendarEvents(
   const seenKeys = new Set<string>();
   const events: ParsedEvent[] = [];
 
-  for (
-    const dayNode of doc.querySelectorAll(".mec-calendar-day[data-mec-cell]")
-  ) {
+  for (const dayNode of doc.querySelectorAll(".mec-calendar-day[data-mec-cell]")) {
     const dateStamp = dayNode.getAttribute("data-mec-cell") ?? "";
-    for (
-      const link of dayNode.querySelectorAll(
-        "a.event-single-link-simple[data-tooltip-content]",
-      )
-    ) {
-      const title = pickText(
-        link.querySelector(".mec-event-title")?.textContent,
-      );
+    for (const link of dayNode.querySelectorAll(
+      "a.event-single-link-simple[data-tooltip-content]",
+    )) {
+      const title = pickText(link.querySelector(".mec-event-title")?.textContent);
       if (!title) {
         continue;
       }
 
       const tooltipSelector = link.getAttribute("data-tooltip-content");
-      const tooltip = tooltipSelector
-        ? doc.querySelector(tooltipSelector)
-        : null;
+      const tooltip = tooltipSelector ? doc.querySelector(tooltipSelector) : null;
       const parsedTime = parseMecTimeRange(
         dateStamp,
         tooltip?.querySelector(".mec-tooltip-event-time")?.textContent ?? "",
@@ -481,22 +435,14 @@ function parseMecCalendarEvents(
         continue;
       }
 
-      const eventUrl = normalizeUrl(link.getAttribute("href"), sourceUrl) ??
-        sourceUrl;
+      const eventUrl = normalizeUrl(link.getAttribute("href"), sourceUrl) ?? sourceUrl;
       const structured = structuredByUrl.get(eventUrl);
-      const rawDescription =
-        tooltip?.querySelector(".mec-tooltip-event-desc")?.textContent ?? "";
-      const description = structured?.description ??
-        cleanDescription(rawDescription.replace(/\s*,\s*\.\.\.$/, ""));
-      const tooltipImage = tooltip?.querySelector("img")?.getAttribute("src") ??
-        null;
-      const imageUrl = structured?.imageUrl ??
-        normalizeUrl(tooltipImage, sourceUrl);
-      const images = structured?.images.length
-        ? structured.images
-        : imageUrl
-        ? [imageUrl]
-        : [];
+      const rawDescription = tooltip?.querySelector(".mec-tooltip-event-desc")?.textContent ?? "";
+      const description =
+        structured?.description ?? cleanDescription(rawDescription.replace(/\s*,\s*\.\.\.$/, ""));
+      const tooltipImage = tooltip?.querySelector("img")?.getAttribute("src") ?? null;
+      const imageUrl = structured?.imageUrl ?? normalizeUrl(tooltipImage, sourceUrl);
+      const images = structured?.images.length ? structured.images : imageUrl ? [imageUrl] : [];
       const priceInfo = extractPrice(description);
 
       const key = `${eventUrl}::${parsedTime.startDatetime}`;
@@ -537,18 +483,17 @@ function parseBatonRougeZooCards(
   const seenKeys = new Set<string>();
   for (const item of doc.querySelectorAll(".repeater-list-item")) {
     const element = item as Element;
-    const title = textFromFirst(element, [
-      ".repeater-list-card-img-lg-item-header",
-      "h3",
-    ]);
+    const title = textFromFirst(element, [".repeater-list-card-img-lg-item-header", "h3"]);
     const linkHref = attrFromFirst(element, ["a[href]"], ["href"]);
     const eventUrl = normalizeUrl(linkHref, sourceUrl);
     const urlDate = eventUrl ? new URL(eventUrl).searchParams.get("occdate") : null;
-    const date = parseIsoDateStamp(urlDate) ?? parseDateParts(
-      textFromFirst(element, [".event-month"]),
-      textFromFirst(element, [".event-day"]),
-      new Date().getUTCFullYear().toString(),
-    );
+    const date =
+      parseIsoDateStamp(urlDate) ??
+      parseDateParts(
+        textFromFirst(element, [".event-month"]),
+        textFromFirst(element, [".event-day"]),
+        new Date().getUTCFullYear().toString(),
+      );
     const timeText = textFromFirst(element, [".item-time"]);
     if (!title || !date || !timeText) {
       continue;
@@ -559,16 +504,10 @@ function parseBatonRougeZooCards(
     }
 
     const imageUrl = validImageUrl(
-      attrFromFirst(element, ["img", "source"], [
-        "data-src",
-        "src",
-        "data-image",
-      ]),
+      attrFromFirst(element, ["img", "source"], ["data-src", "src", "data-image"]),
       sourceUrl,
     );
-    const description = cleanDescription(
-      [title, timeText].filter(Boolean).join(" — "),
-    );
+    const description = cleanDescription([title, timeText].filter(Boolean).join(" — "));
     const priceInfo = extractPrice(description);
     const key = `${eventUrl ?? title}::${parsedTime.startDatetime}`;
     if (seenKeys.has(key)) {
@@ -593,9 +532,7 @@ function parseBatonRougeZooCards(
   return events;
 }
 
-function firstYearFromDocument(
-  doc: ReturnType<DOMParser["parseFromString"]>,
-): number | null {
+function firstYearFromDocument(doc: ReturnType<DOMParser["parseFromString"]>): number | null {
   if (!doc) {
     return null;
   }
@@ -617,20 +554,13 @@ function parseAllInOneCalendarEvents(
   const seenKeys = new Set<string>();
   for (const popover of doc.querySelectorAll(".ai1ec-popover")) {
     const element = popover as Element;
-    const title = textFromFirst(element, [
-      ".ai1ec-popup-title a",
-      ".ai1ec-event-title",
-    ]);
+    const title = textFromFirst(element, [".ai1ec-popup-title a", ".ai1ec-event-title"]);
     const eventUrl = normalizeUrl(
-      attrFromFirst(element, [".ai1ec-popup-title a[href]", "a[href]"], [
-        "href",
-      ]),
+      attrFromFirst(element, [".ai1ec-popup-title a[href]", "a[href]"], ["href"]),
       sourceUrl,
     );
     const timeText = textFromFirst(element, [".ai1ec-event-time"]);
-    const parsedTime = timeText
-      ? parseHumanDateTimeRange(timeText, fallbackYear, timeZone)
-      : null;
+    const parsedTime = timeText ? parseHumanDateTimeRange(timeText, fallbackYear, timeZone) : null;
     if (!title || !parsedTime) {
       continue;
     }
@@ -677,34 +607,25 @@ function parseSquarespaceSummaryEvents(
   const seenKeys = new Set<string>();
   for (const item of doc.querySelectorAll(".summary-item-record-type-event")) {
     const element = item as Element;
-    const title = textFromFirst(element, [".summary-title-link"]) ??
+    const title =
+      textFromFirst(element, [".summary-title-link"]) ??
       attrFromFirst(element, ["a[data-title]"], ["data-title"]);
-    const rawDate = textFromFirst(element, [
-      ".summary-metadata-item--date",
-      "time",
-    ]);
+    const rawDate = textFromFirst(element, [".summary-metadata-item--date", "time"]);
     const date = rawDate ? parseDateFromTextParts(rawDate) : null;
     if (!title || !date) {
       continue;
     }
 
-    const startDatetime = wallClockToIso(
-      { ...date, hour: 0, minute: 0 },
-      timeZone,
-    );
+    const startDatetime = wallClockToIso({ ...date, hour: 0, minute: 0 }, timeZone);
     const eventUrl = normalizeUrl(
-      attrFromFirst(element, [".summary-title-link[href]", "a[href]"], [
-        "href",
-      ]),
+      attrFromFirst(element, [".summary-title-link[href]", "a[href]"], ["href"]),
       sourceUrl,
     );
     const imageUrl = validImageUrl(
       attrFromFirst(element, ["img"], ["data-src", "src", "data-image"]),
       sourceUrl,
     );
-    const description = cleanDescription(
-      textFromFirst(element, [".summary-excerpt"]) ?? title,
-    );
+    const description = cleanDescription(textFromFirst(element, [".summary-excerpt"]) ?? title);
     const priceInfo = extractPrice(description);
     const key = `${eventUrl ?? title}::${startDatetime}`;
     if (seenKeys.has(key)) {
@@ -729,11 +650,12 @@ function parseSquarespaceSummaryEvents(
   return events;
 }
 
-export function parseWebsite(
-  html: string,
-  sourceUrl: string,
-  timeZone = "UTC",
-): ParsedEvent[] {
+/**
+ * Parses a website HTML document for events.
+ * Tries site-specific extractors (MEC, Baton Rouge Zoo cards, All-in-One Calendar,
+ * Squarespace) before falling back to generic structured data.
+ */
+export function parseWebsite(html: string, sourceUrl: string, timeZone = "UTC"): ParsedEvent[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
   if (!doc) {
@@ -741,39 +663,22 @@ export function parseWebsite(
   }
 
   const structuredEvents = parseStructuredEvents(doc, sourceUrl);
-  const mecEvents = parseMecCalendarEvents(
-    doc,
-    sourceUrl,
-    timeZone,
-    structuredEvents,
-  );
+  const mecEvents = parseMecCalendarEvents(doc, sourceUrl, timeZone, structuredEvents);
   if (mecEvents.length > 0) {
     return mecEvents;
   }
 
-  const batonRougeZooEvents = parseBatonRougeZooCards(
-    doc,
-    sourceUrl,
-    timeZone,
-  );
+  const batonRougeZooEvents = parseBatonRougeZooCards(doc, sourceUrl, timeZone);
   if (batonRougeZooEvents.length > 0) {
     return batonRougeZooEvents;
   }
 
-  const allInOneCalendarEvents = parseAllInOneCalendarEvents(
-    doc,
-    sourceUrl,
-    timeZone,
-  );
+  const allInOneCalendarEvents = parseAllInOneCalendarEvents(doc, sourceUrl, timeZone);
   if (allInOneCalendarEvents.length > 0) {
     return allInOneCalendarEvents;
   }
 
-  const squarespaceSummaryEvents = parseSquarespaceSummaryEvents(
-    doc,
-    sourceUrl,
-    timeZone,
-  );
+  const squarespaceSummaryEvents = parseSquarespaceSummaryEvents(doc, sourceUrl, timeZone);
   if (squarespaceSummaryEvents.length > 0) {
     return squarespaceSummaryEvents;
   }
@@ -781,8 +686,7 @@ export function parseWebsite(
   const seenKeys = new Set<string>();
   const events: ParsedEvent[] = [];
   for (const structured of structuredEvents) {
-    const key =
-      `${structured.title.toLowerCase()}::${structured.startDatetime}`;
+    const key = `${structured.title.toLowerCase()}::${structured.startDatetime}`;
     if (seenKeys.has(key)) {
       continue;
     }
@@ -793,6 +697,7 @@ export function parseWebsite(
   return events;
 }
 
+/** Generic website parser supporting multiple event calendar formats and site-specific cards. */
 export const websiteParser: SourceParser<"website"> = {
   type: "website",
   async fetchArtifact(source, ctx) {
@@ -802,8 +707,6 @@ export const websiteParser: SourceParser<"website"> = {
     return { url: source.url, contentType: "text/html", body: html };
   },
   extractEvents(source, artifact, ctx) {
-    return Promise.resolve(
-      parseWebsite(artifact.body, artifact.url || source.url, ctx.timezone),
-    );
+    return Promise.resolve(parseWebsite(artifact.body, artifact.url || source.url, ctx.timezone));
   },
 };

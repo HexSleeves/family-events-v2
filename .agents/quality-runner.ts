@@ -1,4 +1,4 @@
-import { AgentDefinition } from "./types/agent-definition"
+import { AgentDefinition } from "./types/agent-definition";
 
 const definition: AgentDefinition = {
   id: "quality-runner",
@@ -9,6 +9,11 @@ const definition: AgentDefinition = {
   model: "anthropic/claude-sonnet-4.6",
   outputMode: "last_message",
   includeMessageHistory: true,
+  reasoningOptions: {
+    enabled: true,
+    exclude: false,
+    effort: "high",
+  },
 
   toolNames: ["read_files", "code_search", "run_terminal_command", "skill", "end_turn"],
   spawnableAgents: ["codebuff/reviewer@0.0.1"],
@@ -45,15 +50,15 @@ Never claim success without command output. If a command fails, report the faili
       input: {
         paths: ["AGENTS.md", "package.json", "knowledge.md"],
       },
-    }
+    };
 
     yield {
       toolName: "run_terminal_command",
       input: { command: "git status --porcelain" },
-    }
+    };
 
-    yield "STEP_ALL"
+    yield "STEP_ALL";
   },
-}
+};
 
-export default definition
+export default definition;

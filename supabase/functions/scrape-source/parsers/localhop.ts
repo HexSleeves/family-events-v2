@@ -1,8 +1,4 @@
-import {
-  cleanDescription,
-  extractPrice,
-  parseIsoDate,
-} from "../../_shared/parsing.ts";
+import { cleanDescription, extractPrice, parseIsoDate } from "../../_shared/parsing.ts";
 import { validateExternalUrl } from "../../_shared/url-validation.ts";
 import type { ParsedEvent } from "../lib/types.ts";
 import type { SourceParser } from "./_lib/types.ts";
@@ -62,13 +58,17 @@ function addressLine(address: LocalHopAddress | undefined): string | null {
   if (!address) {
     return null;
   }
-  return [
-    pickString(address.address1),
-    pickString(address.address2),
-    pickString(address.city),
-    pickString(address.state),
-    pickString(address.postalCode),
-  ].filter(Boolean).join(", ") || null;
+  return (
+    [
+      pickString(address.address1),
+      pickString(address.address2),
+      pickString(address.city),
+      pickString(address.state),
+      pickString(address.postalCode),
+    ]
+      .filter(Boolean)
+      .join(", ") || null
+  );
 }
 
 function localHopEventUrl(row: LocalHopApiRow): string | null {
@@ -85,7 +85,14 @@ function localHopImageUrl(row: LocalHopApiRow): string | null {
   return url && validateExternalUrl(url).ok ? url : null;
 }
 
+/**
+ * Parses LocalHop EventInstance API response into normalized ParsedEvent list.
+ * Deduplicates by sourceUrl+start, extracts price from description, validates images.
+ */
 export function parseLocalHopEvents(value: unknown): ParsedEvent[] {
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
   const response = value as LocalHopApiResponse;
   if (!Array.isArray(response.results)) {
     return [];
@@ -99,17 +106,13 @@ export function parseLocalHopEvents(value: unknown): ParsedEvent[] {
     }
     const row = rawRow as LocalHopApiRow;
     const title = pickString(row.event?.name);
-    const startDatetime = parseDate(row.standardStartDate) ??
-      parseDate(row.actualStartDate);
+    const startDatetime = parseDate(row.standardStartDate) ?? parseDate(row.actualStartDate);
     if (!title || !startDatetime) {
       continue;
     }
 
-    const endDatetime = parseDate(row.standardEndDate) ??
-      parseDate(row.actualEndDate);
-    const description = cleanDescription(
-      pickString(row.event?.description) ?? title,
-    );
+    const endDatetime = parseDate(row.standardEndDate) ?? parseDate(row.actualEndDate);
+    const description = cleanDescription(pickString(row.event?.description) ?? title);
     const priceInfo = extractPrice(description);
     const venueName = pickString(row.event?.address?.place);
     const address = addressLine(row.event?.address) ?? venueName;
@@ -142,7 +145,9 @@ export function parseLocalHopEvents(value: unknown): ParsedEvent[] {
 function buildLocalHopUrl(sourceUrl: string): string {
   const source = new URL(sourceUrl);
   const limit = source.searchParams.get("limit") ?? "100";
-  const days = Number(source.searchParams.get("days") ?? "120");
+  const rawDays = source.searchParams.get("days");
+  const parsedDays = rawDays != null ? Number(rawDays) : 120;
+  const days = Number.isFinite(parsedDays) && parsedDays >= 0 ? parsedDays : 120;
   const startsAt = new Date();
   const endsAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000);
   const where: Record<string, unknown> = {
@@ -173,23 +178,39 @@ function buildLocalHopUrl(sourceUrl: string): string {
   const apiUrl = new URL(LOCALHOP_API_URL);
   apiUrl.searchParams.set("limit", limit);
   apiUrl.searchParams.set("order", "standardStartDate");
-  apiUrl.searchParams.set(
-    "include",
-    "event,organization,event.organization,event.categories",
-  );
+  apiUrl.searchParams.set("include", "event,organization,event.organization,event.categories");
   apiUrl.searchParams.set("where", JSON.stringify(where));
   return apiUrl.toString();
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
+/** LocalHop source parser: fetches via Parse-backed EventInstance API with org/city filters. */
 export const localHopParser: SourceParser<"localhop"> = {
   type: "localhop",
   async fetchArtifact(source) {
-    const response = await fetch(buildLocalHopUrl(source.url), {
-      headers: {
-        "Accept": "application/json",
-        "X-Parse-Application-Id": LOCALHOP_APP_ID,
-      },
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(buildLocalHopUrl(source.url), {
+        headers: {
+          Accept: "application/json",
+          "X-Parse-Application-Id": LOCALHOP_APP_ID,
+        },
+        signal: controller.signal,
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error(`localhop: fetch timed out after ${FETCH_TIMEOUT_MS}ms`);
+      }
+      throw err;
+    }
+
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       throw new Error(`localhop: fetch failed with HTTP ${response.status}`);
     }
