@@ -11,11 +11,11 @@ Parents can discover curated local family events, save favorites, and plan their
 ## Project Shape
 
 - **Complexity:** complex
-- **Why:** Full-stack monorepo with web + mobile clients, Supabase backend with edge functions, cron jobs, RLS policies, and an invite gate system spanning DB triggers through frontend UI.
+- **Why:** Full-stack monorepo with web + mobile clients, Supabase backend with edge functions, cron jobs, RLS policies, an invite gate system, and now an adaptive pipeline memory layer spanning vector embeddings through LLM prompt augmentation.
 
 ## Current State
 
-The platform is feature-complete for public launch. Web, iOS, and Android clients are functional. The event pipeline (scraping → enrichment → review → publish) is operational. The invite code gate is the last feature gate blocking open registration. CI has minor issues (3 format violations, 1 misnamed Deno test) and build output has large chunks that need splitting.
+The platform is feature-complete for public launch. The event pipeline (scraping → enrichment → review → publish) is operational and now includes adaptive memory: vector embeddings for event similarity, admin decision capture as ground truth, memory-augmented tagging and review prompts, source auto-rejection for high-rejection sources, and a pipeline learning dashboard. All memory features are independently feature-flagged (default off) for safe rollout. 432 web tests, 53 guards, and 29 Deno tests pass.
 
 ## Architecture / Key Patterns
 
@@ -24,6 +24,7 @@ The platform is feature-complete for public launch. Web, iOS, and Android client
 - **Backend:** Supabase (Postgres 17, edge functions in Deno, RLS policies, pg_cron). Private body + public wrapper pattern for SECURITY DEFINER RPCs.
 - **Design system:** Single source of truth in `packages/design-system/tokens/tokens.json`, codegen produces CSS vars, Swift constants, Kotlin tokens, TS tokens.
 - **Invite gate:** Controlled by `app.settings.require_invite` GUC, exposed via `invites_required()` RPC, enforced by DB triggers and frontend UI.
+- **Adaptive pipeline memory (M002):** pgvector embeddings (text-embedding-3-small, 1536-dim) with HNSW index for event similarity. Admin decisions captured via RPCs to admin_event_decisions table. Memory-augmented tagging and review prompts inject similar-event context. Source auto-reject for >80% rejection rate sources. Pipeline learning dashboard for admin observability. All features independently flagged via ai_feature_config.
 
 ## Capability Contract
 
@@ -31,4 +32,5 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M001: Production Readiness and Open Registration — Full audit/cleanup of web + Supabase, make invite gate UI reactive to DB state, disable the gate for public launch, optimize bundle splitting.
+- [x] M001: Production Readiness and Open Registration — Full audit/cleanup of web + Supabase, make invite gate UI reactive to DB state, disable the gate for public launch, optimize bundle splitting.
+- [x] M002: Adaptive Pipeline Memory — Vector embeddings, admin feedback capture, memory-augmented LLM prompts for tagging and review, source auto-reject, pipeline learning dashboard.
