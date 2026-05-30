@@ -1,30 +1,30 @@
-import { AgentDefinition } from './types/agent-definition'
+import { AgentDefinition } from "./types/agent-definition"
 
 const definition: AgentDefinition = {
-  id: 'supabase-migration',
-  version: '1.0.0',
-  displayName: 'Supabase Migration Specialist',
+  id: "supabase-migration",
+  version: "1.0.0",
+  displayName: "Supabase Migration Specialist",
   spawnerPrompt:
-    'Spawn this agent to create, review, or apply Supabase database migrations. ' +
-    'Handles SQL migration files, RLS policies, SECURITY DEFINER RPCs, edge functions, and type generation.',
-  model: 'anthropic/claude-sonnet-4-6',
-  outputMode: 'last_message',
+    "Spawn this agent to create, review, or apply Supabase database migrations. " +
+    "Handles SQL migration files, RLS policies, SECURITY DEFINER RPCs, edge functions, and type generation.",
+  model: "anthropic/claude-sonnet-4.6",
+  outputMode: "last_message",
   includeMessageHistory: true,
 
   toolNames: [
-    'read_files',
-    'write_file',
-    'code_search',
-    'run_terminal_command',
-    'spawn_agents',
-    'end_turn',
+    "read_files",
+    "write_file",
+    "code_search",
+    "run_terminal_command",
+    "spawn_agents",
+    "end_turn",
   ],
-  spawnableAgents: ['codebuff/reviewer@0.0.1', 'codebuff/researcher@0.0.1'],
+  spawnableAgents: ["codebuff/reviewer@0.0.1", "codebuff/researcher@0.0.1"],
 
   inputSchema: {
     prompt: {
-      type: 'string',
-      description: 'What migration to create, modify, or investigate',
+      type: "string",
+      description: "What migration to create, modify, or investigate",
     },
   },
 
@@ -48,44 +48,38 @@ CRITICAL CONVENTIONS (never deviate):
 5. After migration changes: run pnpm run db:types to regenerate packages/contracts/src/database.types.ts`,
 
   instructionsPrompt:
-    'For the requested migration task: read existing migrations for context and conventions, ' +
-    'check existing RLS policies and function patterns, then create or modify the migration. ' +
-    'Follow all SECURITY DEFINER and vault conventions from the system prompt. ' +
-    'After writing, suggest running: pnpm run db:migrate && pnpm run db:types',
+    "For the requested migration task: read existing migrations for context and conventions, " +
+    "check existing RLS policies and function patterns, then create or modify the migration. " +
+    "Follow all SECURITY DEFINER and vault conventions from the system prompt. " +
+    "After writing, suggest running: pnpm run db:migrate && pnpm run db:types",
 
-  stepPrompt: 'Continue working on the migration. Use end_turn when complete.',
+  stepPrompt: "Continue working on the migration. Use end_turn when complete.",
 
   handleSteps: function* ({ prompt }) {
-    // Read recent migrations for context
-    const { toolResult: migrationList } = yield {
-      toolName: 'run_terminal_command',
-      input: { command: 'ls supabase/migrations/ | tail -10' },
-    }
-
-    // Read the reference migration files for conventions
+    // Read the reference migration files for conventions.
     yield {
-      toolName: 'read_files',
+      toolName: "read_files",
       input: {
         paths: [
-          'supabase/migrations/20260601002100_wrap_security_definer_rpcs.sql',
-          'supabase/migrations/20260601001700_url_from_vault_fallback.sql',
+          "supabase/migrations/20260601002100_wrap_security_definer_rpcs.sql",
+          "supabase/migrations/20260601001700_url_from_vault_fallback.sql",
         ],
       },
     }
 
-    // Search for relevant existing patterns
+    // Search for relevant existing patterns.
     if (prompt) {
       yield {
-        toolName: 'code_search',
+        toolName: "code_search",
         input: {
-          pattern: prompt.split(' ').slice(0, 3).join('|'),
-          flags: '-i -l',
+          pattern: prompt.split(" ").slice(0, 3).join("|"),
+          flags: "-i -l",
         },
       }
     }
 
     // Let the LLM write the migration
-    yield 'STEP_ALL'
+    yield "STEP_ALL"
   },
 }
 

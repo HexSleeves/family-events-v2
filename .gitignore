@@ -148,3 +148,6 @@ coverage/
 .cache/
 tmp/
 .deploy/runs/
+
+# ── GSD baseline (auto-generated) ──
+.gsd
