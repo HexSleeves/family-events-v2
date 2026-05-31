@@ -26,6 +26,7 @@
       "scrape-source",
       "send-auth-email",
       "share-og",
+      "sitemap",
       "tag-event",
       "weather"
     ],
@@ -44,6 +45,7 @@
       "scrape-due-sources",
       "scrape-source",
       "send-auth-email",
+      "sitemap",
       "tag-event"
     ]
   },
