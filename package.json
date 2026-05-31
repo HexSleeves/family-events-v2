@@ -44,7 +44,7 @@
     "db:advisors:security": "bash scripts/supabase.sh db advisors --linked --type security --level warn --fail-on error",
     "db:advisors:performance": "bash scripts/supabase.sh db advisors --linked --type performance --level warn --fail-on none",
     "db:types": "bash scripts/supabase.sh gen types typescript --local --schema public > packages/contracts/src/database.types.ts",
-    "db:functions:serve": "bash scripts/supabase.sh functions serve",
+    "db:functions:serve": "bash scripts/supabase-functions-serve.sh",
     "sync:url-validation": "node scripts/sync-url-validation.mjs",
     "clean": "turbo run clean && find . -name 'node_modules' -prune -o -name '.turbo' -print | xargs rm -rf",
     "clean:dist": "find apps packages -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'build' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name 'out' -not -path '*/node_modules/*' -exec rm -rf {} + ; find apps packages -name '.next' -not -path '*/node_modules/*' -exec rm -rf {} +",

@@ -19,12 +19,16 @@
       "generate-parent-tips",
       "log-cron-run",
       "notify-email",
-      "process-source-queue",
       "process-event-review-queue",
+      "process-notification-queue",
+      "process-source-queue",
       "process-tag-queue",
       "scrape-due-sources",
       "scrape-source",
       "send-auth-email",
+      "send-push",
+      "send-reminders",
+      "send-weekly-digest",
       "share-og",
       "sitemap",
       "tag-event",
@@ -39,12 +43,16 @@
       "generate-parent-tips",
       "log-cron-run",
       "notify-email",
-      "process-source-queue",
       "process-event-review-queue",
+      "process-notification-queue",
+      "process-source-queue",
       "process-tag-queue",
       "scrape-due-sources",
       "scrape-source",
       "send-auth-email",
+      "send-push",
+      "send-reminders",
+      "send-weekly-digest",
       "sitemap",
       "tag-event"
     ]
@@ -57,7 +65,9 @@
       "cron-tag-queue",
       "cron-review-events",
       "cron-cleanup-stale",
-      "cron-enrich-events"
+      "cron-enrich-events",
+      "cron-weekly-digest",
+      "cron-send-reminders"
     ],
     "services": [
       {
@@ -100,6 +110,18 @@
       {
         "name": "cron-cleanup-stale",
         "rootDirectory": "apps/cron-cleanup-stale",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-weekly-digest",
+        "rootDirectory": "apps/cron-weekly-digest",
+        "pollTimeoutSeconds": 300,
+        "allowAutoCreate": true
+      },
+      {
+        "name": "cron-send-reminders",
+        "rootDirectory": "apps/cron-send-reminders",
         "pollTimeoutSeconds": 300,
         "allowAutoCreate": true
       }

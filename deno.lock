@@ -27,9 +27,9 @@
         "npm:@supabase/supabase-js@^2.106.2",
         "npm:@types/node@^25.9.1",
         "npm:knip@^6.14.2",
-        "npm:oxfmt@0.51",
-        "npm:oxlint@^1.66.0",
-        "npm:turbo@^2.9.14",
+        "npm:oxfmt@0.52",
+        "npm:oxlint@^1.67.0",
+        "npm:turbo@^2.9.16",
         "npm:typescript@~6.0.3",
         "npm:vitest@4.1.7"
       ]

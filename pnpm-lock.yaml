@@ -45,7 +45,11 @@ importers:
 
   apps/cron-scrape-sources: {}
 
+  apps/cron-send-reminders: {}
+
   apps/cron-tag-queue: {}
+
+  apps/cron-weekly-digest: {}
 
   apps/ios: {}
 
