@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-06-01T03:48:37.322528+00:00",
+  "type": "compilation-diagnostics",
+  "build": {
+    "entrypoint": "project",
+    "path": "apps/ios/FamilyEvents.xcodeproj",
+    "scheme": "FamilyEvents",
+    "configuration": "Debug",
+    "destination": "platform=iOS Simulator,name=iPhone 17 Pro"
+  },
+  "threshold_ms": 100,
+  "build_duration_seconds": 11.756,
+  "build_success": true,
+  "raw_log_path": ".build-benchmark/20260601T034817Z-familyevents-diagnostics.log",
+  "warnings": [],
+  "summary": {
+    "total_warnings": 0,
+    "function_body_warnings": 0,
+    "expression_warnings": 0,
+    "slowest_ms": 0
+  }
+}
