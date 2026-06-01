@@ -1,16 +1,1 @@
-[
-  {
-    "id": "c42c8483",
-    "label": "vite-dev",
-    "command": "cd /Users/lecoqjacob/Developer/personal/family-events-ui && pnpm --filter @family-events/web dev",
-    "cwd": "/Users/lecoqjacob/Developer/personal/family-events-ui",
-    "ownerSessionFile": "/Users/lecoqjacob/.gsd/sessions/--Users-lecoqjacob-Developer-personal-family-events-ui--/2026-05-31T01-36-24-857Z_20db637c-b2ff-446c-8cca-ceac99e36822.jsonl",
-    "persistAcrossSessions": false,
-    "startedAt": 1780198122250,
-    "processType": "server",
-    "group": "dev",
-    "readyPattern": null,
-    "readyPort": 5173,
-    "pid": 53088
-  }
-]
+[]
