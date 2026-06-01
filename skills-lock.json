@@ -121,6 +121,12 @@
       "skillPath": "skills/skill-creator/SKILL.md",
       "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
     },
+    "spm-build-analysis": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/spm-build-analysis/SKILL.md",
+      "computedHash": "9785f2113e45cd29aedc4c1e7e5763735157ff1e4c99a4ca4a65d4f625814c55"
+    },
     "sql-code-review": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
@@ -163,6 +169,12 @@
       "skillPath": "skills/swift-concurrency/SKILL.md",
       "computedHash": "7cdb32ec6bd404ae2e524b54dce5095416831d97a20bf99a37d9b17b27aaa9af"
     },
+    "swift-concurrency-pro": {
+      "source": "twostraws/swift-concurrency-agent-skill",
+      "sourceType": "github",
+      "skillPath": "swift-concurrency-pro/SKILL.md",
+      "computedHash": "db6c88d8da1a264188a2ad826a0ed73d227384315b27e47f3bb6b78ca1a3df40"
+    },
     "swift-language": {
       "source": "dpearson2699/swift-ios-skills",
       "sourceType": "github",
@@ -181,11 +193,23 @@
       "skillPath": "skills/swiftdata/SKILL.md",
       "computedHash": "07420ff53c84acdee50ec73cdf2d77072d8a123dce5db4353b64d5cb32cea477"
     },
+    "swiftdata-pro": {
+      "source": "twostraws/swiftdata-agent-skill",
+      "sourceType": "github",
+      "skillPath": "swiftdata-pro/SKILL.md",
+      "computedHash": "2f979bad98ea3a6744084c5f93e27897f02e8d0ffe15dd03042e88aaae4da14c"
+    },
     "swiftui-animation": {
       "source": "dpearson2699/swift-ios-skills",
       "sourceType": "github",
       "skillPath": "skills/swiftui-animation/SKILL.md",
       "computedHash": "c95ff235afaaa2df0ae2b16305a3c2233851d2f50d375d5c412270ad0980d60d"
+    },
+    "swiftui-expert-skill": {
+      "source": "avdlee/swiftui-agent-skill",
+      "sourceType": "github",
+      "skillPath": "swiftui-expert-skill/SKILL.md",
+      "computedHash": "ffe7adc4c442d2e75985b61ab281e3e303fe201c077ed05d82c0198a18fb1a25"
     },
     "swiftui-gestures": {
       "source": "dpearson2699/swift-ios-skills",
@@ -222,6 +246,12 @@
       "sourceType": "github",
       "skillPath": "skills/swiftui-performance/SKILL.md",
       "computedHash": "b380c5379a0548900b770bfdf498023b45d44b573bcb16e018fd2a05cd23eeb6"
+    },
+    "swiftui-pro": {
+      "source": "twostraws/swiftui-agent-skill",
+      "sourceType": "github",
+      "skillPath": "swiftui-pro/SKILL.md",
+      "computedHash": "07033426e384295a4b49cf0b2ffdefd4098cae4af53fef16bc1f2d9281118c41"
     },
     "swiftui-uikit-interop": {
       "source": "dpearson2699/swift-ios-skills",
@@ -264,6 +294,36 @@
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
       "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "xcode-build-benchmark": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-benchmark/SKILL.md",
+      "computedHash": "e132c38adbb8a74e3e0474c0e34566b209fa3bf29532604af97d715b8c721ec8"
+    },
+    "xcode-build-fixer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-fixer/SKILL.md",
+      "computedHash": "7d1c68154af030a24b7420c9f9c7805e6009e0012da34b9a16c0cfef3396b608"
+    },
+    "xcode-build-orchestrator": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-build-orchestrator/SKILL.md",
+      "computedHash": "d03e65e314a8fbe0ae0cf7469fa1a4280b5d335a7f163fdc7a7a91dbb0fd1b2b"
+    },
+    "xcode-compilation-analyzer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-compilation-analyzer/SKILL.md",
+      "computedHash": "9857f081cf044a06f93f382ea1a53c3fe9699ac0d0686abbabea67696c2eff6a"
+    },
+    "xcode-project-analyzer": {
+      "source": "avdlee/xcode-build-optimization-agent-skill",
+      "sourceType": "github",
+      "skillPath": "skills/xcode-project-analyzer/SKILL.md",
+      "computedHash": "dfe1901df149b68d8869a48143508444605ed8ba20b448d1faec1d6218d58859"
     },
     "xlsx": {
       "source": "anthropics/skills",
